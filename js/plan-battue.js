@@ -143,17 +143,17 @@ async function ajouterTraqueDepuisDB(ligneTraque) {
 function gabaritCarteTraque(etat) {
     const cle = etat.cleLocale;
     const optionsParcelles = '<option value="">— Non précisé —</option>' +
-        parcellesCache.map((p) => `<option value="${p.id}" ${etat.parcelle_id === p.id ? "selected" : ""}>${p.nom}</option>`).join("");
-    const optionsEspeces = especesCache.map((e) => `<option value="${e.id}">${e.nom}</option>`).join("");
+        parcellesCache.map((p) => `<option value="${p.id}" ${etat.parcelle_id === p.id ? "selected" : ""}>${echapper(p.nom)}</option>`).join("");
+    const optionsEspeces = especesCache.map((e) => `<option value="${e.id}">${echapper(e.nom)}</option>`).join("");
     const optionsChasseurs = '<option value="">— Non précisé —</option>' +
-        chasseursCache.filter((c) => c.actif).map((c) => `<option value="${c.id}">${nomAffichePersonne(c)}</option>`).join("");
+        chasseursCache.filter((c) => c.actif).map((c) => `<option value="${c.id}">${echapper(nomAffichePersonne(c))}</option>`).join("");
 
     return `
         <div class="carte-traque" id="carte-traque-conteneur-${cle}">
             <div class="ligne-champs">
                 <div>
                     <label class="etiquette">Nom de la traque</label>
-                    <input type="text" id="champ-nom-traque-${cle}" placeholder="Traque ${etat.numero}" value="${etat.nom || ""}">
+                    <input type="text" id="champ-nom-traque-${cle}" placeholder="Traque ${echapper(etat.numero)}" value="${echapper(etat.nom)}">
                 </div>
                 <div>
                     <label class="etiquette">Parcelle / secteur</label>
@@ -181,7 +181,7 @@ function gabaritCarteTraque(etat) {
                     <label class="etiquette">Ajouter un poste depuis la bibliothèque</label>
                     <select id="select-bibliotheque-${cle}">
                         <option value="">— Choisir un poste enregistré —</option>
-                        ${postesChasseCache.map((p) => `<option value="${p.id}">${p.nom}</option>`).join("")}
+                        ${postesChasseCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("")}
                     </select>
                 </div>
                 <div><button type="button" class="bouton bouton-secondaire" id="bouton-ajouter-bibliotheque-${cle}">Ajouter à la traque</button></div>
@@ -192,7 +192,7 @@ function gabaritCarteTraque(etat) {
             <div id="liste-acces-${cle}" style="margin-top:4px; font-size:13px;"></div>
 
             <label class="etiquette" style="margin-top:12px;">Notes pour cette traque</label>
-            <textarea id="champ-notes-traque-${cle}" rows="2">${etat.notes || ""}</textarea>
+            <textarea id="champ-notes-traque-${cle}" rows="2">${echapper(etat.notes)}</textarea>
 
             <div class="actions-modale" style="margin-top:10px;">
                 <button type="button" class="bouton bouton-danger" id="bouton-supprimer-traque-${cle}">Supprimer la traque</button>
@@ -368,7 +368,7 @@ async function enregistrerNouveauPosteBibliotheque(poste) {
     postesChasseCache.push(data);
     traquesEtat.forEach((etat) => {
         const select = document.getElementById(`select-bibliotheque-${etat.cleLocale}`);
-        if (select) select.insertAdjacentHTML("beforeend", `<option value="${data.id}">${data.nom}</option>`);
+        if (select) select.insertAdjacentHTML("beforeend", `<option value="${data.id}">${echapper(data.nom)}</option>`);
     });
 }
 
@@ -392,7 +392,7 @@ function redessinerTraceTraque(etat) {
         const parcelle = parcellesCache.find((p) => p.id === etat.parcelle_id);
         if (parcelle && parcelle.contour) {
             const polygone = L.polygon(parcelle.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.1 });
-            polygone.bindTooltip(parcelle.nom, { permanent: true, direction: "center", className: "etiquette-parcelle" });
+            polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
             c.contour.addLayer(polygone);
             groupeEtendue.addLayer(polygone);
         }
@@ -404,22 +404,22 @@ function redessinerTraceTraque(etat) {
     if (groupeRabatteurs) groupeEtendue.addLayer(groupeRabatteurs);
 
     etat.parkings.forEach((parking) => {
-        const marqueur = L.marker([parking.lat, parking.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") }).bindTooltip(parking.nom);
+        const marqueur = L.marker([parking.lat, parking.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") }).bindTooltip(echapper(parking.nom));
         c.parkings.addLayer(marqueur);
         groupeEtendue.addLayer(marqueur);
     });
 
     etat.acces.forEach((acces) => {
-        const marqueur = L.marker([acces.lat, acces.lng], { icon: iconePointCarte("🚪", "#8a6d3a") }).bindTooltip(acces.nom);
+        const marqueur = L.marker([acces.lat, acces.lng], { icon: iconePointCarte("🚪", "#8a6d3a") }).bindTooltip(echapper(acces.nom));
         c.acces.addLayer(marqueur);
         groupeEtendue.addLayer(marqueur);
     });
 
     etat.postes.forEach((poste, index) => {
         const chasseur = chasseursCache.find((ch) => ch.id === poste.chasseur_id);
-        const texte = chasseur ? `${poste.nom} — ${nomAffichePersonne(chasseur)}` : `${poste.nom} — non affecté`;
+        const texte = chasseur ? `${echapper(poste.nom)} — ${echapper(nomAffichePersonne(chasseur))}` : `${echapper(poste.nom)} — non affecté`;
         const marqueur = L.marker([poste.lat, poste.lng], { icon: iconePosteAssigne(index + 1, !!poste.chasseur_id) })
-            .bindTooltip(texte, { permanent: true, direction: "right" });
+            .bindTooltip(echapper(texte), { permanent: true, direction: "right" });
         c.postes.addLayer(marqueur);
         groupeEtendue.addLayer(marqueur);
     });
@@ -438,11 +438,11 @@ function construireListePostes(etat) {
     }
     zone.innerHTML = etat.postes.map((poste, index) => `
         <div class="ligne-poste-traque">
-            <span class="nom-poste">${index + 1}. ${poste.nom}</span>
+            <span class="nom-poste">${index + 1}. ${echapper(poste.nom)}</span>
             <select onchange="assignerChasseurPoste('${etat.cleLocale}','${poste.cleLocale}', this.value)">
                 <option value="">— Chasseur non affecté —</option>
                 ${chasseursCache.filter((c) => c.actif).map((c) =>
-                    `<option value="${c.id}" ${poste.chasseur_id === c.id ? "selected" : ""}>${nomAffichePersonne(c)}</option>`
+                    `<option value="${c.id}" ${poste.chasseur_id === c.id ? "selected" : ""}>${echapper(nomAffichePersonne(c))}</option>`
                 ).join("")}
             </select>
             <button type="button" class="bouton bouton-danger" style="padding:2px 6px;" onclick="retirerPosteTraque('${etat.cleLocale}','${poste.cleLocale}')">×</button>
@@ -454,12 +454,12 @@ function construireListesPoints(etat) {
     const cle = etat.cleLocale;
     const zoneParkings = document.getElementById(`liste-parkings-${cle}`);
     zoneParkings.innerHTML = etat.parkings.length === 0 ? "" : etat.parkings.map((p, i) =>
-        `🅿️ ${p.nom} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:4px;" onclick="retirerPoint('${cle}','parkings',${i})">×</button>`
+        `🅿️ ${echapper(p.nom)} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:4px;" onclick="retirerPoint('${cle}','parkings',${i})">×</button>`
     ).join(" &nbsp; ");
 
     const zoneAcces = document.getElementById(`liste-acces-${cle}`);
     zoneAcces.innerHTML = etat.acces.length === 0 ? "" : etat.acces.map((a, i) =>
-        `🚪 ${a.nom} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:4px;" onclick="retirerPoint('${cle}','acces',${i})">×</button>`
+        `🚪 ${echapper(a.nom)} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:4px;" onclick="retirerPoint('${cle}','acces',${i})">×</button>`
     ).join(" &nbsp; ");
 }
 
@@ -619,7 +619,7 @@ function rendreTableauBibliotheque() {
     }
     corps.innerHTML = postesChasseCache.map((p) => `
         <tr>
-            <td>${p.nom}</td>
+            <td>${echapper(p.nom)}</td>
             <td style="text-align:right;"><button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerPosteBibliotheque('${p.id}')">Supprimer</button></td>
         </tr>
     `).join("");
@@ -634,7 +634,7 @@ async function supprimerPosteBibliotheque(id) {
         const select = document.getElementById(`select-bibliotheque-${etat.cleLocale}`);
         if (select) {
             select.innerHTML = '<option value="">— Choisir un poste enregistré —</option>' +
-                postesChasseCache.map((p) => `<option value="${p.id}">${p.nom}</option>`).join("");
+                postesChasseCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
         }
     });
 }

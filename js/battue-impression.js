@@ -58,7 +58,7 @@
     document.getElementById("grille-infos-pratiques").innerHTML = infos.map(([etiquette, valeur]) => `
         <div class="champ-info">
             <div class="etiquette-info">${etiquette}</div>
-            <div class="valeur-info">${valeur}</div>
+            <div class="valeur-info">${echapper(valeur)}</div>
         </div>
     `).join("");
 
@@ -89,20 +89,20 @@
 
             return `
                 <div style="margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--couleur-bordure);">
-                    <strong>${traque.nom || "Traque " + traque.numero}${parcelleTraque ? " — " + parcelleTraque.nom : ""}</strong>
+                    <strong>${echapper(traque.nom || "Traque " + traque.numero)}${parcelleTraque ? " — " + echapper(parcelleTraque.nom) : ""}</strong>
                     ${postes.length > 0 ? `
                         <table class="tableau-donnees" style="margin-top:6px;">
                             <thead><tr><th>Poste</th><th>Chasseur</th></tr></thead>
                             <tbody>
                                 ${postes.map((p) => {
                                     const chasseurPoste = trouverChasseur(p.chasseur_id);
-                                    return `<tr><td>${p.nom}</td><td>${chasseurPoste ? nomAffiche(chasseurPoste) : "—"}</td></tr>`;
+                                    return `<tr><td>${echapper(p.nom)}</td><td>${chasseurPoste ? echapper(nomAffiche(chasseurPoste)) : "—"}</td></tr>`;
                                 }).join("")}
                             </tbody>
                         </table>
                     ` : ""}
                     <div class="bloc-texte" style="margin-top:4px;"><strong>Prélevés :</strong> ${texteTally}</div>
-                    ${traque.notes ? `<div class="bloc-texte">${traque.notes}</div>` : ""}
+                    ${traque.notes ? `<div class="bloc-texte">${echapper(traque.notes)}</div>` : ""}
                 </div>
             `;
         }).join("");
@@ -116,7 +116,7 @@
     } else {
         corpsParticipants.innerHTML = listeParticipants.map((p) => {
             const chasseur = trouverChasseur(p.chasseur_id);
-            return `<tr><td>${chasseur ? nomAffiche(chasseur) : "—"}</td><td>${p.poste || ""}</td></tr>`;
+            return `<tr><td>${chasseur ? echapper(nomAffiche(chasseur)) : "—"}</td><td>${echapper(p.poste)}</td></tr>`;
         }).join("");
     }
 
@@ -128,7 +128,7 @@
         document.getElementById("corps-tableau-plan-impression").innerHTML = plansSaison.map((plan) => {
             const espece = (especes.data || []).find((e) => e.id === plan.espece_id);
             const realise = (prelevements.data || []).filter((p) => p.espece_id === plan.espece_id && p.saison === saison).length;
-            return `<tr><td>${espece ? espece.nom : ""}</td><td>${plan.attribution}</td><td>${realise}</td></tr>`;
+            return `<tr><td>${espece ? echapper(espece.nom) : ""}</td><td>${plan.attribution}</td><td>${realise}</td></tr>`;
         }).join("");
     }
 
@@ -169,13 +169,13 @@ function initialiserCarteImpression(parcelle, parkings, listeTraques, postesParT
 
     if (parcelle && parcelle.contour) {
         const polygone = L.polygon(parcelle.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.2 });
-        polygone.bindTooltip(parcelle.nom, { permanent: true, direction: "center", className: "etiquette-parcelle" });
+        polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
         groupeElements.addLayer(polygone);
     }
 
     parkings.forEach((parking) => {
         const marqueur = L.marker([parking.lat, parking.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") })
-            .bindTooltip(parking.nom, { permanent: true, direction: "top" });
+            .bindTooltip(echapper(parking.nom), { permanent: true, direction: "top" });
         groupeElements.addLayer(marqueur);
     });
 
@@ -183,20 +183,20 @@ function initialiserCarteImpression(parcelle, parkings, listeTraques, postesParT
         const parcelleTraque = (toutesLesParcelles || []).find((p) => p.id === traque.parcelle_id);
         if (parcelleTraque && parcelleTraque.contour) {
             const polygone = L.polygon(parcelleTraque.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.1 });
-            polygone.bindTooltip(parcelleTraque.nom, { permanent: true, direction: "center", className: "etiquette-parcelle" });
+            polygone.bindTooltip(echapper(parcelleTraque.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
             groupeElements.addLayer(polygone);
         }
 
         const groupeMouvement = dessinerLigneAvecFleche(groupeElements, traque.mouvement, "#a3442f", false);
-        if (groupeMouvement && traque.nom) groupeMouvement.eachLayer((c) => { if (c.bindTooltip) c.bindTooltip(traque.nom); });
+        if (groupeMouvement && traque.nom) groupeMouvement.eachLayer((c) => { if (c.bindTooltip) c.bindTooltip(echapper(traque.nom)); });
         dessinerLigneAvecFleche(groupeElements, traque.ligne_rabatteurs, "#3a6b8a", true);
 
         (traque.parkings || []).forEach((parking) => {
-            const marqueur = L.marker([parking.lat, parking.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") }).bindTooltip(parking.nom, { permanent: true, direction: "top" });
+            const marqueur = L.marker([parking.lat, parking.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") }).bindTooltip(echapper(parking.nom), { permanent: true, direction: "top" });
             groupeElements.addLayer(marqueur);
         });
         (traque.acces || []).forEach((acces) => {
-            const marqueur = L.marker([acces.lat, acces.lng], { icon: iconePointCarte("🚪", "#8a6d3a") }).bindTooltip(acces.nom, { permanent: true, direction: "top" });
+            const marqueur = L.marker([acces.lat, acces.lng], { icon: iconePointCarte("🚪", "#8a6d3a") }).bindTooltip(echapper(acces.nom), { permanent: true, direction: "top" });
             groupeElements.addLayer(marqueur);
         });
 
@@ -204,7 +204,7 @@ function initialiserCarteImpression(parcelle, parkings, listeTraques, postesParT
             const chasseurPoste = (tousLesChasseurs || []).find((c) => c.id === poste.chasseur_id);
             const texte = chasseurPoste ? `${poste.nom} — ${chasseurPoste.prenom ? chasseurPoste.prenom + " " : ""}${chasseurPoste.nom}` : poste.nom;
             const marqueur = L.marker([poste.lat, poste.lng], { icon: iconePosteAssigne(index + 1, !!poste.chasseur_id) })
-                .bindTooltip(texte, { permanent: true, direction: "right" });
+                .bindTooltip(echapper(texte), { permanent: true, direction: "right" });
             groupeElements.addLayer(marqueur);
         });
     });

@@ -54,10 +54,10 @@ function remplirTableauPrestataires() {
     }
     corps.innerHTML = prestatairesCache.map((p) => `
         <tr>
-            <td data-etiquette="Nom">${p.nom}</td>
-            <td data-etiquette="Spécialité">${p.specialite || ""}</td>
-            <td data-etiquette="Contact">${p.contact || ""}</td>
-            <td data-etiquette="Téléphone">${p.telephone || ""}</td>
+            <td data-etiquette="Nom">${echapper(p.nom)}</td>
+            <td data-etiquette="Spécialité">${echapper(p.specialite)}</td>
+            <td data-etiquette="Contact">${echapper(p.contact)}</td>
+            <td data-etiquette="Téléphone">${echapper(p.telephone)}</td>
             <td data-etiquette="">
                 <button class="bouton bouton-secondaire" style="padding:4px 8px;" onclick="ouvrirModificationPrestataire('${p.id}')">Modifier</button>
                 <button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerPrestataire('${p.id}')">Supprimer</button>
@@ -69,7 +69,7 @@ function remplirTableauPrestataires() {
 function remplirSelectionPrestataires() {
     document.getElementById("champ-prestataire-chantier").innerHTML =
         '<option value="">— Non précisé —</option>' +
-        prestatairesCache.map((p) => `<option value="${p.id}">${p.nom}</option>`).join("");
+        prestatairesCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
 }
 
 function ouvrirCreationPrestataire() {
@@ -130,7 +130,7 @@ async function chargerParcellesPourChantier() {
     parcellesPourChantierCache = data || [];
     document.getElementById("champ-parcelle-chantier").innerHTML =
         '<option value="">— Non précisé —</option>' +
-        parcellesPourChantierCache.map((p) => `<option value="${p.id}">${p.nom}</option>`).join("");
+        parcellesPourChantierCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
 }
 
 function initialiserCarteChantierSiBesoin() {
@@ -152,14 +152,14 @@ function initialiserCarteChantierSiBesoin() {
 function redessinerPointsInteret() {
     couchePointsChantier.clearLayers();
     pointsInteretEnAttente.forEach((point) => {
-        couchePointsChantier.addLayer(L.marker([point.lat, point.lng]).bindPopup(point.nom));
+        couchePointsChantier.addLayer(L.marker([point.lat, point.lng]).bindPopup(echapper(point.nom)));
     });
     const liste = document.getElementById("liste-points-interet");
     if (pointsInteretEnAttente.length === 0) {
         liste.innerHTML = '<em style="color:#888;">Aucun point placé. Clique sur la carte pour en ajouter.</em>';
     } else {
         liste.innerHTML = pointsInteretEnAttente.map((p, i) =>
-            `📍 ${p.nom} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:6px;" onclick="retirerPointInteret(${i})">×</button>`
+            `📍 ${echapper(p.nom)} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:6px;" onclick="retirerPointInteret(${i})">×</button>`
         ).join("<br>");
     }
 }
@@ -201,10 +201,10 @@ async function chargerChantiers() {
         const cout = chantier.cout_reel ? chantier.cout_reel.toFixed(2) + " €" : "";
         return `
             <tr>
-                <td data-etiquette="Titre"><strong>${chantier.titre}</strong></td>
-                <td data-etiquette="Type">${chantier.type_travaux}</td>
-                <td data-etiquette="Statut">${chantier.statut}</td>
-                <td data-etiquette="Parcelle">${parcelle ? parcelle.nom : ""}</td>
+                <td data-etiquette="Titre"><strong>${echapper(chantier.titre)}</strong></td>
+                <td data-etiquette="Type">${echapper(chantier.type_travaux)}</td>
+                <td data-etiquette="Statut">${echapper(chantier.statut)}</td>
+                <td data-etiquette="Parcelle">${parcelle ? echapper(parcelle.nom) : ""}</td>
                 <td data-etiquette="Début">${debut}</td>
                 <td data-etiquette="Coût">${cout}</td>
                 <td data-etiquette="">

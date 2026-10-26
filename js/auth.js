@@ -50,3 +50,17 @@ function injecterNavigation(pageActiveFichier) {
         <nav class="navigation">${liensNav}</nav>
     `;
 }
+
+/**
+ * Échappe une valeur saisie par un utilisateur avant de l'insérer dans du HTML
+ * (innerHTML, gabarits, infobulles Leaflet). Une valeur absente donne "".
+ */
+function echapper(valeur) {
+    if (valeur === null || valeur === undefined) return "";
+    return String(valeur)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}

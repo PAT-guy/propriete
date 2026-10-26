@@ -84,9 +84,9 @@ function remplirTableauChasseurs() {
     }
     corps.innerHTML = chasseursCache.map((c) => `
         <tr>
-            <td data-etiquette="Nom">${nomAffichePersonne(c)}</td>
-            <td data-etiquette="Téléphone">${c.telephone || ""}</td>
-            <td data-etiquette="Permis">${c.numero_permis || ""}</td>
+            <td data-etiquette="Nom">${echapper(nomAffichePersonne(c))}</td>
+            <td data-etiquette="Téléphone">${echapper(c.telephone)}</td>
+            <td data-etiquette="Permis">${echapper(c.numero_permis)}</td>
             <td data-etiquette="Statut">${c.actif ? "Actif" : "Inactif"}</td>
             <td data-etiquette="">
                 <button class="bouton bouton-secondaire" style="padding:4px 8px;" onclick="ouvrirModificationChasseur('${c.id}')">Modifier</button>
@@ -157,7 +157,7 @@ async function supprimerChasseur(id) {
 async function chargerEspeces() {
     const { data } = await clientSupabase.from("especes_gibier").select().order("nom");
     especesCache = data || [];
-    const options = especesCache.map((e) => `<option value="${e.id}">${e.nom}</option>`).join("");
+    const options = especesCache.map((e) => `<option value="${e.id}">${echapper(e.nom)}</option>`).join("");
     document.getElementById("champ-espece-plan").innerHTML = options;
     document.getElementById("champ-espece-prelevement").innerHTML = options;
 }
@@ -178,8 +178,8 @@ async function chargerPlan() {
         const depasse = plan.attribution && realise >= plan.attribution;
         return `
             <tr>
-                <td data-etiquette="Saison">${plan.saison}</td>
-                <td data-etiquette="Espèce">${espece ? espece.nom : ""}</td>
+                <td data-etiquette="Saison">${echapper(plan.saison)}</td>
+                <td data-etiquette="Espèce">${espece ? echapper(espece.nom) : ""}</td>
                 <td data-etiquette="Attribution">${plan.attribution}</td>
                 <td data-etiquette="Réalisé" style="${depasse ? "color:#a3442f; font-weight:600;" : ""}">${realise} / ${plan.attribution}</td>
                 <td data-etiquette="">
@@ -228,11 +228,11 @@ async function chargerParcellesPourSelect() {
     const { data } = await clientSupabase.from("parcelles").select().order("nom");
     parcellesPourSelectCache = data || [];
     const options = '<option value="">— Non précisé —</option>' +
-        parcellesPourSelectCache.map((p) => `<option value="${p.id}">${p.nom}</option>`).join("");
+        parcellesPourSelectCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
     document.getElementById("champ-parcelle-battue").innerHTML = options;
 
     const optionsResponsable = '<option value="">— Non précisé —</option>' +
-        chasseursCache.filter((c) => c.actif).map((c) => `<option value="${c.id}">${nomAffichePersonne(c)}</option>`).join("");
+        chasseursCache.filter((c) => c.actif).map((c) => `<option value="${c.id}">${echapper(nomAffichePersonne(c))}</option>`).join("");
     document.getElementById("champ-responsable-battue").innerHTML = optionsResponsable;
 }
 
@@ -259,7 +259,7 @@ function initialiserCarteBattueSiBesoin() {
 function redessinerParkings() {
     coucheParkingsBattue.clearLayers();
     parkingsEnAttente.forEach((parking, index) => {
-        const marqueur = L.marker([parking.lat, parking.lng]).bindPopup(parking.nom);
+        const marqueur = L.marker([parking.lat, parking.lng]).bindPopup(echapper(parking.nom));
         coucheParkingsBattue.addLayer(marqueur);
     });
 
@@ -268,7 +268,7 @@ function redessinerParkings() {
         liste.innerHTML = '<em style="color:#888;">Aucun parking placé. Clique sur la carte pour en ajouter.</em>';
     } else {
         liste.innerHTML = parkingsEnAttente.map((p, i) =>
-            `🅿️ ${p.nom} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:6px;" onclick="retirerParking(${i})">×</button>`
+            `🅿️ ${echapper(p.nom)} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:6px;" onclick="retirerParking(${i})">×</button>`
         ).join("<br>");
     }
 }
@@ -313,8 +313,8 @@ async function chargerBattues() {
         return `
             <tr>
                 <td data-etiquette="Date">${dateFormatee}</td>
-                <td data-etiquette="Secteur">${battue.secteur || ""}</td>
-                <td data-etiquette="Responsable">${responsable ? nomAffichePersonne(responsable) : ""}</td>
+                <td data-etiquette="Secteur">${echapper(battue.secteur)}</td>
+                <td data-etiquette="Responsable">${responsable ? echapper(nomAffichePersonne(responsable)) : ""}</td>
                 <td data-etiquette="Participants">${nbParticipants}</td>
                 <td data-etiquette="Traques">${nbTraques}</td>
                 <td data-etiquette="">
@@ -340,7 +340,7 @@ function remplirListeParticipantsCochables(idsCoches) {
     zone.innerHTML = actifs.map((c) => `
         <label style="display:block; padding:3px 0;">
             <input type="checkbox" value="${c.id}" class="case-participant" ${idsCoches.includes(c.id) ? "checked" : ""}>
-            ${nomAffichePersonne(c)}
+            ${echapper(nomAffichePersonne(c))}
         </label>
     `).join("");
 }
@@ -479,9 +479,9 @@ async function chargerPrelevements() {
         return `
             <tr>
                 <td data-etiquette="Date">${new Date(p.date_prelevement).toLocaleDateString("fr-FR")}</td>
-                <td data-etiquette="Espèce">${espece ? espece.nom : ""}</td>
-                <td data-etiquette="Chasseur">${chasseur ? nomAffichePersonne(chasseur) : ""}</td>
-                <td data-etiquette="Sexe">${p.sexe || ""}</td>
+                <td data-etiquette="Espèce">${espece ? echapper(espece.nom) : ""}</td>
+                <td data-etiquette="Chasseur">${chasseur ? echapper(nomAffichePersonne(chasseur)) : ""}</td>
+                <td data-etiquette="Sexe">${echapper(p.sexe)}</td>
                 <td data-etiquette="Poids">${p.poids_kg ? p.poids_kg.toFixed(1) + " kg" : ""}</td>
             </tr>
         `;
@@ -494,11 +494,11 @@ function ouvrirCreationPrelevement() {
     document.getElementById("message-modale-prelevement").innerHTML = "";
 
     const optionsChasseurs = '<option value="">— Non précisé —</option>' +
-        chasseursCache.map((c) => `<option value="${c.id}">${nomAffichePersonne(c)}</option>`).join("");
+        chasseursCache.map((c) => `<option value="${c.id}">${echapper(nomAffichePersonne(c))}</option>`).join("");
     document.getElementById("champ-chasseur-prelevement").innerHTML = optionsChasseurs;
 
     const optionsBattues = '<option value="">— Hors battue —</option>' +
-        battuesCache.map((b) => `<option value="${b.id}">${new Date(b.date_battue).toLocaleDateString("fr-FR")}${b.secteur ? " — " + b.secteur : ""}</option>`).join("");
+        battuesCache.map((b) => `<option value="${b.id}">${new Date(b.date_battue).toLocaleDateString("fr-FR")}${b.secteur ? " — " + echapper(b.secteur) : ""}</option>`).join("");
     document.getElementById("champ-battue-prelevement").innerHTML = optionsBattues;
 
     ouvrirModale("modale-prelevement");

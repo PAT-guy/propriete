@@ -61,7 +61,7 @@ function saisonCourante() {
 async function chargerChasseursFinances() {
     const { data } = await clientSupabase.from("chasseurs").select().order("nom");
     chasseursFinancesCache = data || [];
-    const options = chasseursFinancesCache.map((c) => `<option value="${c.id}">${nomAffichePersonne(c)}</option>`).join("");
+    const options = chasseursFinancesCache.map((c) => `<option value="${c.id}">${echapper(nomAffichePersonne(c))}</option>`).join("");
     document.getElementById("champ-chasseur-cotisation").innerHTML = options;
     document.getElementById("champ-chasseur-document").innerHTML = '<option value="">— Aucun —</option>' + options;
 }
@@ -69,23 +69,23 @@ async function chargerChasseursFinances() {
 async function chargerChantiersFinances() {
     const { data } = await clientSupabase.from("chantiers").select().order("titre");
     chantiersFinancesCache = data || [];
-    const options = '<option value="">— Non lié —</option>' + chantiersFinancesCache.map((c) => `<option value="${c.id}">${c.titre}</option>`).join("");
+    const options = '<option value="">— Non lié —</option>' + chantiersFinancesCache.map((c) => `<option value="${c.id}">${echapper(c.titre)}</option>`).join("");
     document.getElementById("champ-chantier-facture").innerHTML = options;
-    document.getElementById("champ-chantier-document").innerHTML = '<option value="">— Aucun —</option>' + chantiersFinancesCache.map((c) => `<option value="${c.id}">${c.titre}</option>`).join("");
+    document.getElementById("champ-chantier-document").innerHTML = '<option value="">— Aucun —</option>' + chantiersFinancesCache.map((c) => `<option value="${c.id}">${echapper(c.titre)}</option>`).join("");
 }
 
 async function chargerPrestatairesFinances() {
     const { data } = await clientSupabase.from("prestataires").select().order("nom");
     prestatairesFinancesCache = data || [];
     document.getElementById("champ-prestataire-facture").innerHTML =
-        '<option value="">— Non lié —</option>' + prestatairesFinancesCache.map((p) => `<option value="${p.id}">${p.nom}</option>`).join("");
+        '<option value="">— Non lié —</option>' + prestatairesFinancesCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
 }
 
 async function chargerParcellesFinances() {
     const { data } = await clientSupabase.from("parcelles").select().order("nom");
     parcellesFinancesCache = data || [];
     document.getElementById("champ-parcelle-document").innerHTML =
-        '<option value="">— Aucune —</option>' + parcellesFinancesCache.map((p) => `<option value="${p.id}">${p.nom}</option>`).join("");
+        '<option value="">— Aucune —</option>' + parcellesFinancesCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
 }
 
 // ----------------------------------------------------------------------------
@@ -105,10 +105,10 @@ async function chargerCotisations() {
         const couleur = (c.statut === "En attente" || c.statut === "En retard") ? "color:#a3442f; font-weight:600;" : "";
         return `
             <tr>
-                <td data-etiquette="Chasseur">${chasseur ? nomAffichePersonne(chasseur) : ""}</td>
-                <td data-etiquette="Saison">${c.saison}</td>
+                <td data-etiquette="Chasseur">${chasseur ? echapper(nomAffichePersonne(chasseur)) : ""}</td>
+                <td data-etiquette="Saison">${echapper(c.saison)}</td>
                 <td data-etiquette="Montant">${c.montant.toFixed(2)} €</td>
-                <td data-etiquette="Statut" style="${couleur}">${c.statut}</td>
+                <td data-etiquette="Statut" style="${couleur}">${echapper(c.statut)}</td>
                 <td data-etiquette=""><button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerCotisation('${c.id}')">Supprimer</button></td>
             </tr>
         `;
@@ -165,10 +165,10 @@ async function chargerFactures() {
         return `
             <tr>
                 <td data-etiquette="Numéro">${f.numero || "#" + f.id.slice(0, 6)}</td>
-                <td data-etiquette="Description">${f.description || ""}</td>
+                <td data-etiquette="Description">${echapper(f.description)}</td>
                 <td data-etiquette="Montant">${f.montant.toFixed(2)} €</td>
                 <td data-etiquette="Échéance">${echeance}</td>
-                <td data-etiquette="Statut" style="${couleur}">${f.statut}</td>
+                <td data-etiquette="Statut" style="${couleur}">${echapper(f.statut)}</td>
                 <td data-etiquette=""><button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerFacture('${f.id}')">Supprimer</button></td>
             </tr>
         `;
@@ -223,7 +223,7 @@ async function chargerBaux() {
     }
     corps.innerHTML = baux.map((b) => `
         <tr>
-            <td data-etiquette="Locataire">${b.locataire}</td>
+            <td data-etiquette="Locataire">${echapper(b.locataire)}</td>
             <td data-etiquette="Début">${b.date_debut ? new Date(b.date_debut).toLocaleDateString("fr-FR") : ""}</td>
             <td data-etiquette="Fin">${b.date_fin ? new Date(b.date_fin).toLocaleDateString("fr-FR") : ""}</td>
             <td data-etiquette="Montant">${b.montant_annuel ? b.montant_annuel.toFixed(2) + " €" : ""}</td>
@@ -288,9 +288,9 @@ async function chargerDocuments() {
 
         return `
             <tr>
-                <td data-etiquette="Titre"><a href="${urlPublique.publicUrl}" target="_blank">${d.titre}</a></td>
-                <td data-etiquette="Type">${d.type_document}</td>
-                <td data-etiquette="Rattaché à">${rattachements.join(", ")}</td>
+                <td data-etiquette="Titre"><a href="${urlPublique.publicUrl}" target="_blank">${echapper(d.titre)}</a></td>
+                <td data-etiquette="Type">${echapper(d.type_document)}</td>
+                <td data-etiquette="Rattaché à">${echapper(rattachements.join(", "))}</td>
                 <td data-etiquette=""><button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerDocument('${d.id}')">Supprimer</button></td>
             </tr>
         `;
@@ -317,7 +317,7 @@ async function enregistrerDocument(evenement) {
     const chemin = `${Date.now()}_${fichier.name}`;
     const { error: erreurEnvoi } = await clientSupabase.storage.from("documents").upload(chemin, fichier);
     if (erreurEnvoi) {
-        document.getElementById("message-modale-document").innerHTML = `<div class="message-alerte">Échec de l'envoi : ${erreurEnvoi.message}</div>`;
+        document.getElementById("message-modale-document").innerHTML = `<div class="message-alerte">Échec de l'envoi : ${echapper(erreurEnvoi.message)}</div>`;
         return;
     }
 

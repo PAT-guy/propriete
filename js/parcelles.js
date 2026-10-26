@@ -90,7 +90,7 @@ async function chargerProprietaires() {
 function remplirSelectionProprietaires() {
     const select = document.getElementById("champ-proprietaire-parcelle");
     select.innerHTML = '<option value="">— Non renseigné —</option>' +
-        proprietairesCache.map((p) => `<option value="${p.id}">${nomAffichePersonne(p)}</option>`).join("");
+        proprietairesCache.map((p) => `<option value="${p.id}">${echapper(nomAffichePersonne(p))}</option>`).join("");
 }
 
 function nomAffichePersonne(personne) {
@@ -108,8 +108,8 @@ async function chargerEtAfficherParcelles() {
         toutesLesParcelles.forEach((parcelle) => {
             if (!parcelle.contour) return;
             const polygone = dessinerPolygone(carteParcelles, coucheParcellesExistantes, parcelle.contour);
-            polygone.bindPopup(parcelle.nom);
-            polygone.bindTooltip(parcelle.nom, { permanent: true, direction: "center", className: "etiquette-parcelle" });
+            polygone.bindPopup(echapper(parcelle.nom));
+            polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
             polygone.on("click", () => selectionnerParcelle(parcelle.id));
             polygone._parcelleId = parcelle.id;
         });
@@ -141,10 +141,10 @@ function filtrerTableauParcelles() {
         const proprietaire = proprietairesCache.find((pr) => pr.id === p.proprietaire_id);
         return `
             <tr style="cursor:pointer;" onclick="selectionnerParcelle('${p.id}')">
-                <td data-etiquette="Nom"><strong>${p.nom}</strong></td>
-                <td data-etiquette="Commune">${p.commune || ""}</td>
+                <td data-etiquette="Nom"><strong>${echapper(p.nom)}</strong></td>
+                <td data-etiquette="Commune">${echapper(p.commune)}</td>
                 <td data-etiquette="Surface">${p.surface_ha ? p.surface_ha.toFixed(2) + " ha" : ""}</td>
-                <td data-etiquette="Propriétaire">${proprietaire ? nomAffichePersonne(proprietaire) : ""}</td>
+                <td data-etiquette="Propriétaire">${proprietaire ? echapper(nomAffichePersonne(proprietaire)) : ""}</td>
                 <td data-etiquette=""></td>
             </tr>
         `;
@@ -165,12 +165,12 @@ async function selectionnerParcelle(id) {
 
     const proprietaire = proprietairesCache.find((pr) => pr.id === parcelle.proprietaire_id);
     const lignes = [];
-    if (parcelle.reference_cadastrale) lignes.push(`Référence : ${parcelle.reference_cadastrale}`);
-    if (parcelle.commune) lignes.push(`Localisation : ${parcelle.commune}${parcelle.lieu_dit ? " — " + parcelle.lieu_dit : ""}`);
+    if (parcelle.reference_cadastrale) lignes.push(`Référence : ${echapper(parcelle.reference_cadastrale)}`);
+    if (parcelle.commune) lignes.push(`Localisation : ${echapper(parcelle.commune)}${parcelle.lieu_dit ? " — " + parcelle.lieu_dit : ""}`);
     if (parcelle.surface_ha) lignes.push(`Surface : ${parcelle.surface_ha.toFixed(2)} ha`);
-    if (parcelle.type_peuplement) lignes.push(`Peuplement : ${parcelle.type_peuplement}`);
-    if (proprietaire) lignes.push(`Propriétaire : ${nomAffichePersonne(proprietaire)}`);
-    if (parcelle.notes) lignes.push(`Notes : ${parcelle.notes}`);
+    if (parcelle.type_peuplement) lignes.push(`Peuplement : ${echapper(parcelle.type_peuplement)}`);
+    if (proprietaire) lignes.push(`Propriétaire : ${echapper(nomAffichePersonne(proprietaire))}`);
+    if (parcelle.notes) lignes.push(`Notes : ${echapper(parcelle.notes)}`);
     document.getElementById("infos-detail").textContent = lignes.join("\n") || "Aucune information complémentaire.";
 
     if (parcelle.contour && carteParcelles) {
@@ -194,7 +194,7 @@ async function chargerEssences(parcelleId) {
 
     corps.innerHTML = essences.map((e) => `
         <tr>
-            <td data-etiquette="Essence">${e.essence}</td>
+            <td data-etiquette="Essence">${echapper(e.essence)}</td>
             <td data-etiquette="Surface">${e.surface_ha ? e.surface_ha.toFixed(2) + " ha" : ""}</td>
             <td data-etiquette="Âge">${e.age_moyen ? e.age_moyen + " ans" : ""}</td>
             <td data-etiquette=""><button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerEssence('${e.id}')">Retirer</button></td>
@@ -348,7 +348,7 @@ function remplirTableauProprietaires() {
     }
     corps.innerHTML = proprietairesCache.map((p) => `
         <tr>
-            <td>${nomAffichePersonne(p)}</td>
+            <td>${echapper(nomAffichePersonne(p))}</td>
             <td style="text-align:right;"><button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerProprietaire('${p.id}')">Supprimer</button></td>
         </tr>
     `).join("");

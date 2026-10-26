@@ -33,7 +33,7 @@
     if (battues.data && battues.data.length > 0) {
         const prochaine = battues.data[0];
         const dateFormatee = new Date(prochaine.date_battue).toLocaleDateString("fr-FR");
-        lignesAlertes.push(`Prochaine battue : ${dateFormatee}${prochaine.secteur ? " — " + prochaine.secteur : ""}`);
+        lignesAlertes.push(`Prochaine battue : ${dateFormatee}${prochaine.secteur ? " — " + echapper(prochaine.secteur) : ""}`);
     }
 
     const nbFactures = factures.data ? factures.data.length : 0;

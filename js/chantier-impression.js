@@ -66,7 +66,7 @@ function initialiserCarteImpressionChantier(parcelle, pointsInteret) {
         groupe.addLayer(L.polygon(parcelle.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.2 }));
     }
     pointsInteret.forEach((point) => {
-        groupe.addLayer(L.marker([point.lat, point.lng]).bindTooltip(point.nom, { permanent: true, direction: "top" }));
+        groupe.addLayer(L.marker([point.lat, point.lng]).bindTooltip(echapper(point.nom), { permanent: true, direction: "top" }));
     });
 
     if (groupe.getLayers().length > 0) {

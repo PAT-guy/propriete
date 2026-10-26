@@ -421,3 +421,90 @@ table.tableau-donnees tr:hover td { background-color: #f8f6ef; }
     main.contenu { max-width: none; padding: 0; }
     .carte { border: none; padding: 0; }
 }
+
+/* ---------------------------------------------------------------------------
+   Éditeur du plan de battue : grande carte, outils, panneau latéral
+   --------------------------------------------------------------------------- */
+
+main.contenu.contenu-large { max-width: 1400px; }
+
+.etapes {
+    display: flex;
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    color: #6b6b60;
+    flex-wrap: wrap;
+}
+.etapes li { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 20px; background: #ece8dd; }
+.etapes li span {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%; background: #c9c3b3; color: white; font-weight: 700; font-size: 12px;
+}
+.etapes li.actif { background: #dfe9d8; color: var(--couleur-barre); font-weight: 600; }
+.etapes li.actif span { background: var(--couleur-accent); }
+.etapes li.fait span { background: #8aa57a; }
+
+.editeur-plan { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+@media (max-width: 960px) { .editeur-plan { grid-template-columns: 1fr; } }
+
+.outils-dessin { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin-bottom: 8px; }
+.outils-dessin .outil {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-width: 92px; padding: 6px 10px; gap: 0;
+    background: white; border: 2px solid var(--couleur-bordure); border-radius: 10px;
+    cursor: pointer; font: inherit; color: inherit; line-height: 1.25;
+}
+.outils-dessin .outil .icone { font-size: 20px; }
+.outils-dessin .outil span:nth-child(2) { font-weight: 700; font-size: 13px; }
+.outils-dessin .outil small { font-size: 10px; color: #6b6b60; }
+.outils-dessin .outil:hover { border-color: var(--couleur-accent); }
+.outils-dessin .outil.actif { background: var(--couleur-accent); border-color: var(--couleur-accent); color: white; }
+.outils-dessin .outil.actif small { color: #e9f0e4; }
+
+.aide-dessin {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    background: #fff8e1; border: 1px solid #f0e0a8; border-radius: 8px;
+    padding: 8px 12px; margin-bottom: 8px; font-size: 13px; min-height: 40px;
+}
+.carte-plan { height: calc(100vh - 330px); min-height: 460px; }
+.carte-plan.dessin-actif { cursor: crosshair; }
+.carte-plan.dessin-actif .leaflet-interactive { cursor: crosshair; }
+
+.legende-plan { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 12px; color: #555; }
+.legende-plan i { display: inline-block; width: 22px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 4px; }
+
+.panneau-plan { display: flex; flex-direction: column; gap: 12px; }
+.bloc-panneau { background: white; border: 1px solid var(--couleur-bordure); border-radius: 10px; padding: 12px; }
+.titre-bloc { font-size: 12px; text-transform: uppercase; color: #6b6b60; font-weight: 700; margin-bottom: 8px; }
+.liste-traques { display: flex; flex-wrap: wrap; gap: 6px; }
+.pastille-traque {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 16px;
+    border: 2px solid var(--couleur-bordure); background: white; cursor: pointer; font: inherit; font-size: 13px;
+}
+.pastille-traque i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.pastille-traque.actif { border-color: var(--couleur-barre); font-weight: 700; background: #f3f0e6; }
+
+.liste-elements { margin: 6px 0 10px 0; font-size: 13px; }
+.liste-elements .ligne-element {
+    display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid #eee; cursor: pointer;
+}
+.liste-elements .ligne-element:hover { background: #f6f3ea; }
+.liste-elements .ligne-element .libelle { flex: 1; min-width: 0; }
+.liste-elements .ligne-element select { flex: 0 0 52%; max-width: 52%; width: auto; padding: 4px; font-size: 12px; }
+.liste-elements .ligne-element small { color: #888; }
+
+.choix-type { display: flex; flex-wrap: wrap; gap: 6px; }
+.choix-type label {
+    border: 2px solid var(--couleur-bordure); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; margin: 0;
+}
+.choix-type input { display: none; }
+.choix-type label:has(input:checked) { border-color: var(--couleur-accent); background: #e8f0e2; font-weight: 700; }
+
+.poignee-forme span {
+    display: block; width: 14px; height: 14px; border-radius: 50%;
+    background: white; border: 3px solid #222; box-sizing: border-box; cursor: move;
+}
+.poignee-forme.milieu span { width: 10px; height: 10px; border-width: 2px; opacity: 0.7; }

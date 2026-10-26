@@ -1,8 +1,12 @@
 /**
- * Plan de battue détaillé : une journée de battue (battues) peut compter
- * plusieurs traques, chacune avec son propre tracé (mouvement, ligne des
- * rabatteurs, parkings, accès), ses postes affectés à un chasseur, et son
- * décompte d'animaux prélevés.
+ * Plan de battue : une grande carte pour toute la journée.
+ *
+ * Étape 1, on choisit un outil (point, ligne, courbe, polygone). Étape 2, on dessine
+ * sur la carte. Étape 3, on décrit ce qu'on vient de tracer (poste, parking, accès,
+ * mouvement, sens de la battue, zone...) et on le rattache à une traque.
+ *
+ * Données : chaque traque porte ses postes (postes_traque), ses parkings et accès
+ * (listes de points) et ses tracés libres (traques.elements, voir dessin-carte.js).
  */
 
 let battueCourante = null;
@@ -11,10 +15,34 @@ let parcellesCache = [];
 let especesCache = [];
 let postesChasseCache = [];
 let traquesEtat = [];
-let compteurCleLocale = 0;
+let traqueActiveCle = null;
+let compteurCle = 0;
+let modifie = false;
 
-const COULEUR_MOUVEMENT = "#a3442f";
-const COULEUR_RABATTEURS = "#3a6b8a";
+let carte = null;
+let coucheParcelles = null;
+let coucheElements = null;
+let coucheEdition = null;
+let coucheApercu = null;
+
+let outil = null;             // "point" | "ligne" | "courbe" | "polygone" | null
+let pointsEnCours = [];
+let positionSouris = null;
+let edition = null;           // élément ouvert dans la fenêtre de description
+let editionForme = null;      // élément dont on déplace les points
+
+const AIDES_OUTIL = {
+    point: "Outil Point : clique sur la carte pour placer un poste, un parking ou un accès. Échap pour arrêter.",
+    ligne: "Outil Ligne : clique chaque angle du tracé. Double-clic ou « Terminer » pour finir.",
+    courbe: "Outil Courbe : clique quelques points, la courbe lissée passe par chacun. Double-clic ou « Terminer » pour finir.",
+    polygone: "Outil Polygone : clique chaque sommet. Clique sur le premier point, double-clic ou « Terminer » pour fermer la zone.",
+};
+
+const TYPES_POINT = {
+    poste:   { libelle: "Poste", emoji: "🎯" },
+    parking: { libelle: "Parking", emoji: "🅿️" },
+    acces:   { libelle: "Accès", emoji: "🚪" },
+};
 
 (async () => {
     const estConnecte = await protegerPage();
@@ -47,39 +75,62 @@ const COULEUR_RABATTEURS = "#3a6b8a";
     especesCache = especes.data || [];
     postesChasseCache = postesChasse.data || [];
 
-    if (battue.est_modele) {
-        document.getElementById("titre-page").textContent = `Modèle de battue : ${battue.nom_modele || ""}`;
-        document.getElementById("lien-fiche-impression").style.display = "none";
-    } else {
-        const dateFormatee = new Date(battue.date_battue).toLocaleDateString("fr-FR");
-        document.getElementById("titre-page").textContent =
-            `Plan de battue — ${dateFormatee}${battue.secteur ? " — " + battue.secteur : ""}`;
-        document.getElementById("lien-fiche-impression").href = `../battue-impression.html?id=${battue.id}`;
-    }
+    prepareEntete(battue);
 
     document.getElementById("zone-chargement").style.display = "none";
     document.getElementById("zone-contenu").style.display = "block";
 
-    const traquesDB = traquesExistantes.data || [];
-    if (traquesDB.length === 0) {
-        ajouterNouvelleTraqueCarte();
-    } else {
-        for (const t of traquesDB) {
-            await ajouterTraqueDepuisDB(t);
-        }
+    for (const t of traquesExistantes.data || []) {
+        await ajouterTraqueDepuisDB(t);
+    }
+    if (traquesEtat.length === 0) nouvelleTraque();
+    traqueActiveCle = traquesEtat[0].cle;
+
+    try {
+        initialiserCarte();
+    } catch (erreur) {
+        console.error("Carte indisponible :", erreur);
+        document.getElementById("carte-plan").innerHTML =
+            '<div class="message-alerte" style="margin:0;">Carte indisponible (connexion internet nécessaire pour charger le fond de carte). Rien n\'est perdu : reviens quand tu as du réseau.</div>';
+        document.querySelectorAll("#outils-dessin .outil").forEach((b) => { b.disabled = true; });
+        carte = null;
     }
 
-    document.getElementById("bouton-ajouter-traque").addEventListener("click", () => ajouterNouvelleTraqueCarte());
-    document.getElementById("bouton-bibliotheque").addEventListener("click", ouvrirBibliothequePostes);
+    brancherEvenements();
+    redessinerTout();
+    if (carte) ajusterVue();
+    if (traquesExistantes.data && traquesExistantes.data.length > 0) modifie = false;
 })();
+
+function prepareEntete(battue) {
+    const titre = document.getElementById("titre-page");
+    if (battue.est_modele) {
+        titre.textContent = `Modèle de battue : ${battue.nom_modele || ""}`;
+        return;
+    }
+    const dateFormatee = new Date(battue.date_battue + "T00:00:00").toLocaleDateString("fr-FR");
+    titre.textContent = `Plan de battue, ${dateFormatee}${battue.secteur ? " · " + battue.secteur : ""}`;
+    const barre = document.querySelector(".entete-page .barre-outils");
+    const lien = (libelle, page, type) =>
+        `<a class="bouton bouton-secondaire lien-impression" target="_blank" href="${page}?id=${battue.id}${type ? "&type=" + type : ""}">${libelle}</a>`;
+    barre.insertAdjacentHTML("afterbegin",
+        lien("Fiche de battue", "../battue-impression.html") +
+        lien("Carnet de battue", "../carnet-impression.html", "battue") +
+        lien("Carnets des chasseurs", "../carnet-impression.html", "chasseurs"));
+    barre.querySelectorAll(".lien-impression").forEach((a) => {
+        a.addEventListener("click", (e) => {
+            if (modifie && !confirm("Le plan a des modifications non enregistrées. Imprimer quand même la dernière version enregistrée ?")) e.preventDefault();
+        });
+    });
+}
 
 function nomAffichePersonne(personne) {
     return personne.prenom ? `${personne.prenom} ${personne.nom}` : personne.nom;
 }
 
-function genererCleLocale() {
-    compteurCleLocale += 1;
-    return `t${compteurCleLocale}`;
+function nouvelleCle() {
+    compteurCle += 1;
+    return `k${compteurCle}`;
 }
 
 function saisonPourDate(dateStr) {
@@ -88,528 +139,657 @@ function saisonPourDate(dateStr) {
     return d.getMonth() + 1 >= 7 ? `${annee}-${annee + 1}` : `${annee - 1}-${annee}`;
 }
 
+function marquerModifie() {
+    modifie = true;
+}
+
+window.addEventListener("beforeunload", (e) => {
+    if (modifie) { e.preventDefault(); e.returnValue = ""; }
+});
+
 // ----------------------------------------------------------------------------
-// Création des cartes de traque
+// Traques (état en mémoire)
 // ----------------------------------------------------------------------------
 
-function nouvelEtatTraqueVide() {
+function nouvelEtatTraque() {
+    const numero = traquesEtat.reduce((max, t) => Math.max(max, t.numero), 0) + 1;
     return {
-        cleLocale: genererCleLocale(),
-        id: null,
-        numero: traquesEtat.length + 1,
-        nom: null,
-        parcelle_id: null,
-        notes: null,
-        mouvement: [],
-        ligne_rabatteurs: [],
-        parkings: [],
-        acces: [],
-        postes: [],
-        carte: null,
-        couches: {},
-        mode: "aucun",
+        cle: nouvelleCle(), id: null, numero, nom: null, parcelle_id: null, notes: null,
+        elements: [], parkings: [], acces: [], postes: [],
     };
 }
 
-function ajouterNouvelleTraqueCarte() {
-    const etat = nouvelEtatTraqueVide();
+function nouvelleTraque() {
+    const etat = nouvelEtatTraque();
     traquesEtat.push(etat);
-    creerCarteTraqueDOM(etat);
+    return etat;
 }
 
-async function ajouterTraqueDepuisDB(ligneTraque) {
-    const etat = nouvelEtatTraqueVide();
-    etat.id = ligneTraque.id;
-    etat.numero = ligneTraque.numero;
-    etat.nom = ligneTraque.nom;
-    etat.parcelle_id = ligneTraque.parcelle_id;
-    etat.notes = ligneTraque.notes;
-    etat.mouvement = ligneTraque.mouvement || [];
-    etat.ligne_rabatteurs = ligneTraque.ligne_rabatteurs || [];
-    etat.parkings = ligneTraque.parkings || [];
-    etat.acces = ligneTraque.acces || [];
-
-    const { data: postes } = await clientSupabase.from("postes_traque").select().eq("traque_id", ligneTraque.id);
+async function ajouterTraqueDepuisDB(ligne) {
+    const etat = nouvelEtatTraque();
+    etat.id = ligne.id;
+    etat.numero = ligne.numero;
+    etat.nom = ligne.nom;
+    etat.parcelle_id = ligne.parcelle_id;
+    etat.notes = ligne.notes;
+    etat.elements = elementsDeTraque(ligne).map((e) => ({ ...e, cle: nouvelleCle() }));
+    etat.parkings = (ligne.parkings || []).map((p) => ({ ...p, cle: nouvelleCle() }));
+    etat.acces = (ligne.acces || []).map((a) => ({ ...a, cle: nouvelleCle() }));
+    const { data: postes } = await clientSupabase.from("postes_traque").select().eq("traque_id", ligne.id);
     etat.postes = (postes || []).map((p) => ({
-        cleLocale: genererCleLocale(),
-        id: p.id,
-        poste_id: p.poste_id,
-        nom: p.nom,
-        lat: p.lat,
-        lng: p.lng,
-        chasseur_id: p.chasseur_id,
+        cle: nouvelleCle(), id: p.id, poste_id: p.poste_id, nom: p.nom, lat: p.lat, lng: p.lng, chasseur_id: p.chasseur_id,
     }));
-
     traquesEtat.push(etat);
-    creerCarteTraqueDOM(etat);
-    await rafraichirTallyPrelevements(etat);
 }
 
-function gabaritCarteTraque(etat) {
-    const cle = etat.cleLocale;
+function traqueActive() {
+    return traquesEtat.find((t) => t.cle === traqueActiveCle) || traquesEtat[0];
+}
+
+function libelleTraque(t) {
+    return t.nom || `Traque ${t.numero}`;
+}
+
+// ----------------------------------------------------------------------------
+// Carte et événements
+// ----------------------------------------------------------------------------
+
+function initialiserCarte() {
+    carte = L.map("carte-plan", { doubleClickZoom: true }).setView([46.6, 2.5], 6);
+    const fonds = creerFondsCarteIGN();
+    brancherBoutonsFondCarte(carte, fonds, "bouton-fond-plan", "bouton-fond-satellite");
+    coucheParcelles = L.featureGroup().addTo(carte);
+    coucheElements = L.featureGroup().addTo(carte);
+    coucheApercu = L.featureGroup().addTo(carte);
+    coucheEdition = L.featureGroup().addTo(carte);
+
+    carte.on("click", (e) => clicCarte(e.latlng));
+    carte.on("dblclick", () => { if (outil && outil !== "point") terminerDessin(); });
+    carte.on("mousemove", (e) => {
+        if (!outil || outil === "point" || pointsEnCours.length === 0) return;
+        positionSouris = [e.latlng.lat, e.latlng.lng];
+        redessinerApercu();
+    });
+    setTimeout(() => carte.invalidateSize(), 150);
+}
+
+function brancherEvenements() {
+    document.querySelectorAll("#outils-dessin .outil").forEach((bouton) => {
+        bouton.addEventListener("click", () => choisirOutil(bouton.dataset.outil));
+    });
+    document.getElementById("bouton-terminer-dessin").addEventListener("click", terminerDessin);
+    document.getElementById("bouton-annuler-point").addEventListener("click", annulerDernierPoint);
+    document.getElementById("bouton-abandonner-dessin").addEventListener("click", abandonnerDessin);
+    document.getElementById("bouton-fin-edition-forme").addEventListener("click", terminerEditionForme);
+    document.getElementById("bouton-enregistrer-plan").addEventListener("click", enregistrerPlan);
+    document.getElementById("bouton-ajouter-traque").addEventListener("click", () => {
+        const t = nouvelleTraque();
+        traqueActiveCle = t.cle;
+        marquerModifie();
+        redessinerTout();
+    });
+    document.getElementById("formulaire-element").addEventListener("submit", validerElement);
+    document.getElementById("bouton-annuler-element").addEventListener("click", fermerElementSansValider);
+    document.getElementById("bouton-supprimer-element").addEventListener("click", supprimerElementEnEdition);
+    document.getElementById("bouton-modifier-forme").addEventListener("click", () => {
+        const element = edition && edition.item;
+        fermerModale("modale-element");
+        edition = null;
+        if (element) demarrerEditionForme(element);
+    });
+    document.getElementById("bouton-inverser-element").addEventListener("click", () => {
+        if (edition && edition.points) edition.points = edition.points.slice().reverse();
+        document.getElementById("message-modale-element").innerHTML = '<div class="message-info">Sens inversé.</div>';
+    });
+    document.addEventListener("keydown", (e) => {
+        const enSaisie = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || "");
+        if (enSaisie) return;
+        if (e.key === "Escape") { if (editionForme) terminerEditionForme(); else abandonnerDessin(); }
+        if (e.key === "Enter" && outil && outil !== "point") terminerDessin();
+        if (e.key === "Backspace" && outil && pointsEnCours.length) { e.preventDefault(); annulerDernierPoint(); }
+    });
+}
+
+function majEtape(numero) {
+    [1, 2, 3].forEach((n) => {
+        const li = document.getElementById(`etape-${n}`);
+        li.classList.toggle("actif", n === numero);
+        li.classList.toggle("fait", n < numero);
+    });
+}
+
+function definirAide(texte) {
+    document.getElementById("texte-aide").textContent = texte;
+}
+
+// ----------------------------------------------------------------------------
+// Dessin
+// ----------------------------------------------------------------------------
+
+function choisirOutil(nom) {
+    if (!carte) return;
+    if (editionForme) terminerEditionForme();
+    if (outil === nom) { abandonnerDessin(); return; }
+    outil = nom;
+    pointsEnCours = [];
+    positionSouris = null;
+    coucheApercu.clearLayers();
+    document.querySelectorAll("#outils-dessin .outil").forEach((b) => b.classList.toggle("actif", b.dataset.outil === nom));
+    document.getElementById("carte-plan").classList.add("dessin-actif");
+    carte.doubleClickZoom.disable();
+    document.getElementById("actions-dessin").style.display = nom === "point" ? "none" : "";
+    definirAide(AIDES_OUTIL[nom]);
+    majEtape(2);
+}
+
+function quitterOutil() {
+    outil = null;
+    pointsEnCours = [];
+    positionSouris = null;
+    if (carte) {
+        coucheApercu.clearLayers();
+        carte.doubleClickZoom.enable();
+    }
+    document.querySelectorAll("#outils-dessin .outil").forEach((b) => b.classList.remove("actif"));
+    document.getElementById("carte-plan").classList.remove("dessin-actif");
+    document.getElementById("actions-dessin").style.display = "none";
+    definirAide("Choisis un outil ci-dessus pour dessiner. Clique sur un élément déjà dessiné pour le modifier.");
+    majEtape(1);
+}
+
+function abandonnerDessin() {
+    if (outil) quitterOutil();
+}
+
+function distancePixels(a, b) {
+    const pa = carte.latLngToContainerPoint(a);
+    const pb = carte.latLngToContainerPoint(b);
+    return pa.distanceTo(pb);
+}
+
+function clicCarte(latlng) {
+    if (!outil || editionForme) return;
+    const point = [latlng.lat, latlng.lng];
+    if (outil === "point") {
+        ouvrirDescription({ nouveau: true, forme: "point", points: [point] });
+        return;
+    }
+    const dernier = pointsEnCours[pointsEnCours.length - 1];
+    if (dernier && distancePixels(dernier, latlng) < 5) return;   // 2e clic d'un double-clic
+    if (outil === "polygone" && pointsEnCours.length >= 3 && distancePixels(pointsEnCours[0], latlng) < 12) {
+        terminerDessin();
+        return;
+    }
+    pointsEnCours.push(point);
+    redessinerApercu();
+}
+
+function annulerDernierPoint() {
+    pointsEnCours.pop();
+    redessinerApercu();
+}
+
+function redessinerApercu() {
+    coucheApercu.clearLayers();
+    if (pointsEnCours.length === 0) return;
+    const avecSouris = positionSouris ? [...pointsEnCours, positionSouris] : pointsEnCours;
+    const style = { color: "#222", weight: 3, dashArray: "4 6" };
+    if (outil === "polygone" && avecSouris.length >= 3) {
+        coucheApercu.addLayer(L.polygon(avecSouris, { ...style, fillOpacity: 0.1 }));
+    } else if (avecSouris.length >= 2) {
+        const trace = outil === "courbe" ? lisserPoints(avecSouris) : avecSouris;
+        coucheApercu.addLayer(L.polyline(trace, style));
+    }
+    pointsEnCours.forEach((p, i) => {
+        coucheApercu.addLayer(L.circleMarker(p, {
+            radius: i === 0 && outil === "polygone" ? 7 : 5, color: "#222", weight: 2,
+            fillColor: i === 0 ? "#f5c542" : "#fff", fillOpacity: 1, interactive: false,
+        }));
+    });
+}
+
+function terminerDessin() {
+    if (!outil || outil === "point") return;
+    const minimum = outil === "polygone" ? 3 : 2;
+    if (pointsEnCours.length < minimum) {
+        definirAide(`Il faut au moins ${minimum} points. ${AIDES_OUTIL[outil]}`);
+        return;
+    }
+    const forme = outil;
+    const points = pointsEnCours.slice();
+    coucheApercu.clearLayers();
+    pointsEnCours = [];
+    positionSouris = null;
+    ouvrirDescription({ nouveau: true, forme, points });
+}
+
+// ----------------------------------------------------------------------------
+// Étape 3 : description de l'élément (fenêtre)
+// ----------------------------------------------------------------------------
+
+/** Retrouve un élément (poste, parking, accès ou tracé) et sa traque à partir de sa clé. */
+function trouverItem(cle) {
+    for (const t of traquesEtat) {
+        for (const [categorie, liste] of [["poste", t.postes], ["parking", t.parkings], ["acces", t.acces], ["element", t.elements]]) {
+            const item = liste.find((x) => x.cle === cle);
+            if (item) return { traque: t, categorie, liste, item };
+        }
+    }
+    return null;
+}
+
+function ouvrirDescriptionItem(cle) {
+    const trouve = trouverItem(cle);
+    if (!trouve) return;
+    const { traque, categorie, item } = trouve;
+    const forme = categorie === "element" ? item.forme : "point";
+    const type = categorie === "element" ? item.type : categorie;
+    const points = categorie === "element" ? item.points.map((p) => [...p]) : [[item.lat, item.lng]];
+    ouvrirDescription({ nouveau: false, item, categorie, forme, type, points, traque, ancienneTraque: traque });
+}
+
+function ouvrirDescription(contexte) {
+    edition = contexte;
+    majEtape(3);
+    const traque = contexte.traque || traqueActive();
+    const forme = contexte.forme;
+    const choix = forme === "point" ? Object.keys(TYPES_POINT) : typesPourForme(forme);
+    const typeInitial = contexte.type || choix[0];
+
+    document.getElementById("titre-modale-element").textContent = contexte.nouveau ? "Décrire ce que tu viens de tracer" : "Modifier cet élément";
+    document.getElementById("message-modale-element").innerHTML = "";
+    document.getElementById("choix-type").innerHTML = choix.map((cle) => {
+        const libelle = forme === "point" ? `${TYPES_POINT[cle].emoji} ${TYPES_POINT[cle].libelle}` : TYPES_ELEMENT[cle].libelle;
+        return `<label><input type="radio" name="type-element" value="${cle}" ${cle === typeInitial ? "checked" : ""}>${libelle}</label>`;
+    }).join("");
+    document.querySelectorAll('input[name="type-element"]').forEach((r) => r.addEventListener("change", majChampsSelonType));
+
+    document.getElementById("champ-traque-element").innerHTML = traquesEtat.map((t) =>
+        `<option value="${t.cle}" ${t.cle === traque.cle ? "selected" : ""}>${echapper(libelleTraque(t))}</option>`).join("");
+    document.getElementById("champ-chasseur-element").innerHTML = '<option value="">— Non affecté —</option>' +
+        chasseursCache.filter((c) => c.actif).map((c) =>
+            `<option value="${c.id}">${echapper(nomAffichePersonne(c))}</option>`).join("");
+
+    const item = contexte.item || {};
+    document.getElementById("champ-nom-element").value = item.nom || "";
+    document.getElementById("champ-notes-element").value = item.notes || "";
+    document.getElementById("champ-chasseur-element").value = item.chasseur_id || "";
+    document.getElementById("champ-bibliotheque-element").checked = false;
+    document.getElementById("champ-fleche-element").checked = contexte.nouveau
+        ? !!(TYPES_ELEMENT[typeInitial] || {}).fleche
+        : !!item.fleche;
+
+    document.getElementById("bouton-supprimer-element").style.display = contexte.nouveau ? "none" : "";
+    document.getElementById("bouton-modifier-forme").style.display = !contexte.nouveau && forme !== "point" ? "" : "none";
+    majChampsSelonType(true);
+    ouvrirModale("modale-element");
+    setTimeout(() => document.getElementById("champ-nom-element").focus(), 50);
+}
+
+function typeChoisi() {
+    const coche = document.querySelector('input[name="type-element"]:checked');
+    return coche ? coche.value : null;
+}
+
+function majChampsSelonType(initial) {
+    const type = typeChoisi();
+    const estPoint = edition.forme === "point";
+    const estLigne = edition.forme === "ligne" || edition.forme === "courbe";
+    document.getElementById("bloc-chasseur-element").style.display = type === "poste" ? "" : "none";
+    document.getElementById("bloc-bibliotheque-element").style.display = type === "poste" && edition.nouveau ? "" : "none";
+    document.getElementById("bloc-fleche-element").style.display = estLigne ? "" : "none";
+    document.getElementById("champ-notes-element").previousElementSibling.style.display = estPoint && type !== "poste" ? "none" : "";
+    document.getElementById("champ-notes-element").style.display = estPoint && type !== "poste" ? "none" : "";
+    const champNom = document.getElementById("champ-nom-element");
+    if (initial !== true && edition.nouveau && estLigne) {
+        document.getElementById("champ-fleche-element").checked = !!(TYPES_ELEMENT[type] || {}).fleche;
+    }
+    if (estPoint) {
+        const traque = traquesEtat.find((t) => t.cle === document.getElementById("champ-traque-element").value) || traqueActive();
+        const nombre = type === "poste" ? traque.postes.length : type === "parking" ? traque.parkings.length : traque.acces.length;
+        champNom.placeholder = `${TYPES_POINT[type].libelle} ${nombre + (edition.nouveau ? 1 : 0)}`;
+    } else {
+        champNom.placeholder = "ex : battue du matin, zone sud (facultatif)";
+    }
+}
+
+function fermerElementSansValider() {
+    fermerModale("modale-element");
+    const etaitNouveau = edition && edition.nouveau;
+    edition = null;
+    if (etaitNouveau && outil === "point") { majEtape(2); return; }
+    if (!outil) majEtape(1);
+}
+
+function validerElement(evenement) {
+    evenement.preventDefault();
+    if (!edition) return;
+    const type = typeChoisi();
+    const traqueCible = traquesEtat.find((t) => t.cle === document.getElementById("champ-traque-element").value) || traqueActive();
+    const nomSaisi = document.getElementById("champ-nom-element").value.trim();
+    const notes = document.getElementById("champ-notes-element").value.trim() || null;
+    const forme = edition.forme;
+
+    // En modification, on retire l'ancien élément puis on le recrée : permet de changer de type ou de traque.
+    const ancien = edition.item || {};
+    if (!edition.nouveau) {
+        const trouve = trouverItem(ancien.cle);
+        if (trouve) trouve.liste.splice(trouve.liste.indexOf(ancien), 1);
+    }
+
+    if (forme === "point") {
+        const [lat, lng] = edition.points[0];
+        if (type === "poste") {
+            const nom = nomSaisi || `Poste ${traqueCible.postes.length + 1}`;
+            const poste = {
+                cle: ancien.cle || nouvelleCle(), id: ancien.id || null, poste_id: ancien.poste_id || null, nom, lat, lng,
+                chasseur_id: document.getElementById("champ-chasseur-element").value || null,
+            };
+            traqueCible.postes.push(poste);
+            if (edition.nouveau && document.getElementById("champ-bibliotheque-element").checked) enregistrerNouveauPosteBibliotheque(poste);
+        } else {
+            const liste = type === "parking" ? traqueCible.parkings : traqueCible.acces;
+            liste.push({ cle: ancien.cle || nouvelleCle(), nom: nomSaisi || `${TYPES_POINT[type].libelle} ${liste.length + 1}`, lat, lng });
+        }
+    } else {
+        traqueCible.elements.push({
+            cle: ancien.cle || nouvelleCle(), id: ancien.id || `e${Date.now()}${compteurCle}`,
+            type, forme, points: edition.points, nom: nomSaisi || null, notes,
+            fleche: forme !== "polygone" && document.getElementById("champ-fleche-element").checked,
+        });
+    }
+
+    const etaitNouveauPoint = edition.nouveau && forme === "point";
+    traqueActiveCle = traqueCible.cle;
+    fermerModale("modale-element");
+    edition = null;
+    marquerModifie();
+    if (etaitNouveauPoint && outil === "point") majEtape(2);
+    else { quitterOutil(); majEtape(1); }
+    redessinerTout();
+}
+
+function supprimerElementEnEdition() {
+    if (!edition || edition.nouveau) return;
+    if (!confirm("Supprimer cet élément ?")) return;
+    const trouve = trouverItem(edition.item.cle);
+    if (trouve) trouve.liste.splice(trouve.liste.indexOf(edition.item), 1);
+    fermerModale("modale-element");
+    edition = null;
+    marquerModifie();
+    majEtape(1);
+    redessinerTout();
+}
+
+// ----------------------------------------------------------------------------
+// Modification de la forme (déplacer, ajouter, retirer des points)
+// ----------------------------------------------------------------------------
+
+function demarrerEditionForme(element) {
+    if (!carte) return;
+    quitterOutil();
+    editionForme = element;
+    document.getElementById("actions-edition-forme").style.display = "";
+    definirAide("Déplace les points noirs. Clique un point pâle pour en ajouter un, double-clique un point noir pour le retirer.");
+    majEtape(2);
+    redessinerPoignees();
+}
+
+function terminerEditionForme() {
+    if (!editionForme) return;
+    editionForme = null;
+    coucheEdition.clearLayers();
+    document.getElementById("actions-edition-forme").style.display = "none";
+    definirAide("Choisis un outil ci-dessus pour dessiner. Clique sur un élément déjà dessiné pour le modifier.");
+    majEtape(1);
+}
+
+function redessinerPoignees() {
+    coucheEdition.clearLayers();
+    if (!editionForme) return;
+    const element = editionForme;
+    const icone = (milieu) => L.divIcon({ className: `poignee-forme${milieu ? " milieu" : ""}`, html: "<span></span>", iconSize: milieu ? [10, 10] : [14, 14], iconAnchor: milieu ? [5, 5] : [7, 7] });
+    const minimum = element.forme === "polygone" ? 3 : 2;
+
+    element.points.forEach((p, i) => {
+        const poignee = L.marker(p, { icon: icone(false), draggable: true, bubblingMouseEvents: false });
+        poignee.on("drag", (e) => {
+            element.points[i] = [e.latlng.lat, e.latlng.lng];
+            marquerModifie();
+            redessinerElements();
+        });
+        poignee.on("dblclick", () => {
+            if (element.points.length <= minimum) return;
+            element.points.splice(i, 1);
+            marquerModifie();
+            redessinerElements();
+            redessinerPoignees();
+        });
+        coucheEdition.addLayer(poignee);
+    });
+
+    const nbSegments = element.forme === "polygone" ? element.points.length : element.points.length - 1;
+    for (let i = 0; i < nbSegments; i++) {
+        const a = element.points[i];
+        const b = element.points[(i + 1) % element.points.length];
+        const milieu = L.marker([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], { icon: icone(true), bubblingMouseEvents: false });
+        milieu.on("click", () => {
+            element.points.splice(i + 1, 0, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]);
+            marquerModifie();
+            redessinerElements();
+            redessinerPoignees();
+        });
+        coucheEdition.addLayer(milieu);
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Rendu de la carte et du panneau
+// ----------------------------------------------------------------------------
+
+function redessinerTout() {
+    redessinerElements();
+    redessinerPanneau();
+    redessinerLegende();
+}
+
+function marqueurPoint(item, icone, texte, categorie) {
+    const marqueur = L.marker([item.lat, item.lng], { icon: icone, draggable: true, bubblingMouseEvents: false })
+        .bindTooltip(echapper(texte), { permanent: true, direction: categorie === "poste" ? "right" : "top", offset: categorie === "poste" ? [14, 0] : [0, -12] });
+    marqueur.on("click", () => {
+        if (outil) { clicCarte(marqueur.getLatLng()); return; }
+        ouvrirDescriptionItem(item.cle);
+    });
+    marqueur.on("dragend", () => {
+        const pos = marqueur.getLatLng();
+        item.lat = pos.lat;
+        item.lng = pos.lng;
+        marquerModifie();
+    });
+    return marqueur;
+}
+
+function redessinerElements() {
+    if (!carte) return;
+    coucheParcelles.clearLayers();
+    coucheElements.clearLayers();
+
+    const parcellesVues = new Set();
+    const idsParcelles = [battueCourante.parcelle_id, ...traquesEtat.map((t) => t.parcelle_id)].filter(Boolean);
+    idsParcelles.forEach((id) => {
+        if (parcellesVues.has(id)) return;
+        parcellesVues.add(id);
+        const parcelle = parcellesCache.find((p) => p.id === id);
+        if (!parcelle || !parcelle.contour) return;
+        const polygone = L.polygon(parcelle.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.06, interactive: false });
+        polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
+        coucheParcelles.addLayer(polygone);
+    });
+
+    // Éléments de la traque active en dernier (donc au-dessus).
+    const ordre = [...traquesEtat.filter((t) => t.cle !== traqueActiveCle), ...traquesEtat.filter((t) => t.cle === traqueActiveCle)];
+    ordre.forEach((t) => {
+        t.elements.forEach((element) => {
+            const groupe = dessinerElement(coucheElements, element, t.numero);
+            if (!groupe) return;
+            groupe.on("click", () => { if (!outil && !editionForme) ouvrirDescriptionItem(element.cle); });
+        });
+        t.parkings.forEach((p) => coucheElements.addLayer(marqueurPoint(p, iconePointCarte("🅿️", "#3a6b8a"), p.nom, "parking")));
+        t.acces.forEach((a) => coucheElements.addLayer(marqueurPoint(a, iconePointCarte("🚪", "#8a6d3a"), a.nom, "acces")));
+        t.postes.forEach((poste, index) => {
+            const chasseur = chasseursCache.find((c) => c.id === poste.chasseur_id);
+            const texte = chasseur ? `${poste.nom} · ${nomAffichePersonne(chasseur)}` : `${poste.nom} · non affecté`;
+            coucheElements.addLayer(marqueurPoint(poste, iconePosteAssigne(index + 1, !!poste.chasseur_id), texte, "poste"));
+        });
+    });
+}
+
+function ajusterVue() {
+    const groupe = L.featureGroup();
+    coucheElements.eachLayer((c) => groupe.addLayer(c));
+    coucheParcelles.eachLayer((c) => groupe.addLayer(c));
+    if (groupe.getLayers().length > 0) carte.fitBounds(groupe.getBounds(), { maxZoom: 16, padding: [30, 30] });
+}
+
+function redessinerLegende() {
+    const zone = document.getElementById("legende-plan");
+    const traces = traquesEtat.map((t) => `<span><i style="border-color:${couleurTraque(t.numero)}"></i>${echapper(libelleTraque(t))}</span>`).join("");
+    zone.innerHTML = traces +
+        '<span><i style="border-color:#222; border-top-width:5px"></i>Sens de la battue</span>' +
+        '<span><i style="border-color:#444; border-top-style:dashed"></i>Rabatteurs</span>' +
+        '<span>🎯 poste · 🅿️ parking · 🚪 accès</span>';
+}
+
+function libelleItem(categorie, item) {
+    if (categorie === "poste") return `🎯 ${item.nom}`;
+    if (categorie === "parking") return `🅿️ ${item.nom}`;
+    if (categorie === "acces") return `🚪 ${item.nom}`;
+    return `${(TYPES_ELEMENT[item.type] || {}).libelle || "Tracé"}${item.nom ? " : " + item.nom : ""}`;
+}
+
+function redessinerPanneau() {
+    // Liste des traques
+    document.getElementById("liste-traques").innerHTML = traquesEtat.map((t) =>
+        `<button type="button" class="pastille-traque ${t.cle === traqueActiveCle ? "actif" : ""}" onclick="choisirTraque('${t.cle}')">
+            <i style="background:${couleurTraque(t.numero)}"></i>${echapper(libelleTraque(t))}</button>`).join("");
+
+    const t = traqueActive();
     const optionsParcelles = '<option value="">— Non précisé —</option>' +
-        parcellesCache.map((p) => `<option value="${p.id}" ${etat.parcelle_id === p.id ? "selected" : ""}>${echapper(p.nom)}</option>`).join("");
+        parcellesCache.map((p) => `<option value="${p.id}" ${t.parcelle_id === p.id ? "selected" : ""}>${echapper(p.nom)}</option>`).join("");
+    const lignes = [
+        ...t.postes.map((x) => ["poste", x]), ...t.parkings.map((x) => ["parking", x]),
+        ...t.acces.map((x) => ["acces", x]), ...t.elements.map((x) => ["element", x]),
+    ];
     const optionsEspeces = especesCache.map((e) => `<option value="${e.id}">${echapper(e.nom)}</option>`).join("");
     const optionsChasseurs = '<option value="">— Non précisé —</option>' +
         chasseursCache.filter((c) => c.actif).map((c) => `<option value="${c.id}">${echapper(nomAffichePersonne(c))}</option>`).join("");
+    const estModele = !!battueCourante.est_modele;
 
-    return `
-        <div class="carte-traque" id="carte-traque-conteneur-${cle}">
-            <div class="ligne-champs">
-                <div>
-                    <label class="etiquette">Nom de la traque</label>
-                    <input type="text" id="champ-nom-traque-${cle}" placeholder="Traque ${echapper(etat.numero)}" value="${echapper(etat.nom)}">
-                </div>
-                <div>
-                    <label class="etiquette">Parcelle / secteur</label>
-                    <select id="champ-parcelle-traque-${cle}">${optionsParcelles}</select>
-                </div>
-            </div>
+    document.getElementById("fiche-traque").innerHTML = `
+        <div class="titre-bloc">${echapper(libelleTraque(t))}</div>
+        <label class="etiquette" style="margin-top:0;">Nom de la traque</label>
+        <input type="text" value="${echapper(t.nom)}" placeholder="Traque ${t.numero}" oninput="majChampTraque('nom', this.value)">
+        <label class="etiquette">Parcelle / secteur</label>
+        <select onchange="majChampTraque('parcelle_id', this.value)">${optionsParcelles}</select>
 
-            <div class="barre-outils-dessin">
-                <button type="button" class="bouton bouton-secondaire" id="bouton-mode-mouvement-${cle}">Tracer le mouvement de la traque</button>
-                <button type="button" class="bouton bouton-secondaire" id="bouton-mode-rabatteurs-${cle}">Tracer la ligne des rabatteurs</button>
-                <button type="button" class="bouton bouton-secondaire" id="bouton-mode-parking-${cle}">Ajouter un parking</button>
-                <button type="button" class="bouton bouton-secondaire" id="bouton-mode-acces-${cle}">Ajouter un accès</button>
-                <button type="button" class="bouton bouton-secondaire" id="bouton-mode-poste-${cle}">Ajouter un poste (nouveau)</button>
-                <button type="button" class="bouton bouton-secondaire" id="bouton-effacer-traces-${cle}">Effacer les tracés</button>
-            </div>
-
-            <div class="controles-fond-carte">
-                <button type="button" id="bouton-fond-plan-${cle}" class="bouton bouton-secondaire">Plan IGN</button>
-                <button type="button" id="bouton-fond-satellite-${cle}" class="bouton bouton-secondaire">Satellite</button>
-            </div>
-            <div id="carte-${cle}" class="conteneur-carte" style="height:320px;"></div>
-
-            <div class="ligne-champs" style="margin-top:10px; align-items:flex-end;">
-                <div>
-                    <label class="etiquette">Ajouter un poste depuis la bibliothèque</label>
-                    <select id="select-bibliotheque-${cle}">
-                        <option value="">— Choisir un poste enregistré —</option>
-                        ${postesChasseCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("")}
-                    </select>
-                </div>
-                <div><button type="button" class="bouton bouton-secondaire" id="bouton-ajouter-bibliotheque-${cle}">Ajouter à la traque</button></div>
-            </div>
-
-            <div class="liste-postes-traque" id="liste-postes-${cle}"></div>
-            <div id="liste-parkings-${cle}" style="margin-top:8px; font-size:13px;"></div>
-            <div id="liste-acces-${cle}" style="margin-top:4px; font-size:13px;"></div>
-
-            <label class="etiquette" style="margin-top:12px;">Notes pour cette traque</label>
-            <textarea id="champ-notes-traque-${cle}" rows="2">${echapper(etat.notes)}</textarea>
-
-            <div class="actions-modale" style="margin-top:10px;">
-                <button type="button" class="bouton bouton-danger" id="bouton-supprimer-traque-${cle}">Supprimer la traque</button>
-                <span class="espace"></span>
-                <span id="message-traque-${cle}"></span>
-                <button type="button" class="bouton bouton-principal" id="bouton-enregistrer-traque-${cle}">Enregistrer la traque</button>
-            </div>
-
-            <div class="carte" style="margin-top:14px; padding:12px;">
-                <strong style="font-size:13px;">Prélèvements de cette traque</strong>
-                <div class="ligne-champs" style="margin-top:6px;">
-                    <select id="champ-espece-traque-${cle}">${optionsEspeces}</select>
-                    <select id="champ-chasseur-traque-${cle}">${optionsChasseurs}</select>
-                </div>
-                <div class="ligne-champs" style="margin-top:6px;">
-                    <select id="champ-sexe-traque-${cle}">
-                        <option>Indéterminé</option><option>Mâle</option><option>Femelle</option>
-                    </select>
-                    <input type="number" step="0.1" min="0" placeholder="Poids (kg)" id="champ-poids-traque-${cle}">
-                </div>
-                <button type="button" class="bouton bouton-secondaire" style="margin-top:6px;" id="bouton-ajouter-prelevement-${cle}">Enregistrer un prélèvement</button>
-                <div id="tally-prelevements-${cle}" style="margin-top:8px;"></div>
-            </div>
+        <div class="titre-bloc" style="margin-top:14px;">Contenu de cette traque</div>
+        <div class="liste-elements">
+            ${lignes.length === 0 ? '<em style="color:#888;">Rien de dessiné pour l\'instant.</em>' : lignes.map(([categorie, item]) => `
+                <div class="ligne-element" onclick="ouvrirDescriptionItem('${item.cle}')">
+                    <span class="libelle">${echapper(libelleItem(categorie, item))}</span>
+                    ${categorie === "poste" ? `<select onclick="event.stopPropagation()" onchange="affecterChasseur('${item.cle}', this.value)">
+                        <option value="">— chasseur —</option>
+                        ${chasseursCache.filter((c) => c.actif).map((c) => `<option value="${c.id}" ${item.chasseur_id === c.id ? "selected" : ""}>${echapper(nomAffichePersonne(c))}</option>`).join("")}
+                    </select>` : ""}
+                </div>`).join("")}
         </div>
-    `;
-}
 
-function creerCarteTraqueDOM(etat) {
-    const cle = etat.cleLocale;
-    document.getElementById("liste-traques").insertAdjacentHTML("beforeend", gabaritCarteTraque(etat));
-
-    document.getElementById(`bouton-mode-mouvement-${cle}`).addEventListener("click", () => basculerMode(etat, "mouvement"));
-    document.getElementById(`bouton-mode-rabatteurs-${cle}`).addEventListener("click", () => basculerMode(etat, "rabatteurs"));
-    document.getElementById(`bouton-mode-parking-${cle}`).addEventListener("click", () => basculerMode(etat, "parking"));
-    document.getElementById(`bouton-mode-acces-${cle}`).addEventListener("click", () => basculerMode(etat, "acces"));
-    document.getElementById(`bouton-mode-poste-${cle}`).addEventListener("click", () => basculerMode(etat, "poste-nouveau"));
-    document.getElementById(`bouton-effacer-traces-${cle}`).addEventListener("click", () => effacerTraces(etat));
-    document.getElementById(`bouton-ajouter-bibliotheque-${cle}`).addEventListener("click", () => ajouterPosteDepuisBibliotheque(etat));
-    document.getElementById(`bouton-supprimer-traque-${cle}`).addEventListener("click", () => supprimerTraque(cle));
-    document.getElementById(`bouton-enregistrer-traque-${cle}`).addEventListener("click", () => enregistrerTraque(etat));
-    document.getElementById(`bouton-ajouter-prelevement-${cle}`).addEventListener("click", () => ajouterPrelevementTraque(cle));
-    document.getElementById(`champ-parcelle-traque-${cle}`).addEventListener("change", (e) => {
-        etat.parcelle_id = e.target.value || null;
-        redessinerTraceTraque(etat);
-    });
-
-    try {
-        initialiserCarteTraque(etat);
-    } catch (erreur) {
-        console.error("Carte indisponible :", erreur);
-        document.getElementById(`carte-${cle}`).innerHTML =
-            '<div class="message-alerte" style="margin:0;">Carte indisponible (connexion internet nécessaire). Les éléments déjà enregistrés sont conservés.</div>';
-    }
-
-    construireListePostes(etat);
-    construireListesPoints(etat);
-}
-
-function initialiserCarteTraque(etat) {
-    const cle = etat.cleLocale;
-    const carte = L.map(`carte-${cle}`).setView([46.6, 2.5], 6);
-    const fonds = creerFondsCarteIGN();
-    brancherBoutonsFondCarte(carte, fonds, `bouton-fond-plan-${cle}`, `bouton-fond-satellite-${cle}`);
-
-    etat.carte = carte;
-    etat.couches = {
-        contour: L.featureGroup().addTo(carte),
-        mouvement: L.featureGroup().addTo(carte),
-        rabatteurs: L.featureGroup().addTo(carte),
-        parkings: L.featureGroup().addTo(carte),
-        acces: L.featureGroup().addTo(carte),
-        postes: L.featureGroup().addTo(carte),
-    };
-
-    carte.on("click", (evenement) => gererClicCarteTraque(etat, evenement));
-    setTimeout(() => {
-        carte.invalidateSize();
-        redessinerTraceTraque(etat);
-    }, 150);
-}
-
-// ----------------------------------------------------------------------------
-// Modes de dessin
-// ----------------------------------------------------------------------------
-
-function basculerMode(etat, mode) {
-    etat.mode = etat.mode === mode ? "aucun" : mode;
-    const cle = etat.cleLocale;
-    const correspondances = {
-        mouvement: `bouton-mode-mouvement-${cle}`,
-        rabatteurs: `bouton-mode-rabatteurs-${cle}`,
-        parking: `bouton-mode-parking-${cle}`,
-        acces: `bouton-mode-acces-${cle}`,
-        "poste-nouveau": `bouton-mode-poste-${cle}`,
-    };
-    Object.entries(correspondances).forEach(([m, id]) => {
-        document.getElementById(id).classList.toggle("actif", etat.mode === m);
-    });
-}
-
-function gererClicCarteTraque(etat, evenement) {
-    const latlng = [evenement.latlng.lat, evenement.latlng.lng];
-
-    if (etat.mode === "mouvement") {
-        etat.mouvement.push(latlng);
-        redessinerTraceTraque(etat);
-        return;
-    }
-    if (etat.mode === "rabatteurs") {
-        etat.ligne_rabatteurs.push(latlng);
-        redessinerTraceTraque(etat);
-        return;
-    }
-    if (etat.mode === "parking") {
-        const nom = prompt("Nom de ce parking :", `Parking ${etat.parkings.length + 1}`);
-        if (!nom) return;
-        etat.parkings.push({ nom, lat: latlng[0], lng: latlng[1] });
-        redessinerTraceTraque(etat);
-        construireListesPoints(etat);
-        return;
-    }
-    if (etat.mode === "acces") {
-        const nom = prompt("Nom de cet accès :", `Accès ${etat.acces.length + 1}`);
-        if (!nom) return;
-        etat.acces.push({ nom, lat: latlng[0], lng: latlng[1] });
-        redessinerTraceTraque(etat);
-        construireListesPoints(etat);
-        return;
-    }
-    if (etat.mode === "poste-nouveau") {
-        const nom = prompt("Nom de ce poste :", `Poste ${etat.postes.length + 1}`);
-        if (!nom) return;
-        const poste = { cleLocale: genererCleLocale(), id: null, poste_id: null, nom, lat: latlng[0], lng: latlng[1], chasseur_id: null };
-        etat.postes.push(poste);
-        redessinerTraceTraque(etat);
-        construireListePostes(etat);
-        if (confirm(`Enregistrer "${nom}" dans la bibliothèque de postes pour pouvoir le replacer sur d'autres traques ?`)) {
-            enregistrerNouveauPosteBibliotheque(poste);
-        }
-    }
-}
-
-function effacerTraces(etat) {
-    if (!confirm("Effacer le mouvement de la traque et la ligne des rabatteurs ?")) return;
-    etat.mouvement = [];
-    etat.ligne_rabatteurs = [];
-    redessinerTraceTraque(etat);
-}
-
-function ajouterPosteDepuisBibliotheque(etat) {
-    const select = document.getElementById(`select-bibliotheque-${etat.cleLocale}`);
-    const posteId = select.value;
-    if (!posteId) return;
-    const poste = postesChasseCache.find((p) => p.id === posteId);
-    if (!poste) return;
-    etat.postes.push({
-        cleLocale: genererCleLocale(),
-        id: null,
-        poste_id: poste.id,
-        nom: poste.nom,
-        lat: poste.lat,
-        lng: poste.lng,
-        chasseur_id: null,
-    });
-    select.value = "";
-    redessinerTraceTraque(etat);
-    construireListePostes(etat);
-}
-
-async function enregistrerNouveauPosteBibliotheque(poste) {
-    const { data } = await clientSupabase.from("postes_chasse").insert({ nom: poste.nom, lat: poste.lat, lng: poste.lng }).select().single();
-    poste.poste_id = data.id;
-    postesChasseCache.push(data);
-    traquesEtat.forEach((etat) => {
-        const select = document.getElementById(`select-bibliotheque-${etat.cleLocale}`);
-        if (select) select.insertAdjacentHTML("beforeend", `<option value="${data.id}">${echapper(data.nom)}</option>`);
-    });
-}
-
-// ----------------------------------------------------------------------------
-// Rendu de la carte d'une traque
-// ----------------------------------------------------------------------------
-
-function redessinerTraceTraque(etat) {
-    if (!etat.carte) return;
-    const c = etat.couches;
-    c.contour.clearLayers();
-    c.mouvement.clearLayers();
-    c.rabatteurs.clearLayers();
-    c.parkings.clearLayers();
-    c.acces.clearLayers();
-    c.postes.clearLayers();
-
-    const groupeEtendue = L.featureGroup();
-
-    if (etat.parcelle_id) {
-        const parcelle = parcellesCache.find((p) => p.id === etat.parcelle_id);
-        if (parcelle && parcelle.contour) {
-            const polygone = L.polygon(parcelle.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.1 });
-            polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
-            c.contour.addLayer(polygone);
-            groupeEtendue.addLayer(polygone);
-        }
-    }
-
-    const groupeMouvement = dessinerLigneAvecFleche(c.mouvement, etat.mouvement, COULEUR_MOUVEMENT, false);
-    if (groupeMouvement) groupeEtendue.addLayer(groupeMouvement);
-    const groupeRabatteurs = dessinerLigneAvecFleche(c.rabatteurs, etat.ligne_rabatteurs, COULEUR_RABATTEURS, true);
-    if (groupeRabatteurs) groupeEtendue.addLayer(groupeRabatteurs);
-
-    etat.parkings.forEach((parking) => {
-        const marqueur = L.marker([parking.lat, parking.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") }).bindTooltip(echapper(parking.nom));
-        c.parkings.addLayer(marqueur);
-        groupeEtendue.addLayer(marqueur);
-    });
-
-    etat.acces.forEach((acces) => {
-        const marqueur = L.marker([acces.lat, acces.lng], { icon: iconePointCarte("🚪", "#8a6d3a") }).bindTooltip(echapper(acces.nom));
-        c.acces.addLayer(marqueur);
-        groupeEtendue.addLayer(marqueur);
-    });
-
-    etat.postes.forEach((poste, index) => {
-        const chasseur = chasseursCache.find((ch) => ch.id === poste.chasseur_id);
-        const texte = chasseur ? `${echapper(poste.nom)} — ${echapper(nomAffichePersonne(chasseur))}` : `${echapper(poste.nom)} — non affecté`;
-        const marqueur = L.marker([poste.lat, poste.lng], { icon: iconePosteAssigne(index + 1, !!poste.chasseur_id) })
-            .bindTooltip(echapper(texte), { permanent: true, direction: "right" });
-        c.postes.addLayer(marqueur);
-        groupeEtendue.addLayer(marqueur);
-    });
-
-    if (groupeEtendue.getLayers().length > 0) {
-        etat.carte.fitBounds(groupeEtendue.getBounds(), { maxZoom: 16, padding: [25, 25] });
-    }
-}
-
-function construireListePostes(etat) {
-    const zone = document.getElementById(`liste-postes-${etat.cleLocale}`);
-    if (!zone) return;
-    if (etat.postes.length === 0) {
-        zone.innerHTML = '<em style="color:#888;">Aucun poste placé. Choisis-en un dans la bibliothèque ou clique "Ajouter un poste (nouveau)" puis clique sur la carte.</em>';
-        return;
-    }
-    zone.innerHTML = etat.postes.map((poste, index) => `
-        <div class="ligne-poste-traque">
-            <span class="nom-poste">${index + 1}. ${echapper(poste.nom)}</span>
-            <select onchange="assignerChasseurPoste('${etat.cleLocale}','${poste.cleLocale}', this.value)">
-                <option value="">— Chasseur non affecté —</option>
-                ${chasseursCache.filter((c) => c.actif).map((c) =>
-                    `<option value="${c.id}" ${poste.chasseur_id === c.id ? "selected" : ""}>${echapper(nomAffichePersonne(c))}</option>`
-                ).join("")}
+        <label class="etiquette">Poste de la bibliothèque</label>
+        <div style="display:flex; gap:6px;">
+            <select id="select-bibliotheque" style="flex:1;">
+                <option value="">— Choisir —</option>
+                ${postesChasseCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("")}
             </select>
-            <button type="button" class="bouton bouton-danger" style="padding:2px 6px;" onclick="retirerPosteTraque('${etat.cleLocale}','${poste.cleLocale}')">×</button>
+            <button type="button" class="bouton bouton-secondaire" onclick="ajouterPosteDepuisBibliotheque()">Placer</button>
         </div>
-    `).join("");
+        <button type="button" class="bouton bouton-secondaire" style="margin-top:6px;" onclick="ouvrirBibliothequePostes()">Gérer la bibliothèque</button>
+
+        <label class="etiquette">Notes pour cette traque</label>
+        <textarea rows="2" oninput="majChampTraque('notes', this.value)">${echapper(t.notes)}</textarea>
+        <button type="button" class="bouton bouton-danger" style="margin-top:8px;" onclick="supprimerTraque()">Supprimer cette traque</button>
+
+        ${estModele ? "" : `
+        <div class="titre-bloc" style="margin-top:16px;">Prélèvements de cette traque</div>
+        <div class="ligne-champs">
+            <select id="champ-espece-traque">${optionsEspeces}</select>
+            <select id="champ-chasseur-traque">${optionsChasseurs}</select>
+        </div>
+        <div class="ligne-champs" style="margin-top:6px;">
+            <select id="champ-sexe-traque"><option>Indéterminé</option><option>Mâle</option><option>Femelle</option></select>
+            <input type="number" step="0.1" min="0" placeholder="Poids (kg)" id="champ-poids-traque">
+        </div>
+        <button type="button" class="bouton bouton-secondaire" style="margin-top:6px;" onclick="ajouterPrelevementTraque()">Enregistrer un prélèvement</button>
+        <div id="tally-prelevements" style="margin-top:8px; font-size:13px;"></div>`}
+    `;
+    if (!estModele) rafraichirTallyPrelevements(t);
 }
 
-function construireListesPoints(etat) {
-    const cle = etat.cleLocale;
-    const zoneParkings = document.getElementById(`liste-parkings-${cle}`);
-    zoneParkings.innerHTML = etat.parkings.length === 0 ? "" : etat.parkings.map((p, i) =>
-        `🅿️ ${echapper(p.nom)} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:4px;" onclick="retirerPoint('${cle}','parkings',${i})">×</button>`
-    ).join(" &nbsp; ");
-
-    const zoneAcces = document.getElementById(`liste-acces-${cle}`);
-    zoneAcces.innerHTML = etat.acces.length === 0 ? "" : etat.acces.map((a, i) =>
-        `🚪 ${echapper(a.nom)} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:4px;" onclick="retirerPoint('${cle}','acces',${i})">×</button>`
-    ).join(" &nbsp; ");
+function choisirTraque(cle) {
+    traqueActiveCle = cle;
+    redessinerTout();
+    const t = traqueActive();
+    if (!carte) return;
+    const groupe = L.featureGroup();
+    t.elements.forEach((e) => (e.points || []).forEach((p) => groupe.addLayer(L.marker(p))));
+    [...t.postes, ...t.parkings, ...t.acces].forEach((p) => groupe.addLayer(L.marker([p.lat, p.lng])));
+    if (groupe.getLayers().length > 0) carte.fitBounds(groupe.getBounds(), { maxZoom: 16, padding: [40, 40] });
 }
 
-function retirerPoint(cleLocale, liste, index) {
-    const etat = traquesEtat.find((t) => t.cleLocale === cleLocale);
-    if (!etat) return;
-    etat[liste].splice(index, 1);
-    redessinerTraceTraque(etat);
-    construireListesPoints(etat);
-}
-
-function assignerChasseurPoste(cleLocale, clePoste, chasseurId) {
-    const etat = traquesEtat.find((t) => t.cleLocale === cleLocale);
-    if (!etat) return;
-    const poste = etat.postes.find((p) => p.cleLocale === clePoste);
-    if (!poste) return;
-    poste.chasseur_id = chasseurId || null;
-    redessinerTraceTraque(etat);
-}
-
-function retirerPosteTraque(cleLocale, clePoste) {
-    const etat = traquesEtat.find((t) => t.cleLocale === cleLocale);
-    if (!etat) return;
-    etat.postes = etat.postes.filter((p) => p.cleLocale !== clePoste);
-    redessinerTraceTraque(etat);
-    construireListePostes(etat);
-}
-
-// ----------------------------------------------------------------------------
-// Enregistrement / suppression d'une traque
-// ----------------------------------------------------------------------------
-
-async function enregistrerTraque(etat) {
-    const cle = etat.cleLocale;
-    etat.nom = document.getElementById(`champ-nom-traque-${cle}`).value.trim() || null;
-    etat.parcelle_id = document.getElementById(`champ-parcelle-traque-${cle}`).value || null;
-    etat.notes = document.getElementById(`champ-notes-traque-${cle}`).value.trim() || null;
-
-    const valeurs = {
-        battue_id: battueCourante.id,
-        numero: etat.numero,
-        nom: etat.nom,
-        parcelle_id: etat.parcelle_id,
-        mouvement: etat.mouvement.length >= 2 ? etat.mouvement : null,
-        ligne_rabatteurs: etat.ligne_rabatteurs.length >= 2 ? etat.ligne_rabatteurs : null,
-        parkings: etat.parkings,
-        acces: etat.acces,
-        notes: etat.notes,
-    };
-
-    if (etat.id) {
-        await clientSupabase.from("traques").update(valeurs).eq("id", etat.id);
-    } else {
-        const { data } = await clientSupabase.from("traques").insert(valeurs).select().single();
-        etat.id = data.id;
+function majChampTraque(champ, valeur) {
+    const t = traqueActive();
+    t[champ] = valeur.trim ? (valeur.trim() === "" ? null : valeur) : valeur;
+    if (champ === "parcelle_id") {
+        t.parcelle_id = valeur || null;
+        redessinerElements();
+        const parcelle = parcellesCache.find((p) => p.id === t.parcelle_id);
+        if (carte && parcelle && parcelle.contour) carte.fitBounds(L.polygon(parcelle.contour).getBounds(), { maxZoom: 16, padding: [30, 30] });
     }
-
-    await clientSupabase.from("postes_traque").delete().eq("traque_id", etat.id);
-    if (etat.postes.length > 0) {
-        const { data: posesInserees } = await clientSupabase.from("postes_traque").insert(
-            etat.postes.map((p) => ({
-                traque_id: etat.id,
-                poste_id: p.poste_id,
-                nom: p.nom,
-                lat: p.lat,
-                lng: p.lng,
-                chasseur_id: p.chasseur_id,
-            }))
-        ).select();
-        if (posesInserees) {
-            posesInserees.forEach((inseree, index) => { etat.postes[index].id = inseree.id; });
-        }
+    if (champ === "nom") {
+        document.querySelectorAll(".pastille-traque.actif").forEach((b) => { b.lastChild.textContent = libelleTraque(t); });
+        redessinerLegende();
     }
-
-    const message = document.getElementById(`message-traque-${cle}`);
-    message.innerHTML = '<span style="color:#5a7d4a; font-size:13px;">Traque enregistrée.</span>';
-    setTimeout(() => { message.innerHTML = ""; }, 2500);
+    marquerModifie();
 }
 
-async function supprimerTraque(cleLocale) {
-    const index = traquesEtat.findIndex((t) => t.cleLocale === cleLocale);
-    if (index === -1) return;
-    const etat = traquesEtat[index];
-    if (!confirm("Supprimer cette traque, son plan et ses postes ?")) return;
-
-    if (etat.id) {
-        await clientSupabase.from("postes_traque").delete().eq("traque_id", etat.id);
-        await clientSupabase.from("prelevements").update({ traque_id: null }).eq("traque_id", etat.id);
-        await clientSupabase.from("traques").delete().eq("id", etat.id);
-    }
-
-    traquesEtat.splice(index, 1);
-    document.getElementById(`carte-traque-conteneur-${cleLocale}`).remove();
-}
-
-// ----------------------------------------------------------------------------
-// Prélèvements par traque
-// ----------------------------------------------------------------------------
-
-async function ajouterPrelevementTraque(cleLocale) {
-    const etat = traquesEtat.find((t) => t.cleLocale === cleLocale);
-    if (!etat) return;
-    if (!etat.id) {
-        alert("Enregistre d'abord cette traque (bouton \"Enregistrer la traque\") avant d'ajouter un prélèvement.");
-        return;
-    }
-    const especeId = document.getElementById(`champ-espece-traque-${cleLocale}`).value;
-    if (!especeId) return;
-
-    await clientSupabase.from("prelevements").insert({
-        date_prelevement: battueCourante.date_battue,
-        saison: saisonPourDate(battueCourante.date_battue),
-        espece_id: especeId,
-        chasseur_id: document.getElementById(`champ-chasseur-traque-${cleLocale}`).value || null,
-        battue_id: battueCourante.id,
-        traque_id: etat.id,
-        sexe: document.getElementById(`champ-sexe-traque-${cleLocale}`).value,
-        poids_kg: parseFloat(document.getElementById(`champ-poids-traque-${cleLocale}`).value) || null,
-    });
-
-    document.getElementById(`champ-poids-traque-${cleLocale}`).value = "";
-    await rafraichirTallyPrelevements(etat);
-}
-
-async function rafraichirTallyPrelevements(etat) {
-    if (!etat.id) return;
-    const { data } = await clientSupabase.from("prelevements").select().eq("traque_id", etat.id);
-    const zone = document.getElementById(`tally-prelevements-${etat.cleLocale}`);
-    const liste = data || [];
-    if (liste.length === 0) {
-        zone.innerHTML = '<em style="color:#888; font-size:13px;">Aucun animal prélevé sur cette traque pour l\'instant.</em>';
-        return;
-    }
-    const parEspece = {};
-    liste.forEach((p) => {
-        const nom = (especesCache.find((e) => e.id === p.espece_id) || {}).nom || "?";
-        parEspece[nom] = (parEspece[nom] || 0) + 1;
-    });
-    zone.innerHTML = "<strong>Prélevés sur cette traque :</strong> " +
-        Object.entries(parEspece).map(([nom, n]) => `${n} ${nom}`).join(", ");
+function affecterChasseur(cle, chasseurId) {
+    const trouve = trouverItem(cle);
+    if (!trouve) return;
+    trouve.item.chasseur_id = chasseurId || null;
+    marquerModifie();
+    redessinerElements();
 }
 
 // ----------------------------------------------------------------------------
 // Bibliothèque de postes
 // ----------------------------------------------------------------------------
+
+function ajouterPosteDepuisBibliotheque() {
+    const select = document.getElementById("select-bibliotheque");
+    const poste = postesChasseCache.find((p) => p.id === select.value);
+    if (!poste) return;
+    const t = traqueActive();
+    t.postes.push({ cle: nouvelleCle(), id: null, poste_id: poste.id, nom: poste.nom, lat: poste.lat, lng: poste.lng, chasseur_id: null });
+    marquerModifie();
+    redessinerTout();
+}
+
+async function enregistrerNouveauPosteBibliotheque(poste) {
+    const { data } = await clientSupabase.from("postes_chasse").insert({ nom: poste.nom, lat: poste.lat, lng: poste.lng }).select().single();
+    if (!data) return;
+    poste.poste_id = data.id;
+    postesChasseCache.push(data);
+    redessinerPanneau();
+}
 
 function ouvrirBibliothequePostes() {
     rendreTableauBibliotheque();
@@ -619,7 +799,7 @@ function ouvrirBibliothequePostes() {
 function rendreTableauBibliotheque() {
     const corps = document.getElementById("corps-tableau-bibliotheque");
     if (postesChasseCache.length === 0) {
-        corps.innerHTML = '<tr><td style="text-align:center; color:#888;">Aucun poste enregistré pour l\'instant. Ajoute un poste sur une traque et choisis de l\'enregistrer dans la bibliothèque.</td></tr>';
+        corps.innerHTML = '<tr><td style="text-align:center; color:#888;">Aucun poste enregistré pour l\'instant. Coche « Enregistrer dans la bibliothèque » en décrivant un poste.</td></tr>';
         return;
     }
     corps.innerHTML = postesChasseCache.map((p) => `
@@ -635,11 +815,127 @@ async function supprimerPosteBibliotheque(id) {
     await clientSupabase.from("postes_chasse").delete().eq("id", id);
     postesChasseCache = postesChasseCache.filter((p) => p.id !== id);
     rendreTableauBibliotheque();
-    traquesEtat.forEach((etat) => {
-        const select = document.getElementById(`select-bibliotheque-${etat.cleLocale}`);
-        if (select) {
-            select.innerHTML = '<option value="">— Choisir un poste enregistré —</option>' +
-                postesChasseCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
-        }
+    redessinerPanneau();
+}
+
+// ----------------------------------------------------------------------------
+// Enregistrement
+// ----------------------------------------------------------------------------
+
+async function enregistrerPlan() {
+    const bouton = document.getElementById("bouton-enregistrer-plan");
+    const texteInitial = bouton.textContent;
+    bouton.disabled = true;
+    bouton.textContent = "Enregistrement…";
+    try {
+        for (const etat of traquesEtat) await enregistrerTraque(etat);
+        modifie = false;
+        bouton.textContent = "Plan enregistré ✓";
+        redessinerPanneau();
+        setTimeout(() => { bouton.textContent = texteInitial; }, 2200);
+    } catch (erreur) {
+        console.error(erreur);
+        alert("L'enregistrement a échoué : " + (erreur.message || erreur));
+        bouton.textContent = texteInitial;
+    } finally {
+        bouton.disabled = false;
+    }
+}
+
+const sansCle = ({ cle, ...reste }) => reste;
+
+async function enregistrerTraque(etat) {
+    const valeurs = {
+        battue_id: battueCourante.id,
+        numero: etat.numero,
+        nom: etat.nom,
+        parcelle_id: etat.parcelle_id,
+        // Les anciens champs sont remplacés par les tracés libres (elements).
+        mouvement: null,
+        ligne_rabatteurs: null,
+        elements: etat.elements.map(sansCle),
+        parkings: etat.parkings.map(sansCle),
+        acces: etat.acces.map(sansCle),
+        notes: etat.notes,
+    };
+    if (etat.id) {
+        const { error } = await clientSupabase.from("traques").update(valeurs).eq("id", etat.id);
+        if (error) throw new Error(error.message);
+    } else {
+        const { data, error } = await clientSupabase.from("traques").insert(valeurs).select().single();
+        if (error || !data) throw new Error((error && error.message) || "Création de la traque impossible");
+        etat.id = data.id;
+    }
+
+    await clientSupabase.from("postes_traque").delete().eq("traque_id", etat.id);
+    if (etat.postes.length > 0) {
+        const { data: inseres } = await clientSupabase.from("postes_traque").insert(
+            etat.postes.map((p) => ({
+                traque_id: etat.id, poste_id: p.poste_id, nom: p.nom, lat: p.lat, lng: p.lng, chasseur_id: p.chasseur_id,
+            }))
+        ).select();
+        if (inseres) inseres.forEach((ins, i) => { etat.postes[i].id = ins.id; });
+    }
+}
+
+async function supprimerTraque() {
+    const etat = traqueActive();
+    if (!confirm(`Supprimer « ${libelleTraque(etat)} », son plan et ses postes ?`)) return;
+    if (etat.id) {
+        await clientSupabase.from("postes_traque").delete().eq("traque_id", etat.id);
+        await clientSupabase.from("prelevements").update({ traque_id: null }).eq("traque_id", etat.id);
+        await clientSupabase.from("traques").delete().eq("id", etat.id);
+    }
+    traquesEtat = traquesEtat.filter((t) => t.cle !== etat.cle);
+    if (traquesEtat.length === 0) nouvelleTraque();
+    traqueActiveCle = traquesEtat[0].cle;
+    redessinerTout();
+}
+
+// ----------------------------------------------------------------------------
+// Prélèvements par traque
+// ----------------------------------------------------------------------------
+
+async function ajouterPrelevementTraque() {
+    const etat = traqueActive();
+    if (!etat.id) {
+        alert("Enregistre d'abord le plan (bouton « Enregistrer le plan ») avant d'ajouter un prélèvement.");
+        return;
+    }
+    const especeId = document.getElementById("champ-espece-traque").value;
+    if (!especeId) return;
+
+    await clientSupabase.from("prelevements").insert({
+        date_prelevement: battueCourante.date_battue,
+        saison: saisonPourDate(battueCourante.date_battue),
+        espece_id: especeId,
+        chasseur_id: document.getElementById("champ-chasseur-traque").value || null,
+        battue_id: battueCourante.id,
+        traque_id: etat.id,
+        sexe: document.getElementById("champ-sexe-traque").value,
+        poids_kg: parseFloat(document.getElementById("champ-poids-traque").value) || null,
     });
+    document.getElementById("champ-poids-traque").value = "";
+    await rafraichirTallyPrelevements(etat);
+}
+
+async function rafraichirTallyPrelevements(etat) {
+    const zone = document.getElementById("tally-prelevements");
+    if (!zone) return;
+    if (!etat.id) {
+        zone.innerHTML = '<em style="color:#888;">Enregistre le plan pour pouvoir noter des prélèvements.</em>';
+        return;
+    }
+    const { data } = await clientSupabase.from("prelevements").select().eq("traque_id", etat.id);
+    const liste = data || [];
+    if (liste.length === 0) {
+        zone.innerHTML = '<em style="color:#888;">Aucun animal prélevé sur cette traque pour l\'instant.</em>';
+        return;
+    }
+    const parEspece = {};
+    liste.forEach((p) => {
+        const nom = (especesCache.find((e) => e.id === p.espece_id) || {}).nom || "?";
+        parEspece[nom] = (parEspece[nom] || 0) + 1;
+    });
+    zone.innerHTML = "<strong>Prélevés :</strong> " + Object.entries(parEspece).map(([nom, n]) => `${n} ${echapper(nom)}`).join(", ");
 }

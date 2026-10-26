@@ -153,6 +153,10 @@ create table if not exists traques (
     created_at timestamptz default now()
 );
 
+-- Tracés libres de la traque : [{"id","type","forme","points":[[lat,lng],...],"nom","notes","fleche"}, ...]
+-- type : mouvement, rabatteurs, sens, trace, zone, interdite ; forme : ligne, courbe, polygone.
+alter table traques add column if not exists elements jsonb;
+
 create table if not exists postes_traque (
     -- Un poste placé sur la carte pour une traque précise, éventuellement
     -- rattaché à un poste de la bibliothèque, et affecté à un chasseur.

@@ -10,17 +10,25 @@ La page Battues est le point central du site. Elle affiche en haut la prochaine 
 
 **Créer une battue.** "Nouvelle battue" (ou "Créer une battue" sur un modèle) : tu choisis le modèle et la date. Tout est recopié, puis la fiche s'ouvre pour choisir le responsable et cocher les participants de la journée. Les chasseurs affectés aux postes et les participants ne sont volontairement pas recopiés : ils changent d'une fois sur l'autre. Modifier une battue n'a jamais d'effet sur son modèle, et inversement.
 
-## Plans de battue
+## Plan de battue : une grande carte, trois étapes
 
-Chaque battue (une journée) peut compter plusieurs traques. Le bouton "Plan de battue" ouvre une page dédiée où, pour chaque traque :
+Le bouton "Plan de battue" ouvre une grande carte pour toute la journée.
 
-- tu traces le mouvement de la traque et la ligne de départ des rabatteurs (chaque ligne affiche une flèche de direction) ;
-- tu places les postes, soit depuis une bibliothèque de postes réutilisables (les emplacements habituels du territoire), soit en ajoutant un poste ponctuel directement sur la carte (avec la possibilité de l'enregistrer dans la bibliothèque pour la prochaine fois) ;
-- tu affectes un chasseur à chaque poste dans la liste sous la carte ;
-- tu places les parkings et les accès ;
-- tu notes, pour cette traque précise, le nombre d'animaux prélevés par espèce.
+1. **Choisir un outil** : Point (poste, parking, accès), Ligne (point par point), Courbe (lissée, elle passe par chaque point cliqué) ou Polygone (zone fermée).
+2. **Dessiner** sur la carte. Double-clic, Entrée ou "Terminer" pour finir un tracé, Échap pour abandonner, "Annuler le dernier point" pour corriger. Pour un polygone, un clic sur le premier point ferme la zone.
+3. **Décrire** ce qui vient d'être tracé : poste (avec le chasseur affecté), parking, accès, mouvement de la traque, ligne des rabatteurs, **sens de la battue** (flèche), autre tracé, zone de battue ou zone interdite de tir. Chaque élément est rattaché à une traque, colorée différemment sur la carte.
 
-La fiche imprimable de la battue reprend tout cela sur une carte unique de la journée, avec le détail de chaque traque (postes affectés et animaux prélevés), les règles de sécurité et les instructions pour les invités.
+Un clic sur un élément déjà dessiné rouvre sa description, avec "Modifier la forme" (déplacer, ajouter ou retirer des points) et "Inverser le sens". Les points se déplacent aussi en les faisant glisser. "Enregistrer le plan" sauvegarde toutes les traques ; le site prévient si tu quittes la page avec des modifications non enregistrées. Les postes habituels du territoire se réutilisent grâce à la bibliothèque de postes, et les prélèvements se notent par traque dans le panneau de droite.
+
+La courbe est une courbe lissée qui passe par les points cliqués (pas de poignées de Bézier à régler à la main).
+
+## Impression
+
+Trois documents, accessibles depuis le plan de battue :
+
+- **Fiche de battue** : la carte de la journée avec sa légende, le détail de chaque traque, les participants, les règles de sécurité et les instructions, pour les invités.
+- **Carnet de battue** (pour le responsable) : plan de la journée et consignes, feuille de présence et d'émargement (permis et assurance de chaque chasseur, signature), une page par traque avec sa carte et des cases pour noter les prélèvements, bilan de la journée. L'assurance expirée à la date de la battue ou non renseignée est signalée en rouge.
+- **Carnets des chasseurs** : une page par participant, avec son poste entouré en rouge sur la carte de sa traque, son assurance, les consignes et un tableau pour noter ses tirs.
 
 ## Ajouter une parcelle par sa référence cadastrale
 

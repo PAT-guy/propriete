@@ -66,10 +66,15 @@
     const aUneCarte = (parcelle && parcelle.contour) ||
         (battue.parkings && battue.parkings.length > 0) ||
         listeTraques.some((t) => (t.parkings && t.parkings.length) || (t.acces && t.acces.length) ||
-            (t.mouvement && t.mouvement.length > 1) || (t.ligne_rabatteurs && t.ligne_rabatteurs.length > 1) ||
+            elementsDeTraque(t).length > 0 ||
             (postesParTraque[t.id] && postesParTraque[t.id].length));
     if (aUneCarte) {
         document.getElementById("section-carte").style.display = "block";
+        document.getElementById("legende-impression").innerHTML = listeTraques.map((t) =>
+            `<span><i style="border-color:${couleurTraque(t.numero)}"></i>${echapper(t.nom || "Traque " + t.numero)}</span>`).join("") +
+            '<span><i style="border-color:#222; border-top-width:5px"></i>Sens de la battue</span>' +
+            '<span><i style="border-color:#444; border-top-style:dashed"></i>Rabatteurs</span>' +
+            '<span>🎯 poste · 🅿️ parking · 🚪 accès</span>';
     }
 
     // Détail des traques : postes affectés et prélèvements
@@ -187,9 +192,7 @@ function initialiserCarteImpression(parcelle, parkings, listeTraques, postesParT
             groupeElements.addLayer(polygone);
         }
 
-        const groupeMouvement = dessinerLigneAvecFleche(groupeElements, traque.mouvement, "#a3442f", false);
-        if (groupeMouvement && traque.nom) groupeMouvement.eachLayer((c) => { if (c.bindTooltip) c.bindTooltip(echapper(traque.nom)); });
-        dessinerLigneAvecFleche(groupeElements, traque.ligne_rabatteurs, "#3a6b8a", true);
+        elementsDeTraque(traque).forEach((element) => dessinerElement(groupeElements, element, traque.numero));
 
         (traque.parkings || []).forEach((parking) => {
             const marqueur = L.marker([parking.lat, parking.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") }).bindTooltip(echapper(parking.nom), { permanent: true, direction: "top" });

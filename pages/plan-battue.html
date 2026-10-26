@@ -11,28 +11,113 @@
 
 <div id="zone-navigation"></div>
 
-<main class="contenu">
+<main class="contenu contenu-large">
     <div class="entete-page">
         <div>
             <h1 id="titre-page">Plan de battue</h1>
-            <p class="sous-titre">Postes, mouvement de chaque traque, parkings, accès et prélèvements</p>
+            <p class="sous-titre">Choisis un outil, dessine sur la carte, puis décris ce que tu viens de tracer.</p>
         </div>
-    </div>
-
-    <div class="barre-outils">
-        <a href="battues.html" class="bouton bouton-secondaire">← Retour aux battues</a>
-        <a id="lien-fiche-impression" href="#" target="_blank" class="bouton bouton-secondaire">Fiche à imprimer</a>
-        <span class="espace"></span>
-        <button class="bouton bouton-secondaire" id="bouton-bibliotheque">Bibliothèque de postes</button>
-        <button class="bouton bouton-principal" id="bouton-ajouter-traque">Ajouter une traque</button>
+        <div class="barre-outils" style="margin:0;">
+            <a href="battues.html" class="bouton bouton-secondaire">← Retour aux battues</a>
+            <button class="bouton bouton-principal" id="bouton-enregistrer-plan">Enregistrer le plan</button>
+        </div>
     </div>
 
     <div id="zone-chargement" class="message-chargement">Chargement…</div>
 
     <div id="zone-contenu" style="display:none;">
-        <div id="liste-traques"></div>
+        <ol class="etapes" id="etapes">
+            <li id="etape-1" class="actif"><span>1</span> Choisir un outil</li>
+            <li id="etape-2"><span>2</span> Dessiner sur la carte</li>
+            <li id="etape-3"><span>3</span> Décrire</li>
+        </ol>
+
+        <div class="editeur-plan">
+            <div class="colonne-carte">
+                <div class="outils-dessin" id="outils-dessin">
+                    <button type="button" class="outil" data-outil="point" title="Un seul clic : poste, parking ou accès">
+                        <span class="icone">📍</span><span>Point</span><small>poste, parking, accès</small></button>
+                    <button type="button" class="outil" data-outil="ligne" title="Clique chaque angle du tracé">
+                        <span class="icone">📏</span><span>Ligne</span><small>point par point</small></button>
+                    <button type="button" class="outil" data-outil="courbe" title="Courbe lissée qui passe par chaque point cliqué">
+                        <span class="icone">〰️</span><span>Courbe</span><small>lissée</small></button>
+                    <button type="button" class="outil" data-outil="polygone" title="Contour fermé : zone de battue, zone interdite">
+                        <span class="icone">⬠</span><span>Polygone</span><small>zone fermée</small></button>
+                    <span class="espace"></span>
+                    <div class="controles-fond-carte" style="margin:0;">
+                        <button type="button" id="bouton-fond-plan" class="bouton bouton-secondaire">Plan IGN</button>
+                        <button type="button" id="bouton-fond-satellite" class="bouton bouton-secondaire">Satellite</button>
+                    </div>
+                </div>
+
+                <div class="aide-dessin" id="aide-dessin">
+                    <span id="texte-aide">Commence par choisir un outil ci-dessus. Clique sur un élément déjà dessiné pour le modifier.</span>
+                    <span class="espace"></span>
+                    <span id="actions-dessin" style="display:none;">
+                        <button type="button" class="bouton bouton-secondaire" id="bouton-annuler-point">Annuler le dernier point</button>
+                        <button type="button" class="bouton bouton-principal" id="bouton-terminer-dessin">Terminer</button>
+                        <button type="button" class="bouton bouton-secondaire" id="bouton-abandonner-dessin">Abandonner</button>
+                    </span>
+                    <span id="actions-edition-forme" style="display:none;">
+                        <button type="button" class="bouton bouton-principal" id="bouton-fin-edition-forme">Forme terminée</button>
+                    </span>
+                </div>
+
+                <div id="carte-plan" class="conteneur-carte carte-plan"></div>
+                <div class="legende-plan" id="legende-plan"></div>
+            </div>
+
+            <aside class="panneau-plan">
+                <div class="bloc-panneau">
+                    <div class="titre-bloc">Traques</div>
+                    <div id="liste-traques" class="liste-traques"></div>
+                    <button type="button" class="bouton bouton-secondaire" id="bouton-ajouter-traque" style="width:100%; margin-top:8px;">+ Ajouter une traque</button>
+                </div>
+                <div class="bloc-panneau" id="fiche-traque"></div>
+            </aside>
+        </div>
     </div>
 </main>
+
+<!-- Modale Caractéristiques de l'élément dessiné -->
+<div class="fond-modale" id="modale-element">
+    <div class="boite-modale">
+        <h2 id="titre-modale-element">Décrire ce tracé</h2>
+        <div id="message-modale-element"></div>
+        <form id="formulaire-element" autocomplete="off">
+            <label class="etiquette">Qu'est-ce que c'est ?</label>
+            <div class="choix-type" id="choix-type"></div>
+
+            <label class="etiquette">Nom</label>
+            <input type="text" id="champ-nom-element" placeholder="ex : Poste 3, Parking du Fourneau">
+
+            <label class="etiquette">Traque</label>
+            <select id="champ-traque-element"></select>
+
+            <div id="bloc-chasseur-element">
+                <label class="etiquette">Chasseur affecté</label>
+                <select id="champ-chasseur-element"></select>
+                <label class="etiquette" id="bloc-bibliotheque-element"><input type="checkbox" id="champ-bibliotheque-element"> Enregistrer ce poste dans la bibliothèque pour le réutiliser</label>
+            </div>
+
+            <div id="bloc-fleche-element">
+                <label class="etiquette"><input type="checkbox" id="champ-fleche-element"> Flèche de direction à l'extrémité</label>
+                <button type="button" class="bouton bouton-secondaire" id="bouton-inverser-element" style="margin-top:4px;">Inverser le sens</button>
+            </div>
+
+            <label class="etiquette">Notes</label>
+            <textarea id="champ-notes-element" rows="2"></textarea>
+
+            <div class="actions-modale">
+                <button type="button" class="bouton bouton-danger" id="bouton-supprimer-element" style="display:none;">Supprimer</button>
+                <button type="button" class="bouton bouton-secondaire" id="bouton-modifier-forme" style="display:none;">Modifier la forme</button>
+                <span class="espace"></span>
+                <button type="button" class="bouton bouton-secondaire" id="bouton-annuler-element">Annuler</button>
+                <button type="submit" class="bouton bouton-principal">Valider</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Modale Bibliothèque de postes -->
 <div class="fond-modale" id="modale-bibliotheque">

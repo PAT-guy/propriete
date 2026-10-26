@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnets de battue — Forêt &amp; Chasse</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+<style>
+    body { background: white; }
+    main.contenu { max-width: 760px; }
+    .page-carnet { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px dashed #bbb; }
+    .page-carnet:last-child { border-bottom: none; }
+    .entete-carnet { border-bottom: 3px solid var(--couleur-accent); padding-bottom: 8px; margin-bottom: 12px; }
+    .entete-carnet h1 { margin: 0; font-size: 22px; }
+    .entete-carnet p { margin: 3px 0 0 0; color: #555; font-size: 13px; }
+    .page-carnet h2 { font-size: 15px; border-bottom: 1px solid var(--couleur-bordure); padding-bottom: 3px; margin: 14px 0 6px; }
+    .grille-infos { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-bottom: 8px; }
+    .grille-infos .etiquette-info { font-size: 10px; color: #888; text-transform: uppercase; }
+    .grille-infos .valeur-info { font-size: 14px; font-weight: 600; }
+    .carte-carnet { height: 300px; margin: 6px 0; }
+    .bloc-texte { white-space: pre-line; font-size: 12px; line-height: 1.45; }
+    table.saisie { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.saisie th, table.saisie td { border: 1px solid #888; padding: 4px 6px; text-align: left; vertical-align: top; }
+    table.saisie th { background: #eee; font-weight: 700; }
+    table.saisie td.libre { height: 34px; }
+    table.saisie td.libre-haute { height: 62px; }
+    .expiree { color: #b00020; font-weight: 700; }
+    .zone-signature { display: flex; gap: 24px; margin-top: 14px; font-size: 12px; }
+    .zone-signature div { flex: 1; border-top: 1px solid #333; padding-top: 4px; min-height: 54px; }
+    .legende-plan { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: #555; }
+    .legende-plan i { display: inline-block; width: 20px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 3px; }
+    @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .page-carnet { page-break-after: always; border-bottom: none; margin: 0; padding: 0; }
+        .page-carnet:last-child { page-break-after: auto; }
+        .carte-carnet { height: 270px; }
+    }
+</style>
+</head>
+<body>
+
+<main class="contenu">
+    <div class="barre-outils sans-impression">
+        <a href="pages/battues.html" class="bouton bouton-secondaire">← Retour</a>
+        <a id="lien-plan" href="#" class="bouton bouton-secondaire">Plan de battue</a>
+        <span class="espace"></span>
+        <button class="bouton bouton-principal" onclick="window.print()">Imprimer</button>
+    </div>
+
+    <div id="zone-chargement" class="message-chargement">Chargement…</div>
+    <div id="zone-carnet" style="display:none;"></div>
+</main>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/mode-demo.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/fonds-carte.js"></script>
+<script src="js/dessin-carte.js"></script>
+<script src="js/carnet-impression.js"></script>
+</body>
+</html>

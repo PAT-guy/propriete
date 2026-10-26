@@ -34,6 +34,9 @@ let essenceEnEditionParcelleId = null;
     document.getElementById("formulaire-essence").addEventListener("submit", enregistrerEssence);
     document.getElementById("bouton-ajouter-essence").addEventListener("click", ouvrirAjoutEssence);
     document.getElementById("bouton-modifier-parcelle").addEventListener("click", ouvrirModificationParcelle);
+    document.getElementById("bouton-ajouter-cadastre").addEventListener("click", ouvrirAjoutCadastre);
+    document.getElementById("formulaire-cadastre").addEventListener("submit", rechercherParcelleCadastre);
+    document.getElementById("champ-commune-cadastre").addEventListener("input", proposerCommunes);
     document.getElementById("bouton-hors-ligne").addEventListener("click", lancerTelechargementHorsLigne);
     document.getElementById("bouton-modifier-contour").addEventListener("click", demarrerEditionContour);
     document.getElementById("bouton-valider-contour").addEventListener("click", validerEditionContour);
@@ -67,6 +70,128 @@ function initialiserCarte() {
         const centre = evenement.layer.getBounds().getCenter();
         ouvrirCreationParcelle(latlngs, { lat: centre.lat, lng: centre.lng });
     });
+}
+
+// ----------------------------------------------------------------------------
+// Ajout d'une parcelle par sa référence cadastrale
+// Services publics gratuits : geo.api.gouv.fr (communes) et API Carto IGN (parcelles).
+// ----------------------------------------------------------------------------
+
+const URL_API_COMMUNES = "https://geo.api.gouv.fr/communes";
+const URL_API_CADASTRE = "https://apicarto.ign.fr/api/cadastre/parcelle";
+let communesProposees = [];
+let minuterieCommunes = null;
+
+function ouvrirAjoutCadastre() {
+    document.getElementById("formulaire-cadastre").reset();
+    document.getElementById("message-modale-cadastre").innerHTML = "";
+    document.getElementById("liste-communes-cadastre").innerHTML = "";
+    communesProposees = [];
+    ouvrirModale("modale-cadastre");
+}
+
+function libelleCommune(c) {
+    return `${c.nom} (${(c.codesPostaux && c.codesPostaux[0]) || c.code})`;
+}
+
+function proposerCommunes() {
+    clearTimeout(minuterieCommunes);
+    const texte = document.getElementById("champ-commune-cadastre").value.trim();
+    if (texte.length < 3) return;
+    minuterieCommunes = setTimeout(async () => {
+        try {
+            const reponse = await fetch(`${URL_API_COMMUNES}?nom=${encodeURIComponent(texte)}&fields=nom,code,codesPostaux&boost=population&limit=8`);
+            if (!reponse.ok) return;
+            communesProposees = await reponse.json();
+            document.getElementById("liste-communes-cadastre").innerHTML =
+                communesProposees.map((c) => `<option value="${echapper(libelleCommune(c))}"></option>`).join("");
+        } catch (erreur) {
+            // Pas de réseau : la recherche échouera avec un message clair à la validation.
+        }
+    }, 250);
+}
+
+/** Convertit une géométrie GeoJSON (Polygon ou MultiPolygon) en contour [[lat, lng], ...]. */
+function contourDepuisGeometrie(geometrie) {
+    const polygones = geometrie.type === "MultiPolygon" ? geometrie.coordinates : [geometrie.coordinates];
+    const anneaux = polygones.map((p) => p[0]);
+    const surfaceApprox = (a) => Math.abs(a.reduce((somme, [x1, y1], i) => {
+        const [x2, y2] = a[(i + 1) % a.length];
+        return somme + (x1 * y2 - x2 * y1);
+    }, 0)) / 2;
+    const principal = anneaux.reduce((meilleur, a) => (surfaceApprox(a) > surfaceApprox(meilleur) ? a : meilleur));
+    const [premier, dernier] = [principal[0], principal[principal.length - 1]];
+    const fermeParDoublon = principal.length > 1 && premier[0] === dernier[0] && premier[1] === dernier[1];
+    const sansFermeture = fermeParDoublon ? principal.slice(0, -1) : principal;
+    return { contour: sansFermeture.map(([lng, lat]) => [lat, lng]), morceaux: anneaux.length };
+}
+
+async function rechercherParcelleCadastre(evenement) {
+    evenement.preventDefault();
+    const message = document.getElementById("message-modale-cadastre");
+    const bouton = document.getElementById("bouton-chercher-cadastre");
+    const alerte = (texte) => { message.innerHTML = `<div class="message-alerte">${echapper(texte)}</div>`; };
+    message.innerHTML = "";
+
+    const saisieCommune = document.getElementById("champ-commune-cadastre").value.trim();
+    const commune = communesProposees.find((c) => libelleCommune(c) === saisieCommune);
+    if (!commune) return alerte("Choisis la commune dans la liste proposée (tape au moins 3 lettres).");
+
+    const section = document.getElementById("champ-section-cadastre").value.trim().toUpperCase();
+    const numeroSaisi = document.getElementById("champ-numero-cadastre").value.trim();
+    if (!/^[A-Z0-9]{1,2}$/.test(section)) return alerte("La section comporte une ou deux lettres (ex : AB).");
+    if (!/^\d{1,4}$/.test(numeroSaisi)) return alerte("Le numéro comporte un à quatre chiffres (ex : 12).");
+
+    const prefixe = document.getElementById("champ-prefixe-cadastre").value.trim();
+    const parametres = new URLSearchParams({
+        code_insee: commune.code,
+        section: section.padStart(2, "0"),
+        numero: numeroSaisi.padStart(4, "0"),
+    });
+    if (prefixe) parametres.set("com_abs", prefixe.padStart(3, "0"));
+
+    bouton.disabled = true;
+    try {
+        const reponse = await fetch(`${URL_API_CADASTRE}?${parametres}`);
+        if (!reponse.ok) throw new Error(`Le service cadastre a répondu par une erreur (${reponse.status}).`);
+        const resultat = await reponse.json();
+        if (!resultat.features || resultat.features.length === 0) {
+            return alerte(`Aucune parcelle ${section} ${numeroSaisi} trouvée sur ${commune.nom}. Vérifie la section et le numéro, ou essaie un préfixe si la commune a fusionné.`);
+        }
+        const parcelle = resultat.features[0];
+        const { contour, morceaux } = contourDepuisGeometrie(parcelle.geometry);
+        const limites = limitesContour(contour);
+        const centre = { lat: (limites.nord + limites.sud) / 2, lng: (limites.est + limites.ouest) / 2 };
+        const proprietes = parcelle.properties || {};
+
+        fermerModale("modale-cadastre");
+        ouvrirCreationParcelle(contour, centre);
+        document.getElementById("champ-nom-parcelle").value = `${section} ${parseInt(numeroSaisi, 10)}`;
+        document.getElementById("champ-reference-parcelle").value = `${commune.nom} ${section} ${numeroSaisi.padStart(4, "0")}`;
+        document.getElementById("champ-commune-parcelle").value = commune.nom;
+        if (proprietes.contenance) document.getElementById("champ-surface-parcelle").value = (proprietes.contenance / 10000).toFixed(2);
+        if (morceaux > 1) {
+            document.getElementById("message-modale-parcelle").innerHTML =
+                '<div class="message-alerte">Cette parcelle est en plusieurs morceaux : seul le plus grand est repris.</div>';
+        }
+        if (carteParcelles) {
+            coucheDessinEnCours.clearLayers();
+            const apercu = L.polygon(contour, { color: "#5a7d4a", weight: 3, dashArray: "6" }).addTo(coucheDessinEnCours);
+            carteParcelles.fitBounds(apercu.getBounds(), { maxZoom: 17, padding: [30, 30] });
+        }
+    } catch (erreur) {
+        alerte(erreur instanceof TypeError
+            ? "Impossible de joindre le service du cadastre (vérifie ta connexion internet)."
+            : erreur.message);
+    } finally {
+        bouton.disabled = false;
+    }
+}
+
+function limitesContour(contour) {
+    const lats = contour.map((p) => p[0]);
+    const lngs = contour.map((p) => p[1]);
+    return { nord: Math.max(...lats), sud: Math.min(...lats), est: Math.max(...lngs), ouest: Math.min(...lngs) };
 }
 
 async function lancerTelechargementHorsLigne() {

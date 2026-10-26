@@ -14,6 +14,10 @@ Chaque battue (une journée) peut compter plusieurs traques. Depuis l'onglet "Ba
 
 La fiche imprimable de la battue (bouton "Fiche à imprimer") reprend tout cela sur une carte unique de la journée, avec le détail de chaque traque (postes affectés et animaux prélevés), les règles de sécurité et les instructions pour les invités.
 
+## Ajouter une parcelle par sa référence cadastrale
+
+Sur la page Parcelles, "Ajouter par référence cadastrale" : tape la commune (choisis-la dans la liste), la section (ex : AB) et le numéro (ex : 12). Le contour officiel et la surface sont récupérés automatiquement auprès du cadastre IGN (gratuit, internet nécessaire), puis la fiche s'ouvre pré-remplie pour que tu choisisses le nom, le propriétaire, etc. Le champ "préfixe" ne sert que dans les communes fusionnées, où un même numéro peut exister deux fois. Si une parcelle est composée de plusieurs morceaux séparés, seul le plus grand est repris.
+
 ## Modifier le contour d'une parcelle
 
 Sélectionne la parcelle dans la liste, clique sur "Modifier le contour", déplace les points blancs sur la carte, puis "Valider le contour" (ou "Annuler").

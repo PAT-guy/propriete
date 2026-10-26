@@ -30,6 +30,7 @@
             <button id="bouton-annuler-contour" class="bouton bouton-secondaire">Annuler</button>
         </span>
         <button id="bouton-hors-ligne" class="bouton bouton-secondaire" title="Enregistre la carte affichée pour la consulter sans réseau">Télécharger cette zone hors ligne</button>
+        <button id="bouton-ajouter-cadastre" class="bouton bouton-secondaire">Ajouter par référence cadastrale</button>
         <button id="bouton-dessiner" class="bouton bouton-principal">Tracer une nouvelle parcelle</button>
     </div>
 
@@ -70,6 +71,38 @@
 </main>
 
 <!-- Modale : fiche parcelle -->
+<div class="fond-modale" id="modale-cadastre">
+    <div class="boite-modale">
+        <h2>Ajouter une parcelle par sa référence cadastrale</h2>
+        <p style="font-size:13px; color:#555; margin-top:0;">Le contour officiel est récupéré automatiquement (cadastre IGN). Internet est nécessaire.</p>
+        <div id="message-modale-cadastre"></div>
+        <form id="formulaire-cadastre" autocomplete="off">
+            <label class="etiquette">Commune *</label>
+            <input type="text" id="champ-commune-cadastre" placeholder="Tape le nom puis choisis dans la liste" list="liste-communes-cadastre" required>
+            <datalist id="liste-communes-cadastre"></datalist>
+            <div class="ligne-champs">
+                <div>
+                    <label class="etiquette">Section *</label>
+                    <input type="text" id="champ-section-cadastre" placeholder="ex : AB" maxlength="2" required>
+                </div>
+                <div>
+                    <label class="etiquette">Numéro *</label>
+                    <input type="text" id="champ-numero-cadastre" placeholder="ex : 12" maxlength="4" required>
+                </div>
+                <div>
+                    <label class="etiquette">Préfixe (rare)</label>
+                    <input type="text" id="champ-prefixe-cadastre" placeholder="000" maxlength="3">
+                </div>
+            </div>
+            <div class="barre-outils" style="margin-top:16px;">
+                <span class="espace" style="flex:1"></span>
+                <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-cadastre')">Annuler</button>
+                <button type="submit" class="bouton bouton-principal" id="bouton-chercher-cadastre">Rechercher la parcelle</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="fond-modale" id="modale-parcelle">
     <div class="boite-modale">
         <h2 id="titre-modale-parcelle">Nouvelle parcelle</h2>

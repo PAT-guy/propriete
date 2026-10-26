@@ -8,7 +8,6 @@ let coucheParcellesExistantes;
 let coucheDessinEnCours;
 let controleDessin;
 let parcelleSelectionneeId = null;
-let proprietairesCache = [];
 let essenceEnEditionParcelleId = null;
 
 (async () => {
@@ -25,7 +24,6 @@ let essenceEnEditionParcelleId = null;
             '<div class="message-alerte" style="margin:0;">Carte indisponible (connexion internet nécessaire pour charger le fond de carte). Le reste de la page fonctionne normalement.</div>';
         document.getElementById("bouton-dessiner").disabled = true;
     }
-    await chargerProprietaires();
     await chargerEtAfficherParcelles();
 
     document.getElementById("champ-recherche").addEventListener("input", filtrerTableauParcelles);
@@ -42,8 +40,6 @@ let essenceEnEditionParcelleId = null;
     document.getElementById("bouton-valider-contour").addEventListener("click", validerEditionContour);
     document.getElementById("bouton-annuler-contour").addEventListener("click", annulerEditionContour);
     document.getElementById("bouton-supprimer-parcelle").addEventListener("click", supprimerParcelleSelectionnee);
-    document.getElementById("bouton-proprietaires").addEventListener("click", ouvrirGestionProprietaires);
-    document.getElementById("bouton-ajouter-proprietaire").addEventListener("click", ajouterProprietaireRapide);
 })();
 
 // ----------------------------------------------------------------------------
@@ -233,22 +229,6 @@ function dessinerPolygone(carte, couche, coordonnees, options) {
 // Chargement des données
 // ----------------------------------------------------------------------------
 
-async function chargerProprietaires() {
-    const { data } = await clientSupabase.from("proprietaires").select().order("nom");
-    proprietairesCache = data || [];
-    remplirSelectionProprietaires();
-}
-
-function remplirSelectionProprietaires() {
-    const select = document.getElementById("champ-proprietaire-parcelle");
-    select.innerHTML = '<option value="">— Non renseigné —</option>' +
-        proprietairesCache.map((p) => `<option value="${p.id}">${echapper(nomAffichePersonne(p))}</option>`).join("");
-}
-
-function nomAffichePersonne(personne) {
-    return personne.prenom ? `${personne.prenom} ${personne.nom}` : personne.nom;
-}
-
 let toutesLesParcelles = [];
 
 async function chargerEtAfficherParcelles() {
@@ -285,18 +265,16 @@ function filtrerTableauParcelles() {
     });
 
     if (visibles.length === 0) {
-        corps.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">Aucune parcelle</td></tr>`;
+        corps.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">Aucune parcelle</td></tr>`;
         return;
     }
 
     corps.innerHTML = visibles.map((p) => {
-        const proprietaire = proprietairesCache.find((pr) => pr.id === p.proprietaire_id);
         return `
             <tr style="cursor:pointer;" onclick="selectionnerParcelle('${p.id}')">
                 <td data-etiquette="Nom"><strong>${echapper(p.nom)}</strong></td>
                 <td data-etiquette="Commune">${echapper(p.commune)}</td>
                 <td data-etiquette="Surface">${p.surface_ha ? p.surface_ha.toFixed(2) + " ha" : ""}</td>
-                <td data-etiquette="Propriétaire">${proprietaire ? echapper(nomAffichePersonne(proprietaire)) : ""}</td>
                 <td data-etiquette=""></td>
             </tr>
         `;
@@ -316,13 +294,11 @@ async function selectionnerParcelle(id) {
     document.getElementById("panneau-detail").style.display = "block";
     document.getElementById("titre-detail").textContent = parcelle.nom;
 
-    const proprietaire = proprietairesCache.find((pr) => pr.id === parcelle.proprietaire_id);
     const lignes = [];
     if (parcelle.reference_cadastrale) lignes.push(`Référence : ${parcelle.reference_cadastrale}`);
     if (parcelle.commune) lignes.push(`Localisation : ${parcelle.commune}${parcelle.lieu_dit ? " — " + parcelle.lieu_dit : ""}`);
     if (parcelle.surface_ha) lignes.push(`Surface : ${parcelle.surface_ha.toFixed(2)} ha`);
     if (parcelle.type_peuplement) lignes.push(`Peuplement : ${parcelle.type_peuplement}`);
-    if (proprietaire) lignes.push(`Propriétaire : ${nomAffichePersonne(proprietaire)}`);
     if (parcelle.notes) lignes.push(`Notes : ${parcelle.notes}`);
     document.getElementById("infos-detail").textContent = lignes.join("\n") || "Aucune information complémentaire.";
 
@@ -390,7 +366,6 @@ function ouvrirModificationParcelle() {
     document.getElementById("champ-surface-parcelle").value = parcelle.surface_ha || "";
     document.getElementById("champ-peuplement-parcelle").value = parcelle.type_peuplement || "";
     document.getElementById("champ-date-acquisition-parcelle").value = parcelle.date_acquisition || "";
-    document.getElementById("champ-proprietaire-parcelle").value = parcelle.proprietaire_id || "";
     document.getElementById("champ-notes-parcelle").value = parcelle.notes || "";
 
     ouvrirModale("modale-parcelle");
@@ -413,7 +388,6 @@ async function enregistrerParcelle(evenement) {
         surface_ha: parseFloat(document.getElementById("champ-surface-parcelle").value) || null,
         type_peuplement: document.getElementById("champ-peuplement-parcelle").value.trim() || null,
         date_acquisition: document.getElementById("champ-date-acquisition-parcelle").value || null,
-        proprietaire_id: document.getElementById("champ-proprietaire-parcelle").value || null,
         notes: document.getElementById("champ-notes-parcelle").value.trim() || null,
     };
 
@@ -527,56 +501,4 @@ async function supprimerEssence(id) {
     if (!confirm("Retirer cette essence de la parcelle ?")) return;
     await clientSupabase.from("essences_parcelle").delete().eq("id", id);
     await chargerEssences(parcelleSelectionneeId);
-}
-
-// ----------------------------------------------------------------------------
-// Propriétaires
-// ----------------------------------------------------------------------------
-
-function ouvrirGestionProprietaires() {
-    remplirTableauProprietaires();
-    document.getElementById("champ-nom-proprietaire").value = "";
-    document.getElementById("champ-prenom-proprietaire").value = "";
-    document.getElementById("champ-telephone-proprietaire").value = "";
-    ouvrirModale("modale-proprietaires");
-}
-
-function remplirTableauProprietaires() {
-    const corps = document.getElementById("corps-tableau-proprietaires");
-    if (proprietairesCache.length === 0) {
-        corps.innerHTML = `<tr><td style="text-align:center; color:#888;">Aucun propriétaire</td></tr>`;
-        return;
-    }
-    corps.innerHTML = proprietairesCache.map((p) => `
-        <tr>
-            <td>${echapper(nomAffichePersonne(p))}</td>
-            <td style="text-align:right;"><button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerProprietaire('${p.id}')">Supprimer</button></td>
-        </tr>
-    `).join("");
-}
-
-async function ajouterProprietaireRapide() {
-    const nom = document.getElementById("champ-nom-proprietaire").value.trim();
-    if (!nom) {
-        alert("Le nom est obligatoire.");
-        return;
-    }
-    await clientSupabase.from("proprietaires").insert({
-        nom,
-        prenom: document.getElementById("champ-prenom-proprietaire").value.trim() || null,
-        telephone: document.getElementById("champ-telephone-proprietaire").value.trim() || null,
-    });
-    await chargerProprietaires();
-    remplirTableauProprietaires();
-    document.getElementById("champ-nom-proprietaire").value = "";
-    document.getElementById("champ-prenom-proprietaire").value = "";
-    document.getElementById("champ-telephone-proprietaire").value = "";
-}
-
-async function supprimerProprietaire(id) {
-    if (!confirm("Supprimer ce propriétaire ? Les parcelles liées resteront, sans propriétaire renseigné.")) return;
-    await clientSupabase.from("proprietaires").delete().eq("id", id);
-    await chargerProprietaires();
-    remplirTableauProprietaires();
-    await chargerEtAfficherParcelles();
 }

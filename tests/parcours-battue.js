@@ -64,7 +64,7 @@ const t=(n,c)=>{ (c?ok++:ko++); console.log((c?'OK  ':'FAIL ')+n); };
  t('XSS plan-battue : aucun script exécuté', !(await p.evaluate(()=>window.__xss)));
  await p.goto(B+'battue-impression.html?id='+ids.b); await p.waitForTimeout(1000);
  t('XSS fiche : aucun script exécuté', !(await p.evaluate(()=>window.__xss)));
- for (const u of ['tableau-de-bord.html','pages/travaux.html','pages/finances.html']) { await p.goto(B+u); await p.waitForTimeout(700); }
+ for (const u of ['tableau-de-bord.html','pages/travaux.html']) { await p.goto(B+u); await p.waitForTimeout(700); }
  t('autres pages sans erreur JS', errs.length===0);
  console.log('Erreurs JS:',errs); console.log(ok+' OK, '+ko+' FAIL'); await b.close();
 })();

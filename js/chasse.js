@@ -79,7 +79,7 @@ async function chargerChasseurs() {
 function remplirTableauChasseurs() {
     const corps = document.getElementById("corps-tableau-chasseurs");
     if (chasseursCache.length === 0) {
-        corps.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">Aucun chasseur</td></tr>`;
+        corps.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">Aucun chasseur</td></tr>`;
         return;
     }
     corps.innerHTML = chasseursCache.map((c) => `
@@ -87,6 +87,7 @@ function remplirTableauChasseurs() {
             <td data-etiquette="Nom">${echapper(nomAffichePersonne(c))}</td>
             <td data-etiquette="Téléphone">${echapper(c.telephone)}</td>
             <td data-etiquette="Permis">${echapper(c.numero_permis)}</td>
+            <td data-etiquette="Assurance">${etatAssuranceChasseur(c)}</td>
             <td data-etiquette="Statut">${c.actif ? "Actif" : "Inactif"}</td>
             <td data-etiquette="">
                 <button class="bouton bouton-secondaire" style="padding:4px 8px;" onclick="ouvrirModificationChasseur('${c.id}')">Modifier</button>
@@ -94,6 +95,23 @@ function remplirTableauChasseurs() {
             </td>
         </tr>
     `).join("");
+}
+
+/** Texte HTML de l'état de l'assurance : valide (avec la date), expirée en rouge, ou non renseignée. */
+function etatAssuranceChasseur(chasseur) {
+    if (!chasseur.assurance_validite) {
+        return chasseur.assurance_assureur
+            ? `${echapper(chasseur.assurance_assureur)}, validité non renseignée`
+            : '<span style="color:#888;">Non renseignée</span>';
+    }
+    const date = new Date(chasseur.assurance_validite);
+    const dateFormatee = date.toLocaleDateString("fr-FR");
+    const fin = new Date(date);
+    fin.setHours(23, 59, 59, 999);
+    const assureur = chasseur.assurance_assureur ? `${echapper(chasseur.assurance_assureur)}, ` : "";
+    return fin < new Date()
+        ? `<span style="color:#a3442f; font-weight:600;">${assureur}expirée le ${dateFormatee}</span>`
+        : `${assureur}jusqu'au ${dateFormatee}`;
 }
 
 function ouvrirCreationChasseur() {
@@ -116,6 +134,9 @@ function ouvrirModificationChasseur(id) {
     document.getElementById("champ-telephone-chasseur").value = chasseur.telephone || "";
     document.getElementById("champ-permis-chasseur").value = chasseur.numero_permis || "";
     document.getElementById("champ-adhesion-chasseur").value = chasseur.date_adhesion || "";
+    document.getElementById("champ-assureur-chasseur").value = chasseur.assurance_assureur || "";
+    document.getElementById("champ-contrat-assurance-chasseur").value = chasseur.assurance_numero_contrat || "";
+    document.getElementById("champ-validite-assurance-chasseur").value = chasseur.assurance_validite || "";
     document.getElementById("champ-actif-chasseur").checked = !!chasseur.actif;
     ouvrirModale("modale-chasseur");
 }
@@ -133,6 +154,9 @@ async function enregistrerChasseur(evenement) {
         telephone: document.getElementById("champ-telephone-chasseur").value.trim() || null,
         numero_permis: document.getElementById("champ-permis-chasseur").value.trim() || null,
         date_adhesion: document.getElementById("champ-adhesion-chasseur").value || null,
+        assurance_assureur: document.getElementById("champ-assureur-chasseur").value.trim() || null,
+        assurance_numero_contrat: document.getElementById("champ-contrat-assurance-chasseur").value.trim() || null,
+        assurance_validite: document.getElementById("champ-validite-assurance-chasseur").value || null,
         actif: document.getElementById("champ-actif-chasseur").checked,
     };
     if (chasseurEnEditionId) {

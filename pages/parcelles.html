@@ -16,7 +16,7 @@
     <div class="entete-page">
         <div>
             <h1>Cadastre des parcelles</h1>
-            <p class="sous-titre">Trace les contours sur la carte, renseigne les essences et le propriétaire</p>
+            <p class="sous-titre">Trace les contours sur la carte, renseigne les essences</p>
         </div>
     </div>
 
@@ -38,13 +38,12 @@
 
     <div class="barre-outils" style="margin-top:18px;">
         <input type="text" id="champ-recherche" placeholder="Rechercher une parcelle...">
-        <button id="bouton-proprietaires" class="bouton bouton-secondaire">Gérer les propriétaires</button>
     </div>
 
     <div class="carte">
         <table class="tableau-donnees">
             <thead>
-                <tr><th>Nom</th><th>Commune</th><th>Surface</th><th>Propriétaire</th><th></th></tr>
+                <tr><th>Nom</th><th>Commune</th><th>Surface</th><th></th></tr>
             </thead>
             <tbody id="corps-tableau-parcelles"></tbody>
         </table>
@@ -144,9 +143,6 @@
                 </div>
             </div>
 
-            <label class="etiquette">Propriétaire</label>
-            <select id="champ-proprietaire-parcelle"></select>
-
             <label class="etiquette">Notes</label>
             <textarea id="champ-notes-parcelle" rows="2"></textarea>
 
@@ -181,26 +177,6 @@
                 <button type="submit" class="bouton bouton-principal">Enregistrer</button>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- Modale : propriétaires -->
-<div class="fond-modale" id="modale-proprietaires">
-    <div class="boite-modale">
-        <h2>Propriétaires</h2>
-        <table class="tableau-donnees"><tbody id="corps-tableau-proprietaires"></tbody></table>
-        <div id="formulaire-proprietaire-rapide" style="margin-top:14px; border-top:1px solid #eee; padding-top:12px;">
-            <label class="etiquette">Nom *</label>
-            <input type="text" id="champ-nom-proprietaire">
-            <label class="etiquette">Prénom</label>
-            <input type="text" id="champ-prenom-proprietaire">
-            <label class="etiquette">Téléphone</label>
-            <input type="text" id="champ-telephone-proprietaire">
-            <div class="actions-modale">
-                <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-proprietaires')">Fermer</button>
-                <button type="button" id="bouton-ajouter-proprietaire" class="bouton bouton-principal">Ajouter</button>
-            </div>
-        </div>
     </div>
 </div>
 

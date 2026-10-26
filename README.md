@@ -16,7 +16,7 @@ La fiche imprimable de la battue (bouton "Fiche à imprimer") reprend tout cela 
 
 ## Ajouter une parcelle par sa référence cadastrale
 
-Sur la page Parcelles, "Ajouter par référence cadastrale" : tape la commune (choisis-la dans la liste), la section (ex : AB) et le numéro (ex : 12). Le contour officiel et la surface sont récupérés automatiquement auprès du cadastre IGN (gratuit, internet nécessaire), puis la fiche s'ouvre pré-remplie pour que tu choisisses le nom, le propriétaire, etc. Le champ "préfixe" ne sert que dans les communes fusionnées, où un même numéro peut exister deux fois. Si une parcelle est composée de plusieurs morceaux séparés, seul le plus grand est repris.
+Sur la page Parcelles, "Ajouter par référence cadastrale" : tape la commune (choisis-la dans la liste), la section (ex : AB) et le numéro (ex : 12). Le contour officiel et la surface sont récupérés automatiquement auprès du cadastre IGN (gratuit, internet nécessaire), puis la fiche s'ouvre pré-remplie pour que tu choisisses le nom d'usage, la commune, etc. Le champ "préfixe" ne sert que dans les communes fusionnées, où un même numéro peut exister deux fois. Si une parcelle est composée de plusieurs morceaux séparés, seul le plus grand est repris.
 
 ## Modifier le contour d'une parcelle
 
@@ -53,13 +53,7 @@ L'application utilise un seul identifiant/mot de passe pour toute l'association 
 3. Renseigne un email (peut être fictif, par exemple `chasse@tonassociation.fr`) et un mot de passe. Décoche l'envoi d'email de confirmation si l'option apparaît, ou coche directement "Auto Confirm User".
 4. C'est cet email et ce mot de passe que tu communiques à tout le monde.
 
-## Étape 4 — Créer l'espace de stockage des documents
-
-1. Dans le menu de gauche, ouvre **Storage**.
-2. Crée un nouveau bucket nommé exactement `documents`.
-3. Rends-le **public** (option proposée à la création). Cela simplifie l'accès aux fichiers déposés (baux, factures, photos) : n'importe qui avec le lien direct du fichier peut l'ouvrir, mais les fichiers ne sont listés nulle part publiquement et restent invisibles sans ce lien précis. Pour une association de chasse, c'est un compromis raisonnable ; si tu stockes un jour des documents vraiment sensibles, dis-le-moi, il existe une solution plus stricte (liens signés à durée limitée).
-
-## Étape 5 — Récupérer les clés et configurer le site
+## Étape 4 — Récupérer les clés et configurer le site
 
 1. Dans le menu de gauche, ouvre **Project Settings → API**.
 2. Copie la valeur **Project URL**.
@@ -68,7 +62,7 @@ L'application utilise un seul identifiant/mot de passe pour toute l'association 
 
 Ces deux valeurs ne sont pas secrètes au sens strict : elles seront visibles par quiconque regarde le code source du site. C'est normal, c'est comme ça que Supabase fonctionne. La vraie protection vient des règles d'accès créées à l'étape 2, qui exigent d'être connecté avec le compte partagé pour lire ou modifier quoi que ce soit.
 
-## Étape 6 — Publier sur GitHub Pages
+## Étape 5 — Publier sur GitHub Pages
 
 1. Crée un dépôt GitHub (public ou privé, les deux fonctionnent avec GitHub Pages si ton compte le permet).
 2. Mets-y tout le contenu de ce dossier (`index.html`, `tableau-de-bord.html`, `css/`, `js/`, `pages/`, etc., y compris `js/config.js` une fois rempli).

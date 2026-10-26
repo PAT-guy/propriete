@@ -9,7 +9,6 @@ const PAGES_NAVIGATION = [
     { fichier: "pages/parcelles.html", libelle: "Parcelles" },
     { fichier: "pages/chasse.html", libelle: "Chasse" },
     { fichier: "pages/travaux.html", libelle: "Travaux" },
-    { fichier: "pages/finances.html", libelle: "Finances" },
 ];
 
 async function protegerPage() {

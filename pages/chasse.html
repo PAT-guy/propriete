@@ -33,7 +33,7 @@
         </div>
         <div class="carte">
             <table class="tableau-donnees">
-                <thead><tr><th>Nom</th><th>Téléphone</th><th>N° permis</th><th>Statut</th><th></th></tr></thead>
+                <thead><tr><th>Nom</th><th>Téléphone</th><th>N° permis</th><th>Assurance</th><th>Statut</th><th></th></tr></thead>
                 <tbody id="corps-tableau-chasseurs"></tbody>
             </table>
         </div>
@@ -92,6 +92,11 @@
                 <div><label class="etiquette">N° de permis</label><input type="text" id="champ-permis-chasseur"></div>
             </div>
             <label class="etiquette">Date d'adhésion</label><input type="date" id="champ-adhesion-chasseur">
+            <div class="ligne-champs">
+                <div><label class="etiquette">Assurance de chasse (assureur)</label><input type="text" id="champ-assureur-chasseur" placeholder="ex : Groupama"></div>
+                <div><label class="etiquette">N° de contrat</label><input type="text" id="champ-contrat-assurance-chasseur"></div>
+            </div>
+            <label class="etiquette">Assurance valable jusqu'au</label><input type="date" id="champ-validite-assurance-chasseur">
             <label class="etiquette"><input type="checkbox" id="champ-actif-chasseur" checked> Membre actif</label>
             <div class="actions-modale">
                 <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-chasseur')">Annuler</button>

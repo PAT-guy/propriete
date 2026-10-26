@@ -63,6 +63,11 @@ create table if not exists chasseurs (
     created_at timestamptz default now()
 );
 
+-- Assurance de chasse (ajoutée après la création initiale de la table).
+alter table chasseurs add column if not exists assurance_assureur text;
+alter table chasseurs add column if not exists assurance_numero_contrat text;
+alter table chasseurs add column if not exists assurance_validite date;
+
 create table if not exists especes_gibier (
     id uuid primary key default gen_random_uuid(),
     nom text not null unique

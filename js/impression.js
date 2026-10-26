@@ -248,16 +248,20 @@ function construirePanneau() {
 
         <div class="ib-section">
             <h3>Apparence</h3>
-            <div class="ligne-champs">
-                <div><label class="etiquette">Palette</label><select data-style="palette">${Object.entries(PALETTES).map(([k, p]) => `<option value="${k}" ${s.palette === k ? "selected" : ""}>${echapper(p.libelle)}</option>`).join("")}</select></div>
-                <div><label class="etiquette">Police</label><select data-style="police">${Object.entries(POLICES).map(([k, p]) => `<option value="${k}" ${s.police === k ? "selected" : ""}>${echapper(p.libelle)}</option>`).join("")}</select></div>
-            </div>
+            <label class="etiquette">Palette</label>
+            <select data-style="palette">${Object.entries(PALETTES).map(([k, p]) => `<option value="${k}" ${s.palette === k ? "selected" : ""}>${echapper(p.libelle)}</option>`).join("")}</select>
+            ${s.palette === "perso" ? `<div class="ligne-champs" style="margin-top:6px;">
+                ${[["primaire", "Principale"], ["secondaire", "Secondaire"], ["accent", "Accent"]].map(([cle, libelle]) =>
+                    `<div><label class="etiquette">${libelle}</label><input type="color" data-couleur="${cle}" value="${echapper((s.couleursPerso || {})[cle])}" style="height:34px; padding:2px;"></div>`).join("")}
+            </div>` : ""}
+            <label class="etiquette">Police <small style="color:#888;">(selon les polices de l'appareil qui imprime)</small></label>
+            <select data-style="police">${Object.entries(POLICES).map(([k, p]) => `<option value="${k}" ${s.police === k ? "selected" : ""}>${echapper(p.libelle)}</option>`).join("")}</select>
             <div class="ligne-champs">
                 <div><label class="etiquette">Taille du texte (pt)</label><input type="number" min="6" max="14" step="0.5" data-style="tailleBase" value="${s.tailleBase}"></div>
                 <div><label class="etiquette">Marge intérieure (mm)</label><input type="number" min="4" max="25" step="1" data-style="marge" value="${s.marge}"></div>
             </div>
-            <label class="etiquette" style="font-weight:400;"><input type="checkbox" data-style="cadre" ${s.cadre !== false ? "checked" : ""}> Cadre à double filet</label>
-            <label class="etiquette" style="font-weight:400;"><input type="checkbox" data-style="fondPapier" ${s.fondPapier ? "checked" : ""}> Fond papier crème (consomme de l'encre)</label>
+            ${CHOIX_APPARENCE.map(([cle, libelle, valeurs]) => `<label class="etiquette">${libelle}</label>
+                <select data-style="${cle}">${valeurs.map(([v, l]) => `<option value="${v}" ${s[cle] === v ? "selected" : ""}>${echapper(l)}</option>`).join("")}</select>`).join("")}
         </div>
 
         ${["recto", "verso"].map((face) => `
@@ -314,9 +318,13 @@ function brancherPanneau() {
         champ.addEventListener(champ.type === "number" || champ.type === "text" ? "input" : "change", () => {
             const cle = champ.dataset.style;
             config.style[cle] = champ.type === "checkbox" ? champ.checked : champ.type === "number" ? Number(champ.value) : champ.value;
-            changementConfig(false);
+            changementConfig(cle === "palette");   // la palette personnalisée affiche des sélecteurs de couleur en plus
         });
     });
+    panneau.querySelectorAll("[data-couleur]").forEach((champ) => champ.addEventListener("input", () => {
+        config.style.couleursPerso = { ...(config.style.couleursPerso || {}), [champ.dataset.couleur]: champ.value };
+        changementConfig(false);
+    }));
     panneau.querySelectorAll("[data-opt]").forEach((champ) => {
         champ.addEventListener(champ.type === "number" || champ.type === "text" || champ.tagName === "TEXTAREA" ? "input" : "change", () => {
             const t = trouverBloc(champ.dataset.uid);

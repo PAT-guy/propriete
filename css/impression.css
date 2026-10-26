@@ -32,13 +32,15 @@
     break-after: page;
 }
 .ib-feuille:last-child { page-break-after: auto; break-after: auto; }
-.ib-racine.fond-papier .ib-feuille { background: var(--ib-papier); }
+.ib-racine.fond-creme .ib-feuille { background: var(--ib-papier); }
+.ib-racine.fond-vert .ib-feuille { background: #eef3ea; }
+.ib-racine.fond-gris .ib-feuille { background: #f2f2ef; }
 
 .ib-carton, .ib-page { position: relative; overflow: hidden; box-sizing: border-box; width: 210mm; }
 .ib-carton { height: 148.5mm; }
 .ib-page { height: 297mm; }
 
-/* Cadre : double filet vert sapin et ocre */
+/* Cadre : double filet (par défaut), simple, épais, pointillé ou aucun */
 .ib-cadre {
     position: absolute; inset: 3.5mm; pointer-events: none;
     border: 0.45mm solid var(--ib-primaire);
@@ -46,7 +48,13 @@
 .ib-cadre::after {
     content: ""; position: absolute; inset: 0.9mm; border: 0.2mm solid var(--ib-accent);
 }
-.ib-sans-cadre .ib-cadre { display: none; }
+.cadre-simple .ib-cadre { border-width: 0.35mm; }
+.cadre-simple .ib-cadre::after { display: none; }
+.cadre-epais .ib-cadre { border-width: 1.2mm; }
+.cadre-epais .ib-cadre::after { display: none; }
+.cadre-pointille .ib-cadre { border: 0.55mm dotted var(--ib-primaire); }
+.cadre-pointille .ib-cadre::after { display: none; }
+.cadre-aucun .ib-cadre, .ib-sans-cadre .ib-cadre { display: none; }
 
 .ib-face-contenu {
     position: absolute; inset: var(--ib-marge);
@@ -66,6 +74,14 @@
     border-bottom: 0.25mm solid var(--ib-filet); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ib-bloc-titre::before { content: "◆ "; color: var(--ib-accent); font-size: 0.8em; }
+.titres-souligne .ib-bloc-titre { }
+.titres-bandeau .ib-bloc-titre { background: var(--ib-primaire); color: #fff; border-bottom: none; padding: 0 2mm; border-radius: 0.6mm; }
+.titres-bandeau .ib-bloc-titre::before { color: var(--ib-accent); }
+.titres-pastille .ib-bloc-titre { border-bottom: none; }
+.titres-pastille .ib-bloc-titre::before { content: "●"; font-size: 0.9em; margin-right: 0.8mm; }
+.titres-simple .ib-bloc-titre { border-bottom: none; border-left: 1.2mm solid var(--ib-accent); padding-left: 2mm; }
+.titres-simple .ib-bloc-titre::before { content: ""; }
+.casse-normale .ib-bloc-titre { text-transform: none; letter-spacing: 0.02em; font-size: 1.12em; }
 
 /* En-tête */
 .ib-entete { display: flex; align-items: center; gap: 3.5mm; }
@@ -73,10 +89,12 @@
     background: var(--ib-primaire); color: #fff; padding: 2.4mm 4mm; border-bottom: 0.9mm solid var(--ib-accent); border-radius: 0.8mm;
 }
 .ib-entete-simple { border-bottom: 0.5mm double var(--ib-primaire); padding-bottom: 1.5mm; color: var(--ib-primaire); }
-.ib-ornement { width: 9mm; height: 9mm; flex: none; color: var(--ib-accent); }
+.ib-entete-centre { justify-content: center; text-align: center; border-top: 0.3mm solid var(--ib-accent); border-bottom: 0.3mm solid var(--ib-accent); padding: 1.6mm 0; color: var(--ib-primaire); }
+.ib-entete-encadre { border: 0.6mm solid var(--ib-primaire); padding: 2mm 3.5mm; color: var(--ib-primaire); }
+.ib-entete-minimal { border-bottom: 0.3mm solid var(--ib-filet); padding-bottom: 1.2mm; color: var(--ib-primaire); }
+.ib-ornement { width: calc(9mm * var(--ib-echelle-titre, 1)); height: calc(9mm * var(--ib-echelle-titre, 1)); flex: none; color: var(--ib-accent); }
 .ib-ornement svg { width: 100%; height: 100%; display: block; fill: currentColor; }
-.ib-entete-simple .ib-ornement { color: var(--ib-accent); }
-.ib-titre { font-size: 2.15em; font-weight: 700; line-height: 1.05; letter-spacing: 0.02em; }
+.ib-titre { font-size: calc(2.15em * var(--ib-echelle-titre, 1)); font-weight: 700; line-height: 1.05; letter-spacing: 0.02em; }
 .ib-sous-titre { font-size: 1.05em; margin-top: 0.8mm; opacity: 0.92; }
 .ib-entete-bandeau .ib-sous-titre { color: #f1e3bd; }
 
@@ -109,6 +127,19 @@
 .ib-table td.libre { height: var(--ib-h-ligne, 7mm); }
 .ib-table tr.nom-traque td { background: var(--ib-primaire); color: #fff; font-weight: 700; padding: 0.8mm 1.6mm; }
 .ib-table .num { width: 8mm; text-align: center; font-weight: 700; }
+.tableaux-lignes .ib-table th, .tableaux-lignes .ib-table td { border: none; border-bottom: 0.2mm solid #9a9a8a; }
+.tableaux-lignes .ib-table th { background: none; border-bottom: 0.4mm solid var(--ib-primaire); }
+.tableaux-zebre .ib-table th, .tableaux-zebre .ib-table td { border: none; }
+.tableaux-zebre .ib-table th { background: var(--ib-primaire); color: #fff; }
+.tableaux-zebre .ib-table tbody tr:nth-child(even) td { background: rgba(0, 0, 0, 0.055); }
+.tableaux-ouvert .ib-table th, .tableaux-ouvert .ib-table td { border: none; }
+.tableaux-ouvert .ib-table th { background: none; border-bottom: 0.35mm solid var(--ib-primaire); }
+.tableaux-ouvert .ib-table td.libre { border-bottom: 0.15mm dotted #aaa; }
+.tableaux-lignes .ib-table tr.nom-traque td, .tableaux-zebre .ib-table tr.nom-traque td, .tableaux-ouvert .ib-table tr.nom-traque td { background: var(--ib-primaire); color: #fff; border: none; }
+.coins-droits .ib-entete-bandeau, .coins-droits .ib-encart-traque, .coins-droits .ib-carte-zone, .coins-droits .ib-texte.cadre, .coins-droits .ib-titre-bandeau { border-radius: 0; }
+.coins-ronds .ib-entete-bandeau, .coins-ronds .ib-entete-encadre { border-radius: 3.5mm; }
+.coins-ronds .ib-encart-traque, .coins-ronds .ib-carte-zone, .coins-ronds .ib-texte.cadre { border-radius: 3mm; }
+.coins-ronds.titres-bandeau .ib-bloc-titre { border-radius: 2.5mm; }
 .ib-sous-tableaux { display: grid; gap: 2.5mm 4mm; align-items: start; }
 .ib-expiree { color: #b00020; font-weight: 700; }
 .ib-sonnerie { font-weight: 700; color: var(--ib-primaire); }

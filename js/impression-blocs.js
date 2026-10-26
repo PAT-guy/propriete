@@ -14,16 +14,63 @@ const PALETTES = {
     sologne:   { libelle: "Sologne (vert sapin, ocre)", primaire: "#2f4a33", secondaire: "#6b4a2b", accent: "#b8892f", filet: "#c9b98f", papier: "#f7f1e3" },
     brique:    { libelle: "Brique de Sologne", primaire: "#7b3a2e", secondaire: "#4a5a3a", accent: "#c18a2e", filet: "#d4bfa0", papier: "#f8efe2" },
     etang:     { libelle: "Étang (gris bleu)", primaire: "#2f4f5a", secondaire: "#5a6b4a", accent: "#b08a3c", filet: "#b9c6c4", papier: "#eff3f1" },
+    bruyere:   { libelle: "Bruyère (violet gris)", primaire: "#55456b", secondaire: "#4c5d3c", accent: "#c0922f", filet: "#cfc6d6", papier: "#f5f2f7" },
+    chene:     { libelle: "Chêne (brun, crème)", primaire: "#5a3d24", secondaire: "#3f5a3a", accent: "#c28a2c", filet: "#d6c3a5", papier: "#f8f0e2" },
+    foret:     { libelle: "Forêt profonde (vert sombre, or)", primaire: "#1d3326", secondaire: "#4a3b24", accent: "#d0a53b", filet: "#c4b88a", papier: "#f3efe0" },
+    ardoise:   { libelle: "Ardoise (gris, orange)", primaire: "#34414a", secondaire: "#5b6b73", accent: "#c4693a", filet: "#c3cbd0", papier: "#f1f3f4" },
+    venerie:   { libelle: "Rouge vénerie", primaire: "#7a1f27", secondaire: "#3b4a30", accent: "#b88a2a", filet: "#d9c2b8", papier: "#faf1ec" },
     noirblanc: { libelle: "Noir et blanc (photocopie)", primaire: "#222222", secondaire: "#444444", accent: "#666666", filet: "#999999", papier: "#ffffff" },
+    perso:     { libelle: "Personnalisée (je choisis les couleurs)", primaire: "#2f4a33", secondaire: "#6b4a2b", accent: "#b8892f", filet: "#c9b98f", papier: "#f7f1e3" },
 };
+
+/** Couleurs effectives d'un style : la palette choisie, ou les trois couleurs personnalisées (le filet et le papier s'en déduisent). */
+function couleursDuStyle(style) {
+    const base = PALETTES[style.palette] || PALETTES.sologne;
+    if (style.palette !== "perso") return base;
+    const perso = style.couleursPerso || {};
+    return { ...base, primaire: perso.primaire || base.primaire, secondaire: perso.secondaire || base.secondaire, accent: perso.accent || base.accent,
+        filet: melangerCouleurs(perso.accent || base.accent, "#ffffff", 0.55), papier: melangerCouleurs(perso.primaire || base.primaire, "#ffffff", 0.94) };
+}
+
+function melangerCouleurs(hexA, hexB, partB) {
+    const lire = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [a, b] = [lire(hexA), lire(hexB)];
+    return "#" + a.map((v, i) => Math.round(v * (1 - partB) + b[i] * partB).toString(16).padStart(2, "0")).join("");
+}
 
 const POLICES = {
-    serif:   { libelle: "Classique (avec empattements)", pile: 'Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif' },
-    sans:    { libelle: "Moderne (sans empattements)", pile: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
-    machine: { libelle: "Machine à écrire", pile: '"Courier New", Courier, monospace' },
+    serif:     { libelle: "Classique (avec empattements)", pile: 'Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif' },
+    garamond:  { libelle: "Livre ancien (Garamond)", pile: 'Garamond, "EB Garamond", "Cormorant Garamond", "Palatino Linotype", Georgia, serif' },
+    rustique:  { libelle: "Rustique (Rockwell)", pile: 'Rockwell, "Roboto Slab", "Courier New", Georgia, serif' },
+    sans:      { libelle: "Moderne (sans empattements)", pile: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
+    humaniste: { libelle: "Humaniste (Trebuchet)", pile: '"Trebuchet MS", "Gill Sans", Calibri, "Segoe UI", sans-serif' },
+    condensee: { libelle: "Condensée (gain de place)", pile: '"Arial Narrow", "Roboto Condensed", "Helvetica Neue Condensed", "Segoe UI", sans-serif' },
+    machine:   { libelle: "Machine à écrire", pile: '"Courier New", Courier, monospace' },
 };
 
-const SVG_FEUILLE_CHENE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c-.7 1.2-.6 2.4-.2 3.4-1-.6-2.2-.7-3.2-.3.3 1 1 1.7 1.8 2.1-1.2-.1-2.4.4-3 1.3.8.6 1.7.9 2.6.8-1.1.5-1.9 1.4-2.2 2.5.9.2 1.8.1 2.6-.3-.6.9-.8 2-.5 3 .8-.1 1.5-.5 2.1-1.1 0 .9.3 1.7.8 2.4V22h1.2v-5.5c.5-.7.8-1.5.8-2.4.6.6 1.3 1 2.1 1.1.3-1 .1-2.1-.5-3 .8.4 1.7.5 2.6.3-.3-1.1-1.1-2-2.2-2.5.9.1 1.8-.2 2.6-.8-.6-.9-1.8-1.4-3-1.3.8-.4 1.5-1.1 1.8-2.1-1-.4-2.2-.3-3.2.3.4-1 .5-2.2-.2-3.4z"/></svg>';
+/** Choix d'apparence proposés dans le panneau : [clé du style, libellé, valeurs possibles]. */
+const CHOIX_APPARENCE = [
+    ["cadreStyle", "Cadre", [["double", "Double filet"], ["simple", "Filet simple"], ["epais", "Épais"], ["pointille", "Pointillé"], ["aucun", "Aucun"]]],
+    ["titreStyle", "Titres de section", [["souligne", "Soulignés"], ["bandeau", "Bandeau coloré"], ["pastille", "Pastille"], ["simple", "Barre à gauche"]]],
+    ["titreCasse", "Casse des titres", [["maj", "MAJUSCULES"], ["normale", "Normale"]]],
+    ["tableStyle", "Tableaux", [["grille", "Grille"], ["lignes", "Lignes horizontales"], ["zebre", "Zébré"], ["ouvert", "Sans bordures"]]],
+    ["coins", "Coins", [["arrondis", "Arrondis"], ["droits", "Droits"], ["ronds", "Très arrondis"]]],
+    ["fond", "Fond du papier", [["blanc", "Blanc"], ["creme", "Crème"], ["vert", "Vert très pâle"], ["gris", "Gris très pâle"]]],
+];
+
+const ENTETE_SVG_TRAIT = 'style="fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round" ';
+const ORNEMENTS = {
+    chene: { libelle: "Feuille de chêne", svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.800c1.600 1 2 2.600 1.500 3.700 2-.8 3.700.3 3.200 1.900 2.100-.2 3.400 1.700 2.200 3.100 1.500.8 1.200 2.800-.6 3.100.6 1.500-1.200 2.800-3 2.100-.5 1.300-1.800 2-3.300 2s-2.800-.7-3.300-2c-1.800.7-3.600-.6-3-2.100-1.800-.3-2.100-2.300-.6-3.100-1.200-1.400.1-3.300 2.200-3.100-.5-1.600 1.200-2.700 3.200-1.900-.5-1.100-.1-2.700 1.500-3.700z"/><path d="M11.400 17v5h1.200v-5z"/></svg>' },
+    gland: { libelle: "Gland", svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.2v2.4" style="stroke:currentColor; stroke-width:1.4; stroke-linecap:round"/><path d="M4.6 10.200C4.600 6.200 7.800 3.800 12 3.800s7.400 2.400 7.400 6.400z"/><path d="M5.800 11.800h12.400c-.2 4.600-2.800 8.400-6.200 10.400-3.400-2-6-5.800-6.200-10.400z"/></svg>' },
+    cerf: { libelle: "Tête de cerf", svg: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.600 8.700 13.400c-.5-1.200.3-2.300 1.500-2.300h3.600c1.200 0 2 1.100 1.500 2.300z"/><path d="M8.500 11.800 4.800 10.300l2.600 3.400zM15.500 11.800l3.700-1.500-2.600 3.400z"/><g ${ENTETE_SVG_TRAIT}><path d="M10.400 10.600C8.800 8.400 8.200 6 8.200 2.800M9.200 8.300 6 7.800M8.500 5.700 5.500 4.300M8.300 4.200l1.800-1.600"/><path d="M13.600 10.600c1.600-2.200 2.200-4.600 2.200-7.800M14.800 8.300 18 7.800M15.500 5.700l3-1.400M15.700 4.200l-1.800-1.600"/></g></svg>` },
+    cor: { libelle: "Cor de chasse", svg: `<svg viewBox="0 0 24 24" aria-hidden="true"><g style="fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round"><path d="M6.600 6.800C2.800 8.600 2.200 14.800 6.800 17.400 11 19.600 17 17.600 17 12.600 17 8.400 12.400 6.400 9.400 8.600 6.800 10.600 7.200 14.400 10.200 15"/><path d="M6.600 6.800 4.600 4.200"/></g><path d="M16.200 10.600 22.200 7.200v9.400l-5.200-3z"/></svg>` },
+};
+
+function ornementSvg(o) {
+    // Anciennes mises en page : « ornement » était une case à cocher (feuille de chêne).
+    const cle = o.ornement === true ? "chene" : o.ornement === false || !o.ornement ? "aucun" : o.ornement;
+    return ORNEMENTS[cle] ? `<span class="ib-ornement">${ORNEMENTS[cle].svg}</span>` : "";
+}
 
 // ----------------------------------------------------------------------------
 // Utilitaires de rendu
@@ -135,16 +182,21 @@ const BLOCS = {
         description: "Titre, date et secteur de la battue.",
         options: [
             { cle: "titre", type: "texte", libelle: "Titre", defaut: "Battue" },
-            { cle: "style", type: "choix", libelle: "Style", defaut: "bandeau", choix: [["bandeau", "Bandeau coloré"], ["simple", "Simple, double filet"]] },
+            { cle: "style", type: "choix", libelle: "Style", defaut: "bandeau", choix: [["bandeau", "Bandeau coloré"], ["simple", "Simple, double filet"], ["centre", "Centré, ornements de chaque côté"], ["encadre", "Encadré"], ["minimal", "Minimal"]] },
             { cle: "afficherDate", type: "bool", libelle: "Afficher la date", defaut: true },
             { cle: "afficherSecteur", type: "bool", libelle: "Afficher le secteur", defaut: true },
-            { cle: "ornement", type: "bool", libelle: "Feuille de chêne", defaut: true },
+            { cle: "ornement", type: "choix", libelle: "Ornement", defaut: "chene", choix: [["chene", "Feuille de chêne"], ["gland", "Gland"], ["cerf", "Tête de cerf"], ["cor", "Cor de chasse"], ["aucun", "Aucun"]] },
+            { cle: "tailleTitre", type: "nombre", libelle: "Taille du titre (1 = normale)", defaut: 1, min: 0.6, max: 2, pas: 0.1 },
         ],
         rendre(ctx, o) {
             const sousTitre = [o.afficherDate ? dateLonguePour(ctx) : "", o.afficherSecteur ? ctx.battue.secteur : ""].filter(Boolean).join(" · ");
-            return `<header class="ib-entete ib-entete-${o.style === "simple" ? "simple" : "bandeau"}">
-                ${o.ornement ? `<span class="ib-ornement">${SVG_FEUILLE_CHENE}</span>` : ""}
-                <div><div class="ib-titre">${esc(remplacerVariables(o.titre, ctx))}</div>${sousTitre ? `<div class="ib-sous-titre">${esc(sousTitre)}</div>` : ""}</div>
+            const style = ["bandeau", "simple", "centre", "encadre", "minimal"].includes(o.style) ? o.style : "bandeau";
+            const echelle = Number(o.tailleTitre) > 0 ? Number(o.tailleTitre) : 1;
+            const ornement = ornementSvg(o);
+            return `<header class="ib-entete ib-entete-${style}" style="--ib-echelle-titre:${echelle}">
+                ${ornement}
+                <div class="ib-entete-texte"><div class="ib-titre">${esc(remplacerVariables(o.titre, ctx))}</div>${sousTitre ? `<div class="ib-sous-titre">${esc(sousTitre)}</div>` : ""}</div>
+                ${style === "centre" ? ornement : ""}
             </header>`;
         },
     },
@@ -508,12 +560,18 @@ function nouveauBloc(cle, surcharges) {
     };
 }
 
+const STYLE_PAR_DEFAUT = {
+    palette: "sologne", police: "serif", tailleBase: 10, marge: 8,
+    cadreStyle: "double", titreStyle: "souligne", titreCasse: "maj", tableStyle: "grille", coins: "arrondis", fond: "blanc",
+    couleursPerso: { primaire: "#2f4a33", secondaire: "#6b4a2b", accent: "#b8892f" },
+};
+
 function configParDefaut(type) {
     const b = (cle, options, generaux) => nouveauBloc(cle, { options, generaux });
     if (type === "carton") {
         return {
             version: 1, type: "carton", nom: "Carton Sologne",
-            style: { palette: "sologne", police: "serif", tailleBase: 9.5, fondPapier: false, cadre: true, marge: 8 },
+            style: { ...STYLE_PAR_DEFAUT, tailleBase: 9.5, marge: 8 },
             faces: {
                 recto: [
                     b("entete", { titre: "Battue" }),
@@ -528,7 +586,7 @@ function configParDefaut(type) {
     }
     return {
         version: 1, type: "fiche", nom: "Fiche de gestion Sologne",
-        style: { palette: "sologne", police: "serif", tailleBase: 10, fondPapier: false, cadre: true, marge: 10 },
+        style: { ...STYLE_PAR_DEFAUT, tailleBase: 10, marge: 10 },
         faces: {
             recto: [
                 b("entete", { titre: "Fiche de gestion" }),
@@ -558,6 +616,12 @@ function normaliserConfig(config, type) {
         faces: { recto: [], verso: [] },
     };
     delete c.style.traitsCoupe;   // option supprimée : plus de trait de coupe
+    // Anciennes mises en page : cadre (oui/non) et fond papier (oui/non) deviennent des choix.
+    if (config && config.style && config.style.cadre === false && !config.style.cadreStyle) c.style.cadreStyle = "aucun";
+    if (config && config.style && config.style.fondPapier && !config.style.fond) c.style.fond = "creme";
+    delete c.style.cadre;
+    delete c.style.fondPapier;
+    c.style.couleursPerso = { ...STYLE_PAR_DEFAUT.couleursPerso, ...(c.style.couleursPerso || {}) };
     ["recto", "verso"].forEach((face) => {
         ((config && config.faces && config.faces[face]) || []).forEach((bloc) => {
             if (!BLOCS[bloc.bloc]) return;
@@ -607,11 +671,13 @@ function rendreFace(blocs, ctx) {
 }
 
 function attributsRacine(config) {
-    const p = PALETTES[config.style.palette] || PALETTES.sologne;
-    const police = (POLICES[config.style.police] || POLICES.serif).pile;
-    const style = `--ib-primaire:${p.primaire}; --ib-secondaire:${p.secondaire}; --ib-accent:${p.accent}; --ib-filet:${p.filet}; --ib-papier:${p.papier}; `
-        + `--ib-police:${police}; --ib-base:${Number(config.style.tailleBase) || 9}pt; --ib-marge:${Number(config.style.marge) || 8}mm;`;
-    const classes = `ib-racine ${config.style.fondPapier ? "fond-papier" : ""} ${config.style.cadre === false ? "ib-sans-cadre" : ""}`;
+    const st = config.style;
+    const p = couleursDuStyle(st);
+    const police = (POLICES[st.police] || POLICES.serif).pile;
+    const marges = { primaire: p.primaire, secondaire: p.secondaire, accent: p.accent, filet: p.filet, papier: p.papier };
+    const style = `--ib-primaire:${marges.primaire}; --ib-secondaire:${marges.secondaire}; --ib-accent:${marges.accent}; --ib-filet:${marges.filet}; --ib-papier:${marges.papier}; `
+        + `--ib-police:${police}; --ib-base:${Number(st.tailleBase) || 9}pt; --ib-marge:${Number(st.marge) || 8}mm;`;
+    const classes = ["ib-racine", `cadre-${st.cadreStyle}`, `titres-${st.titreStyle}`, `casse-${st.titreCasse}`, `tableaux-${st.tableStyle}`, `coins-${st.coins}`, `fond-${st.fond}`].join(" ");
     return { style, classes };
 }
 

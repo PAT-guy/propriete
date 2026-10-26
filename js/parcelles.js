@@ -34,6 +34,10 @@ let essenceEnEditionParcelleId = null;
     document.getElementById("formulaire-essence").addEventListener("submit", enregistrerEssence);
     document.getElementById("bouton-ajouter-essence").addEventListener("click", ouvrirAjoutEssence);
     document.getElementById("bouton-modifier-parcelle").addEventListener("click", ouvrirModificationParcelle);
+    document.getElementById("bouton-hors-ligne").addEventListener("click", lancerTelechargementHorsLigne);
+    document.getElementById("bouton-modifier-contour").addEventListener("click", demarrerEditionContour);
+    document.getElementById("bouton-valider-contour").addEventListener("click", validerEditionContour);
+    document.getElementById("bouton-annuler-contour").addEventListener("click", annulerEditionContour);
     document.getElementById("bouton-supprimer-parcelle").addEventListener("click", supprimerParcelleSelectionnee);
     document.getElementById("bouton-proprietaires").addEventListener("click", ouvrirGestionProprietaires);
     document.getElementById("bouton-ajouter-proprietaire").addEventListener("click", ajouterProprietaireRapide);
@@ -63,6 +67,29 @@ function initialiserCarte() {
         const centre = evenement.layer.getBounds().getCenter();
         ouvrirCreationParcelle(latlngs, { lat: centre.lat, lng: centre.lng });
     });
+}
+
+async function lancerTelechargementHorsLigne() {
+    const bouton = document.getElementById("bouton-hors-ligne");
+    if (!carteParcelles) {
+        alert("La carte n'est pas disponible.");
+        return;
+    }
+    const texteInitial = bouton.textContent;
+    bouton.disabled = true;
+    try {
+        const { total, echecs } = await telechargerZoneHorsLigne(carteParcelles, (faites, sur) => {
+            bouton.textContent = `Téléchargement ${faites}/${sur}…`;
+        });
+        alert(echecs === 0
+            ? `Zone enregistrée pour le hors ligne (${total} tuiles).`
+            : `Zone enregistrée en partie : ${echecs} tuiles sur ${total} n'ont pas pu être téléchargées.`);
+    } catch (erreur) {
+        alert(erreur.message);
+    } finally {
+        bouton.textContent = texteInitial;
+        bouton.disabled = false;
+    }
 }
 
 function activerModeDessin() {
@@ -156,6 +183,7 @@ function filtrerTableauParcelles() {
 // ----------------------------------------------------------------------------
 
 async function selectionnerParcelle(id) {
+    if (polygoneEnEdition && polygoneEnEdition._parcelleId !== id) annulerEditionContour();
     parcelleSelectionneeId = id;
     const parcelle = toutesLesParcelles.find((p) => p.id === id);
     if (!parcelle) return;
@@ -165,12 +193,12 @@ async function selectionnerParcelle(id) {
 
     const proprietaire = proprietairesCache.find((pr) => pr.id === parcelle.proprietaire_id);
     const lignes = [];
-    if (parcelle.reference_cadastrale) lignes.push(`Référence : ${echapper(parcelle.reference_cadastrale)}`);
-    if (parcelle.commune) lignes.push(`Localisation : ${echapper(parcelle.commune)}${parcelle.lieu_dit ? " — " + parcelle.lieu_dit : ""}`);
+    if (parcelle.reference_cadastrale) lignes.push(`Référence : ${parcelle.reference_cadastrale}`);
+    if (parcelle.commune) lignes.push(`Localisation : ${parcelle.commune}${parcelle.lieu_dit ? " — " + parcelle.lieu_dit : ""}`);
     if (parcelle.surface_ha) lignes.push(`Surface : ${parcelle.surface_ha.toFixed(2)} ha`);
-    if (parcelle.type_peuplement) lignes.push(`Peuplement : ${echapper(parcelle.type_peuplement)}`);
-    if (proprietaire) lignes.push(`Propriétaire : ${echapper(nomAffichePersonne(proprietaire))}`);
-    if (parcelle.notes) lignes.push(`Notes : ${echapper(parcelle.notes)}`);
+    if (parcelle.type_peuplement) lignes.push(`Peuplement : ${parcelle.type_peuplement}`);
+    if (proprietaire) lignes.push(`Propriétaire : ${nomAffichePersonne(proprietaire)}`);
+    if (parcelle.notes) lignes.push(`Notes : ${parcelle.notes}`);
     document.getElementById("infos-detail").textContent = lignes.join("\n") || "Aucune information complémentaire.";
 
     if (parcelle.contour && carteParcelles) {
@@ -276,6 +304,54 @@ async function enregistrerParcelle(evenement) {
     fermerModale("modale-parcelle");
     await chargerEtAfficherParcelles();
     if (parcelleEnEditionId) selectionnerParcelle(parcelleEnEditionId);
+}
+
+// ----------------------------------------------------------------------------
+// Modification du contour d'une parcelle déjà tracée
+// ----------------------------------------------------------------------------
+
+let polygoneEnEdition = null;
+let contourAvantEdition = null;
+
+function demarrerEditionContour() {
+    if (!parcelleSelectionneeId || !carteParcelles) {
+        alert("Sélectionne d'abord une parcelle, la carte doit être disponible.");
+        return;
+    }
+    const polygone = coucheParcellesExistantes.getLayers().find((l) => l._parcelleId === parcelleSelectionneeId);
+    if (!polygone) {
+        alert("Cette parcelle n'a pas de contour à modifier. Trace-la à nouveau avec « Tracer une nouvelle parcelle ».");
+        return;
+    }
+    if (polygoneEnEdition) annulerEditionContour();
+    polygoneEnEdition = polygone;
+    contourAvantEdition = polygone.getLatLngs()[0].map((p) => [p.lat, p.lng]);
+    polygone.editing.enable();
+    document.getElementById("barre-edition-contour").style.display = "inline";
+}
+
+function terminerEditionContour() {
+    if (polygoneEnEdition) polygoneEnEdition.editing.disable();
+    polygoneEnEdition = null;
+    contourAvantEdition = null;
+    document.getElementById("barre-edition-contour").style.display = "none";
+}
+
+async function validerEditionContour() {
+    if (!polygoneEnEdition) return;
+    const id = polygoneEnEdition._parcelleId;
+    const contour = polygoneEnEdition.getLatLngs()[0].map((p) => [p.lat, p.lng]);
+    const centre = polygoneEnEdition.getBounds().getCenter();
+    terminerEditionContour();
+    await clientSupabase.from("parcelles").update({ contour, centre: { lat: centre.lat, lng: centre.lng } }).eq("id", id);
+    await chargerEtAfficherParcelles();
+    await selectionnerParcelle(id);
+}
+
+function annulerEditionContour() {
+    if (!polygoneEnEdition) return;
+    polygoneEnEdition.setLatLngs(contourAvantEdition);
+    terminerEditionContour();
 }
 
 async function supprimerParcelleSelectionnee() {

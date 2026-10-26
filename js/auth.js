@@ -14,7 +14,10 @@ const PAGES_NAVIGATION = [
 
 async function protegerPage() {
     const { data } = await clientSupabase.auth.getSession();
-    if (!data.session) {
+    // Hors ligne, un jeton expiré ne peut pas être renouvelé : on laisse passer
+    // quelqu'un qui s'est déjà connecté sur cet appareil (lecture seule de fait).
+    const dejaConnecteIci = Object.keys(localStorage).some((k) => /^sb-.*-auth-token$/.test(k));
+    if (!data.session && !(!navigator.onLine && dejaConnecteIci)) {
         window.location.href = cheminRacine() + "index.html";
         return false;
     }
@@ -27,6 +30,8 @@ function cheminRacine() {
 }
 
 async function deconnexion() {
+    // Les données mises en cache pour le hors ligne ne doivent pas survivre à la session.
+    if (window.caches) await caches.delete("foret-donnees-v1");
     await clientSupabase.auth.signOut();
     window.location.href = cheminRacine() + "index.html";
 }

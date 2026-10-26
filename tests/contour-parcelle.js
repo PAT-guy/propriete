@@ -1,0 +1,34 @@
+const { chromium } = require('playwright');
+const L = process.argv[2] + '/node_modules';
+const map = {'leaflet@1.9.4/dist/leaflet.js':L+'/leaflet/dist/leaflet.js','leaflet@1.9.4/dist/leaflet.css':L+'/leaflet/dist/leaflet.css','leaflet-draw@1.0.4/dist/leaflet.draw.js':L+'/leaflet-draw/dist/leaflet.draw.js','leaflet-draw@1.0.4/dist/leaflet.draw.css':L+'/leaflet-draw/dist/leaflet.draw.css','@supabase/supabase-js@2':L+'/@supabase/supabase-js/dist/umd/supabase.js'};
+const B='http://localhost:8123/'; let ok=0,ko=0; const errs=[];
+const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
+(async()=>{
+ const b=await chromium.launch(); const ctx=await b.newContext(); const p=await ctx.newPage();
+ p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>d.accept());
+ await ctx.route(/unpkg\.com/, r=>{const u=r.request().url();const k=Object.keys(map).find(k=>u.includes(k));k?r.fulfill({path:map[k]}):r.abort();});
+ await ctx.route(/geopf\.fr/, r=>r.abort());
+ await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/tableau-de-bord.html');
+ await p.goto(B+'pages/parcelles.html'); await p.waitForTimeout(600);
+ const id=await p.evaluate(async()=>(await clientSupabase.from('parcelles').insert({nom:'P1',contour:[[46.60,2.50],[46.60,2.52],[46.62,2.52],[46.62,2.50]],centre:{lat:46.61,lng:2.51}}).select().single()).data.id);
+ await p.reload(); await p.waitForTimeout(1000);
+ await p.locator('#corps-tableau-parcelles tr').first().click(); await p.waitForTimeout(500);
+ t('panneau détail ouvert', await p.locator('#panneau-detail').isVisible());
+ await p.click('#bouton-modifier-contour'); await p.waitForTimeout(400);
+ const n=await p.locator('.leaflet-editing-icon').count();
+ t('poignées d\'édition affichées ('+n+')', n>=4);
+ const h=p.locator('.leaflet-editing-icon').first(); const bx=await h.boundingBox();
+ await p.mouse.move(bx.x+bx.width/2,bx.y+bx.height/2); await p.mouse.down(); await p.mouse.move(bx.x+40,bx.y+40,{steps:8}); await p.mouse.up();
+ await p.click('#bouton-valider-contour'); await p.waitForTimeout(800);
+ const c=await p.evaluate(async id=>(await clientSupabase.from('parcelles').select().eq('id',id).single()).data.contour,id);
+ t('contour modifié en base', JSON.stringify(c[0])!==JSON.stringify([46.60,2.50]) && c.length===4);
+ t('barre d\'édition masquée', !(await p.locator('#barre-edition-contour').isVisible()));
+ // annulation
+ await p.locator('#corps-tableau-parcelles tr').first().click(); await p.click('#bouton-modifier-contour'); await p.waitForTimeout(300);
+ const h2=p.locator('.leaflet-editing-icon').first(); const b2=await h2.boundingBox();
+ await p.mouse.move(b2.x+b2.width/2,b2.y+b2.height/2); await p.mouse.down(); await p.mouse.move(b2.x+60,b2.y+60,{steps:8}); await p.mouse.up();
+ await p.click('#bouton-annuler-contour'); await p.waitForTimeout(300);
+ const c2=await p.evaluate(async id=>(await clientSupabase.from('parcelles').select().eq('id',id).single()).data.contour,id);
+ t('annulation : base inchangée', JSON.stringify(c2)===JSON.stringify(c));
+ t('aucune erreur JS', errs.length===0); console.log(errs); console.log(ok+' OK, '+ko+' FAIL'); await b.close();
+})();

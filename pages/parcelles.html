@@ -24,6 +24,12 @@
         <button id="bouton-fond-plan" class="bouton bouton-secondaire">Plan IGN</button>
         <button id="bouton-fond-satellite" class="bouton bouton-secondaire">Satellite</button>
         <span class="espace" style="flex:1"></span>
+        <span id="barre-edition-contour" style="display:none;">
+            <span style="font-size:13px; color:#555;">Déplace les points blancs pour ajuster le contour.</span>
+            <button id="bouton-valider-contour" class="bouton bouton-principal">Valider le contour</button>
+            <button id="bouton-annuler-contour" class="bouton bouton-secondaire">Annuler</button>
+        </span>
+        <button id="bouton-hors-ligne" class="bouton bouton-secondaire" title="Enregistre la carte affichée pour la consulter sans réseau">Télécharger cette zone hors ligne</button>
         <button id="bouton-dessiner" class="bouton bouton-principal">Tracer une nouvelle parcelle</button>
     </div>
 
@@ -47,6 +53,7 @@
         <div class="barre-outils">
             <h2 id="titre-detail" style="margin:0; flex:1;"></h2>
             <button id="bouton-modifier-parcelle" class="bouton bouton-secondaire">Modifier la fiche</button>
+            <button id="bouton-modifier-contour" class="bouton bouton-secondaire">Modifier le contour</button>
             <button id="bouton-supprimer-parcelle" class="bouton bouton-danger">Supprimer</button>
         </div>
         <p id="infos-detail" style="font-size:13px; color:#555; white-space:pre-line;"></p>

@@ -14,6 +14,14 @@ Chaque battue (une journée) peut compter plusieurs traques. Depuis l'onglet "Ba
 
 La fiche imprimable de la battue (bouton "Fiche à imprimer") reprend tout cela sur une carte unique de la journée, avec le détail de chaque traque (postes affectés et animaux prélevés), les règles de sécurité et les instructions pour les invités.
 
+## Modifier le contour d'une parcelle
+
+Sélectionne la parcelle dans la liste, clique sur "Modifier le contour", déplace les points blancs sur la carte, puis "Valider le contour" (ou "Annuler").
+
+## Utilisation hors ligne (en forêt)
+
+Après une première visite avec du réseau, le site s'ouvre sans connexion. Pour avoir aussi les fonds de carte : sur la page Parcelles, zoome sur le secteur concerné puis clique sur "Télécharger cette zone hors ligne" (plan et photo aérienne). Ce qui fonctionne sans réseau : ouvrir les pages déjà visitées, consulter les cartes de la zone téléchargée et les dernières données chargées. Ce qui ne fonctionne pas : toute modification (ajout, changement, suppression) et l'ouverture d'une page jamais visitée. Faire cette préparation la veille, avec du réseau, sur le téléphone qui sera utilisé. À la déconnexion, les données mises en cache sont effacées.
+
 ## Mode démonstration
 
 Le site fonctionne immédiatement sans aucune configuration : tant que `js/config.js` contient encore les valeurs par défaut, l'application bascule sur un mode démonstration qui stocke les données dans le navigateur. Identifiant : `demo@foret.local`, mot de passe `demo`. Pratique pour prendre en main l'application avant de créer le vrai projet, mais les données ne sont pas partagées entre appareils dans ce mode, et disparaissent si tu vides les données du navigateur.
@@ -81,6 +89,6 @@ Si une mise à jour ajoute de nouvelles tables (c'est le cas pour les plans de b
 ## Limites connues de cette version
 
 - Impression : la mise en page d'impression dépend du navigateur utilisé. Le rendu est optimisé pour Chrome et Firefox ; teste une impression avant un usage en situation réelle.
-- Modification du contour d'une parcelle déjà tracée : non disponible pour l'instant (il faut supprimer la parcelle et la retracer). Possible à ajouter si besoin.
+- Hors ligne : voir la section dédiée ci-dessus. Les modifications saisies sans réseau ne sont pas enregistrées, elles sont refusées avec un message.
 - Un seul niveau d'accès (compte partagé unique) : pas de distinction entre ce qu'un gestionnaire et un simple chasseur peuvent faire.
 - Pas d'export PDF autre que l'impression navigateur (Fichier → Imprimer → Enregistrer en PDF fonctionne très bien en pratique).

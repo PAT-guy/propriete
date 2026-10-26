@@ -54,6 +54,7 @@ class RequeteTableDemo {
         this.triDescendant = false;
         this.limiteLignes = null;
         this.veutUnSeul = false;
+        this.plage = null;
         this.operation = "select";
         this.payload = null;
     }
@@ -71,6 +72,7 @@ class RequeteTableDemo {
         return this;
     }
     limit(n) { this.limiteLignes = n; return this; }
+    range(de, a) { this.plage = [de, a]; return this; }
     single() { this.veutUnSeul = true; return this; }
     maybeSingle() { this.veutUnSeul = true; return this; }
 
@@ -124,6 +126,7 @@ class RequeteTableDemo {
                 return this.triDescendant ? -sens : sens;
             });
         }
+        if (this.plage) resultat = resultat.slice(this.plage[0], this.plage[1] + 1);
         if (this.limiteLignes !== null) resultat = resultat.slice(0, this.limiteLignes);
 
         if (this.veutUnSeul) return { data: resultat[0] || null, error: null };

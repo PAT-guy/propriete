@@ -157,6 +157,15 @@ create table if not exists traques (
 -- type : mouvement, rabatteurs, sens, trace, zone, interdite ; forme : ligne, courbe, polygone.
 alter table traques add column if not exists elements jsonb;
 
+-- Versions enregistrées du plan de battue (retour en arrière).
+create table if not exists versions_plan (
+    id uuid primary key default gen_random_uuid(),
+    battue_id uuid not null references battues(id) on delete cascade,
+    nom text not null,
+    contenu jsonb not null,       -- {"traques":[{"numero","nom","parcelle_id","notes","elements","parkings","acces","postes":[...]}]}
+    created_at timestamptz default now()
+);
+
 create table if not exists postes_traque (
     -- Un poste placé sur la carte pour une traque précise, éventuellement
     -- rattaché à un poste de la bibliothèque, et affecté à un chasseur.
@@ -266,7 +275,7 @@ begin
             'proprietaires', 'parcelles', 'essences_parcelle',
             'chasseurs', 'especes_gibier', 'plans_chasse', 'battues',
             'participants_battue', 'prelevements',
-            'postes_chasse', 'traques', 'postes_traque',
+            'postes_chasse', 'traques', 'postes_traque', 'versions_plan',
             'prestataires', 'chantiers',
             'cotisations', 'factures', 'baux_chasse', 'documents'
         ])

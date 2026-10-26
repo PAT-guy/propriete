@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sauvegarde — Forêt &amp; Chasse</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div id="zone-navigation"></div>
+
+<main class="contenu">
+    <div class="entete-page">
+        <div>
+            <h1>Sauvegarde</h1>
+            <p class="sous-titre">Un fichier contenant toutes les données du site, pour les conserver et les rouvrir plus tard.</p>
+        </div>
+    </div>
+
+    <div class="carte">
+        <h2 style="font-size:16px; margin-top:0;">Télécharger une sauvegarde</h2>
+        <p style="font-size:13px; color:#555;">Parcelles, chasseurs, battues, modèles, plans et versions, prélèvements, chantiers : tout est enregistré dans un seul fichier. Les documents déposés (fichiers) ne sont pas inclus.</p>
+        <p id="texte-derniere-sauvegarde" style="font-size:13px;"></p>
+        <button class="bouton bouton-principal" id="bouton-sauvegarder">Télécharger la sauvegarde</button>
+        <span id="message-sauvegarde" style="margin-left:10px; font-size:13px;"></span>
+    </div>
+
+    <div class="carte" style="margin-top:16px;">
+        <h2 style="font-size:16px; margin-top:0;">Rouvrir une sauvegarde</h2>
+        <div id="message-restauration"></div>
+        <label class="etiquette">Fichier de sauvegarde</label>
+        <input type="file" id="champ-fichier" accept=".json,application/json">
+        <div id="resume-fichier" style="font-size:13px; margin:10px 0; color:#444;"></div>
+
+        <label class="etiquette"><input type="radio" name="mode-restauration" value="ajouter" checked> Ajouter ce qui manque <span style="color:#666;">(les données actuelles ne sont pas touchées)</span></label>
+        <label class="etiquette"><input type="radio" name="mode-restauration" value="remplacer"> Tout remplacer <span style="color:#a3442f;">(les données actuelles sont effacées, une copie de sécurité est téléchargée d'abord)</span></label>
+
+        <button class="bouton bouton-danger" id="bouton-restaurer" style="margin-top:10px;" disabled>Rouvrir la sauvegarde</button>
+        <span id="progression-restauration" style="margin-left:10px; font-size:13px;"></span>
+    </div>
+
+    <div class="carte" style="margin-top:16px;">
+        <h2 style="font-size:16px; margin-top:0;">Contenu actuel</h2>
+        <table class="tableau-donnees"><tbody id="corps-contenu"></tbody></table>
+    </div>
+</main>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/mode-demo.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sauvegarde.js"></script>
+</body>
+</html>

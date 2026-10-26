@@ -39,8 +39,22 @@ let editionEstModele = false;
 
     document.getElementById("formulaire-battue").addEventListener("submit", enregistrerBattue);
     document.getElementById("formulaire-nouvelle").addEventListener("submit", creerBattueDepuisFormulaire);
+    afficherRappelSauvegarde();
     await chargerTout();
 })();
+
+/** Rappelle de télécharger une sauvegarde si la dernière date de plus de 30 jours (ou n'existe pas). */
+function afficherRappelSauvegarde() {
+    let derniere = null;
+    try { derniere = localStorage.getItem("foret_derniere_sauvegarde"); } catch (e) { /* stockage indisponible */ }
+    const jours = derniere ? (Date.now() - new Date(derniere).getTime()) / 86400000 : Infinity;
+    if (jours < 30) return;
+    document.getElementById("zone-prochaine").insertAdjacentHTML("beforebegin", `
+        <div class="carte sans-impression" style="background:#fff8e1; border-color:#f0e0a8; font-size:13px; margin-bottom:12px;">
+            ${derniere ? `Dernière sauvegarde il y a ${Math.floor(jours)} jours.` : "Aucune sauvegarde téléchargée depuis cet appareil."}
+            <a href="sauvegarde.html"><strong>Télécharger une sauvegarde</strong></a> pour ne rien perdre.
+        </div>`);
+}
 
 function nomAffichePersonne(personne) {
     return personne.prenom ? `${personne.prenom} ${personne.nom}` : personne.nom;
@@ -405,6 +419,7 @@ async function supprimerBattue(id) {
     await clientSupabase.from("prelevements").update({ traque_id: null }).eq("battue_id", id);
     await clientSupabase.from("traques").delete().eq("battue_id", id);
     await clientSupabase.from("participants_battue").delete().eq("battue_id", id);
+    await clientSupabase.from("versions_plan").delete().eq("battue_id", id);
     await clientSupabase.from("prelevements").update({ battue_id: null }).eq("battue_id", id);
     await clientSupabase.from("battues").delete().eq("id", id);
     await chargerTout();

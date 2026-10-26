@@ -18,6 +18,7 @@ let traquesEtat = [];
 let traqueActiveCle = null;
 let compteurCle = 0;
 let modifie = false;
+let idsTraquesASupprimer = [];
 
 let carte = null;
 let coucheParcelles = null;
@@ -222,6 +223,8 @@ function brancherEvenements() {
     document.getElementById("bouton-abandonner-dessin").addEventListener("click", abandonnerDessin);
     document.getElementById("bouton-fin-edition-forme").addEventListener("click", terminerEditionForme);
     document.getElementById("bouton-enregistrer-plan").addEventListener("click", enregistrerPlan);
+    document.getElementById("bouton-versions").addEventListener("click", ouvrirVersions);
+    document.getElementById("bouton-creer-version").addEventListener("click", creerVersion);
     document.getElementById("bouton-ajouter-traque").addEventListener("click", () => {
         const t = nouvelleTraque();
         traqueActiveCle = t.cle;
@@ -828,6 +831,9 @@ async function enregistrerPlan() {
     bouton.disabled = true;
     bouton.textContent = "Enregistrement…";
     try {
+        // Traques retirées par une restauration de version : supprimées maintenant, pas avant.
+        for (const id of idsTraquesASupprimer) await supprimerTraqueEnBase(id);
+        idsTraquesASupprimer = [];
         for (const etat of traquesEtat) await enregistrerTraque(etat);
         modifie = false;
         bouton.textContent = "Plan enregistré ✓";
@@ -878,14 +884,16 @@ async function enregistrerTraque(etat) {
     }
 }
 
+async function supprimerTraqueEnBase(id) {
+    await clientSupabase.from("postes_traque").delete().eq("traque_id", id);
+    await clientSupabase.from("prelevements").update({ traque_id: null }).eq("traque_id", id);
+    await clientSupabase.from("traques").delete().eq("id", id);
+}
+
 async function supprimerTraque() {
     const etat = traqueActive();
     if (!confirm(`Supprimer « ${libelleTraque(etat)} », son plan et ses postes ?`)) return;
-    if (etat.id) {
-        await clientSupabase.from("postes_traque").delete().eq("traque_id", etat.id);
-        await clientSupabase.from("prelevements").update({ traque_id: null }).eq("traque_id", etat.id);
-        await clientSupabase.from("traques").delete().eq("id", etat.id);
-    }
+    if (etat.id) await supprimerTraqueEnBase(etat.id);
     traquesEtat = traquesEtat.filter((t) => t.cle !== etat.cle);
     if (traquesEtat.length === 0) nouvelleTraque();
     traqueActiveCle = traquesEtat[0].cle;
@@ -938,4 +946,113 @@ async function rafraichirTallyPrelevements(etat) {
         parEspece[nom] = (parEspece[nom] || 0) + 1;
     });
     zone.innerHTML = "<strong>Prélevés :</strong> " + Object.entries(parEspece).map(([nom, n]) => `${n} ${echapper(nom)}`).join(", ");
+}
+
+// ----------------------------------------------------------------------------
+// Versions du plan
+// ----------------------------------------------------------------------------
+
+function instantane() {
+    return {
+        traques: traquesEtat.map((t) => ({
+            numero: t.numero, nom: t.nom, parcelle_id: t.parcelle_id, notes: t.notes,
+            elements: t.elements.map(sansCle),
+            parkings: t.parkings.map(sansCle),
+            acces: t.acces.map(sansCle),
+            postes: t.postes.map((p) => ({ poste_id: p.poste_id, nom: p.nom, lat: p.lat, lng: p.lng, chasseur_id: p.chasseur_id })),
+        })),
+    };
+}
+
+function resumeVersion(contenu) {
+    const traques = (contenu && contenu.traques) || [];
+    const elements = traques.reduce((n, t) => n + (t.elements || []).length + (t.postes || []).length + (t.parkings || []).length + (t.acces || []).length, 0);
+    return `${traques.length} traque(s), ${elements} élément(s)`;
+}
+
+async function ouvrirVersions() {
+    document.getElementById("message-versions").innerHTML = "";
+    document.getElementById("champ-nom-version").value = "";
+    ouvrirModale("modale-versions");
+    await rafraichirVersions();
+}
+
+async function rafraichirVersions() {
+    const { data } = await clientSupabase.from("versions_plan").select().eq("battue_id", battueCourante.id);
+    const versions = (data || []).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+    const corps = document.getElementById("corps-versions");
+    if (versions.length === 0) {
+        corps.innerHTML = '<tr><td style="text-align:center; color:#888;">Aucune version enregistrée.</td></tr>';
+        return;
+    }
+    corps.innerHTML = versions.map((v) => `
+        <tr>
+            <td><strong>${echapper(v.nom)}</strong><br><small style="color:#888;">${echapper(new Date(v.created_at).toLocaleString("fr-FR"))} · ${echapper(resumeVersion(v.contenu))}</small></td>
+            <td style="text-align:right; white-space:nowrap;">
+                <button class="bouton bouton-secondaire" style="padding:4px 8px;" onclick="restaurerVersion('${v.id}')">Rouvrir</button>
+                <button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerVersion('${v.id}')">Supprimer</button>
+            </td>
+        </tr>`).join("");
+}
+
+async function enregistrerVersion(nom) {
+    const { error } = await clientSupabase.from("versions_plan").insert({ battue_id: battueCourante.id, nom, contenu: instantane() });
+    if (error) throw new Error(error.message);
+}
+
+async function creerVersion() {
+    const champ = document.getElementById("champ-nom-version");
+    const nom = champ.value.trim() || `Version du ${new Date().toLocaleString("fr-FR")}`;
+    try {
+        await enregistrerVersion(nom);
+        champ.value = "";
+        document.getElementById("message-versions").innerHTML = `<div class="message-info" style="background:#e8f0e2; padding:8px; border-radius:8px; margin-bottom:8px;">Version « ${echapper(nom)} » enregistrée.</div>`;
+        await rafraichirVersions();
+    } catch (erreur) {
+        document.getElementById("message-versions").innerHTML = `<div class="message-alerte">Échec : ${echapper(erreur.message)}</div>`;
+    }
+}
+
+async function supprimerVersion(id) {
+    if (!confirm("Supprimer cette version ?")) return;
+    await clientSupabase.from("versions_plan").delete().eq("id", id);
+    await rafraichirVersions();
+}
+
+/**
+ * Remplace le contenu de l'éditeur par celui d'une version. Rien n'est écrit dans les traques tant
+ * que « Enregistrer le plan » n'est pas cliqué. Une traque de même numéro garde son identifiant
+ * (donc ses prélèvements) ; l'état actuel est gardé automatiquement dans une version de secours.
+ */
+async function restaurerVersion(id) {
+    const { data: version } = await clientSupabase.from("versions_plan").select().eq("id", id).single();
+    if (!version) return;
+    if (!confirm(`Rouvrir « ${version.nom} » ? Le contenu actuel de l'éditeur sera remplacé (une version « Avant réouverture » est gardée automatiquement).`)) return;
+    try {
+        await enregistrerVersion(`Avant réouverture de « ${version.nom} »`);
+    } catch (erreur) {
+        alert("Impossible de garder une copie de l'état actuel : " + erreur.message);
+        return;
+    }
+    const existantes = traquesEtat;
+    const nouvelles = ((version.contenu && version.contenu.traques) || []).map((vt) => {
+        const correspondante = existantes.find((e) => e.numero === vt.numero && e.id);
+        return {
+            cle: nouvelleCle(), id: correspondante ? correspondante.id : null,
+            numero: vt.numero, nom: vt.nom, parcelle_id: vt.parcelle_id, notes: vt.notes,
+            elements: (vt.elements || []).map((e) => ({ ...e, cle: nouvelleCle() })),
+            parkings: (vt.parkings || []).map((p) => ({ ...p, cle: nouvelleCle() })),
+            acces: (vt.acces || []).map((a) => ({ ...a, cle: nouvelleCle() })),
+            postes: (vt.postes || []).map((p) => ({ ...p, cle: nouvelleCle(), id: null })),
+        };
+    });
+    idsTraquesASupprimer.push(...existantes.filter((e) => e.id && !nouvelles.some((n) => n.id === e.id)).map((e) => e.id));
+    traquesEtat = nouvelles;
+    if (traquesEtat.length === 0) nouvelleTraque();
+    traqueActiveCle = traquesEtat[0].cle;
+    marquerModifie();
+    fermerModale("modale-versions");
+    quitterOutil();
+    redessinerTout();
+    if (carte) ajusterVue();
 }

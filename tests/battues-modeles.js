@@ -10,7 +10,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await ctx.route(/geopf\.fr/, r=>r.abort());
  await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/pages/battues.html');
  t('la connexion mène à la page Battues', true);
- t('navigation : Battues en premier, plus de Finances', (await p.locator('nav.navigation a').allInnerTexts()).join('|')==='Battues|Parcelles|Chasse|Travaux');
+ t('navigation : Battues en premier, Sauvegarde en dernier, plus de Finances', (await p.locator('nav.navigation a').allInnerTexts()).join('|')==='Battues|Parcelles|Chasse|Travaux|Sauvegarde');
  await p.waitForTimeout(500);
  const ids=await p.evaluate(async()=>{ const ch=[]; for (const n of ['Martin','Durand']) ch.push((await clientSupabase.from('chasseurs').insert({nom:n,actif:true}).select().single()).data.id); return ch; });
  await p.reload(); await p.waitForTimeout(500);

@@ -30,6 +30,15 @@ Trois documents, accessibles depuis le plan de battue :
 - **Carnet de battue** (pour le responsable) : plan de la journée et consignes, feuille de présence et d'émargement (permis et assurance de chaque chasseur, signature), une page par traque avec sa carte et des cases pour noter les prélèvements, bilan de la journée. L'assurance expirée à la date de la battue ou non renseignée est signalée en rouge.
 - **Carnets des chasseurs** : une page par participant, avec son poste entouré en rouge sur la carte de sa traque, son assurance, les consignes et un tableau pour noter ses tirs.
 
+## Sauvegarde et versions
+
+**Sauvegarde complète** (page Sauvegarde) : un bouton télécharge un fichier avec toutes les données (parcelles, chasseurs, battues, modèles, plans, prélèvements, chantiers...). Les documents déposés ne sont pas inclus. Le site rappelle de sauvegarder si la dernière date de plus de 30 jours. Pour rouvrir un fichier :
+- "Ajouter ce qui manque" : les données actuelles ne sont pas touchées, seuls les éléments absents sont ajoutés (on peut le refaire sans créer de doublons) ;
+- "Tout remplacer" : les données actuelles sont effacées puis remplacées par celles du fichier. Une copie de sécurité de l'état d'avant est téléchargée automatiquement avant l'effacement.
+Le fichier peut aussi servir à déplacer les données d'un projet Supabase à un autre, ou du mode démonstration vers un vrai projet.
+
+**Versions d'un plan** (bouton "Versions" dans le plan de battue) : "Enregistrer une version" garde l'état actuel de l'éditeur, même non enregistré. "Rouvrir" remplace le contenu de l'éditeur par cette version (l'état précédent est gardé automatiquement dans une version "Avant réouverture") ; rien n'est modifié en base tant que tu ne cliques pas sur "Enregistrer le plan". Les traques de même numéro gardent leurs prélèvements.
+
 ## Ajouter une parcelle par sa référence cadastrale
 
 Sur la page Parcelles, "Ajouter par référence cadastrale" : tape la commune (choisis-la dans la liste), la section (ex : AB) et le numéro (ex : 12). Le contour officiel et la surface sont récupérés automatiquement auprès du cadastre IGN (gratuit, internet nécessaire), puis la fiche s'ouvre pré-remplie pour que tu choisisses le nom d'usage, la commune, etc. Le champ "préfixe" ne sert que dans les communes fusionnées, où un même numéro peut exister deux fois. Si une parcelle est composée de plusieurs morceaux séparés, seul le plus grand est repris.

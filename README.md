@@ -22,13 +22,22 @@ Un clic sur un élément déjà dessiné rouvre sa description, avec "Modifier l
 
 La courbe est une courbe lissée qui passe par les points cliqués (pas de poignées de Bézier à régler à la main).
 
-## Impression
+## Impression : cartons A5 et fiche de gestion A4
 
-Trois documents, accessibles depuis le plan de battue :
+Deux boutons dans le plan de battue (et sur la page Battues) : **Cartons de battue** et **Fiche de gestion**. Les anciens carnets et l'ancienne fiche de battue sont remplacés par ces deux documents.
 
-- **Fiche de battue** : la carte de la journée avec sa légende, le détail de chaque traque, les participants, les règles de sécurité et les instructions, pour les invités.
-- **Carnet de battue** (pour le responsable) : plan de la journée et consignes, feuille de présence et d'émargement (permis et assurance de chaque chasseur, signature), une page par traque avec sa carte et des cases pour noter les prélèvements, bilan de la journée. L'assurance expirée à la date de la battue ou non renseignée est signalée en rouge.
-- **Carnets des chasseurs** : une page par participant, avec son poste entouré en rouge sur la carte de sa traque, son assurance, les consignes et un tableau pour noter ses tirs.
+- **Cartons de battue** : A5 paysage, recto-verso, **2 par feuille A4** (même carton répété deux fois, trait de coupe pointillé). Par défaut, le recto porte l'en-tête, le rendez-vous, un **encart pour écrire à la main les numéros de poste de chaque traque** et les consignes ; le verso porte la grande carte avec les postes numérotés à la couleur de leur traque.
+- **Fiche de gestion** : A4 recto-verso. Par défaut, le recto porte le conducteur, le chef ou la cheffe de ligne et les véhicules de chaque traque (à saisir dans le plan, rubrique « Équipe de la traque »), puis le nom du chasseur à chaque poste, traque par traque. Le verso porte la grande carte et les cases à remplir (prélèvements par poste, heures des traques, incidents, signatures).
+
+Pour imprimer : bouton « Imprimer », format A4, recto-verso avec retournement sur le **bord long**, échelle 100 %, sans marges ni mise à l'échelle. Pour les cartons, découper ensuite sur le trait pointillé.
+
+**Tout est modulable**, avec un aperçu à l'échelle réelle qui se met à jour en direct :
+- chaque face est une liste de **blocs** (en-tête, informations pratiques, encart des numéros de poste, carte, règles de sécurité, instructions, notes, postes et chasseurs, équipes, tableaux de saisie, bilan, présence et émargement avec assurance, incidents, signatures, texte libre, espace) que l'on active, réordonne (▲ ▼), déplace d'une face à l'autre (⇄), ajoute ou retire ;
+- chaque bloc a ses réglages (titre, colonnes, taille du texte, hauteur des lignes, cases à cocher...), une largeur (pleine ou demi-largeur, deux blocs demi-largeur se placent côte à côte) et une hauteur (selon le contenu, place restante ou fixe en mm) ;
+- l'apparence se règle globalement : palette (Sologne vert sapin et ocre, Brique de Sologne, Étang, Noir et blanc), police, taille du texte, marges, cadre à double filet, fond papier crème, trait de coupe ;
+- le texte libre accepte `{date}`, `{secteur}`, `{rdv_lieu}`, `{rdv_heure}`, `{responsable}`, `{nb_traques}` ;
+- un cadre rouge et un message signalent quand une face dépasse la page (le bas serait coupé) ;
+- les mises en page se **nomment et s'enregistrent** (« Enregistrer sous… »), se rouvrent et se suppriment. Le travail en cours est aussi gardé dans le navigateur.
 
 ## Sauvegarde et versions
 

@@ -147,7 +147,8 @@ function afficherProchaine() {
                 <strong>${participants.length} participant(s)</strong>${participants.length ? " : " + echapper(participants.map(nomAffichePersonne).join(", ")) : ""}
             </div>
             <a class="bouton bouton-principal" href="plan-battue.html?id=${b.id}">Plan de battue</a>
-            <a class="bouton bouton-secondaire" href="../battue-impression.html?id=${b.id}" target="_blank">Fiche à imprimer</a>
+            <a class="bouton bouton-secondaire" href="impression.html?id=${b.id}&doc=carton" target="_blank">Cartons A5</a>
+            <a class="bouton bouton-secondaire" href="impression.html?id=${b.id}&doc=fiche" target="_blank">Fiche de gestion</a>
             <button class="bouton bouton-secondaire" onclick="ouvrirModificationBattue('${b.id}')">Participants et infos</button>
         </div>`;
 }
@@ -185,7 +186,8 @@ function ligneBattue(b) {
             <td data-etiquette="Traques">${nbTraquesDe(b.id)}</td>
             <td data-etiquette="">
                 <a class="bouton bouton-principal" style="padding:4px 8px;" href="plan-battue.html?id=${b.id}">Plan</a>
-                <a class="bouton bouton-secondaire" style="padding:4px 8px;" href="../battue-impression.html?id=${b.id}" target="_blank">Fiche</a>
+                <a class="bouton bouton-secondaire" style="padding:4px 8px;" href="impression.html?id=${b.id}&doc=carton" target="_blank">Cartons</a>
+                <a class="bouton bouton-secondaire" style="padding:4px 8px;" href="impression.html?id=${b.id}&doc=fiche" target="_blank">Gestion</a>
                 <button class="bouton bouton-secondaire" style="padding:4px 8px;" onclick="ouvrirModificationBattue('${b.id}')">Modifier</button>
                 <button class="bouton bouton-secondaire" style="padding:4px 8px;" onclick="enregistrerCommeModele('${b.id}')">Enregistrer comme modèle</button>
                 <button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerBattue('${b.id}')">Supprimer</button>

@@ -9,7 +9,7 @@ const TABLES_SAUVEGARDE = [
     ["parcelles", "Parcelles"], ["essences_parcelle", "Essences"], ["plans_chasse", "Plan de chasse"],
     ["battues", "Battues et modèles"], ["participants_battue", "Participants aux battues"],
     ["traques", "Traques"], ["postes_chasse", "Bibliothèque de postes"], ["postes_traque", "Postes placés"],
-    ["versions_plan", "Versions de plans"], ["prelevements", "Prélèvements"], ["prestataires", "Prestataires"],
+    ["versions_plan", "Versions de plans"], ["modeles_impression", "Mises en page d'impression"], ["prelevements", "Prélèvements"], ["prestataires", "Prestataires"],
     ["chantiers", "Chantiers"], ["cotisations", "Cotisations"], ["factures", "Factures"],
     ["baux_chasse", "Baux de chasse"], ["documents", "Documents (références)"],
 ];

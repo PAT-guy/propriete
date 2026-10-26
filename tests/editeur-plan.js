@@ -16,7 +16,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  const clic=async(x,y)=>{ await carte.click({position:{x,y}}); await p.waitForTimeout(120); };
  t('3 étapes et 4 outils affichés', await p.locator('#etapes li').count()===3 && await p.locator('#outils-dessin .outil').count()===4);
  t('carte grande (au moins 450 px de haut)', (await carte.boundingBox()).height>=450);
- t('boutons d\'impression (fiche, carnet, carnets)', (await p.locator('.lien-impression').allInnerTexts()).join('|')==='Fiche de battue|Carnet de battue|Carnets des chasseurs');
+ t('boutons d\'impression (cartons, fiche de gestion)', (await p.locator('.lien-impression').allInnerTexts()).join('|')==='Cartons de battue|Fiche de gestion');
  // 1. ligne point par point
  await p.click('[data-outil=ligne]'); t('étape 2 active quand un outil est choisi', await p.locator('#etape-2.actif').count()===1);
  await clic(200,300); await clic(350,250); await clic(500,320);

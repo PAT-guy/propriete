@@ -44,18 +44,18 @@ const t=(n,c)=>{ (c?ok++:ko++); console.log((c?'OK  ':'FAIL ')+n); };
  t('poste enregistré', dbt.pt.length===1 && dbt.pt[0].nom==='Poste test');
  await p.reload(); await p.waitForTimeout(1000);
  t('persistance après rechargement', (await p.evaluate(async()=>(await clientSupabase.from('traques').select()).data.length))===1 && await p.evaluate(()=>traquesEtat[0].elements.length===1));
- await p.goto(B+'battue-impression.html?id='+ids.b); await p.waitForTimeout(1200);
- t('fiche impression visible', await p.locator('#zone-fiche').isVisible());
- t('carte impression avec éléments', await p.locator('#carte-impression .leaflet-marker-icon, #carte-impression path').count()>0);
- await p.screenshot({path:process.argv[3]+'/fiche.png',fullPage:true});
+ await p.goto(B+'battue-impression.html?id='+ids.b); await p.waitForURL('**/pages/impression.html**'); await p.waitForTimeout(1200);
+ t('ancienne adresse de la fiche : redirigée vers les cartons', p.url().includes('doc=carton'));
+ t('cartons : 2 feuilles A4, 4 cartons', await p.locator('.ib-feuille').count()===2 && await p.locator('.ib-carton').count()===4);
+ t('carte des cartons avec éléments', await p.locator('.ib-carte-leaflet .leaflet-marker-icon, .ib-carte-leaflet path').count()>0);
 
  await p.goto(B+'pages/chasse.html'); await p.waitForTimeout(800);
  t('XSS chasseur : aucun script exécuté', !(await p.evaluate(()=>window.__xss)));
  t('XSS chasseur : texte affiché littéralement', (await p.locator('#corps-tableau-chasseurs').innerText()).includes('<img src=x'));
  await p.goto(B+'pages/plan-battue.html?id='+ids.b); await p.waitForTimeout(1000);
  t('XSS plan-battue : aucun script exécuté', !(await p.evaluate(()=>window.__xss)));
- await p.goto(B+'battue-impression.html?id='+ids.b); await p.waitForTimeout(1000);
- t('XSS fiche : aucun script exécuté', !(await p.evaluate(()=>window.__xss)));
+ await p.goto(B+'pages/impression.html?doc=fiche&id='+ids.b); await p.waitForTimeout(1000);
+ t('XSS fiche de gestion : aucun script exécuté', !(await p.evaluate(()=>window.__xss)));
  for (const u of ['pages/battues.html','pages/travaux.html']) { await p.goto(B+u); await p.waitForTimeout(700); }
  t('autres pages sans erreur JS', errs.length===0);
  console.log('Erreurs JS:',errs); console.log(ok+' OK, '+ko+' FAIL'); await b.close();

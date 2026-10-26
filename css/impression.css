@@ -1,0 +1,179 @@
+/* ---------------------------------------------------------------------------
+   Cartons de battue (A5 paysage, 2 par feuille A4) et fiche de gestion (A4 recto-verso)
+   Les tailles sont en millimètres : l'aperçu et l'impression sont identiques.
+   --------------------------------------------------------------------------- */
+
+.ib-racine {
+    --ib-primaire: #2f4a33;
+    --ib-secondaire: #6b4a2b;
+    --ib-accent: #b8892f;
+    --ib-filet: #c9b98f;
+    --ib-papier: #f7f1e3;
+    --ib-texte: #25251d;
+    --ib-police: Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    --ib-base: 9pt;
+    --ib-marge: 8mm;
+    font-family: var(--ib-police);
+    font-size: var(--ib-base);
+    color: var(--ib-texte);
+    line-height: 1.3;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.ib-feuille {
+    width: 210mm;
+    height: 297mm;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+    box-sizing: border-box;
+    page-break-after: always;
+    break-after: page;
+}
+.ib-feuille:last-child { page-break-after: auto; break-after: auto; }
+.ib-racine.fond-papier .ib-feuille { background: var(--ib-papier); }
+
+.ib-carton, .ib-page { position: relative; overflow: hidden; box-sizing: border-box; width: 210mm; }
+.ib-carton { height: 148.5mm; }
+.ib-page { height: 297mm; }
+
+.ib-trait-coupe {
+    position: absolute; left: 0; right: 0; top: 148.5mm; z-index: 5;
+    border-top: 0.3mm dashed #8a8a8a;
+}
+.ib-trait-coupe::before {
+    content: "✂"; position: absolute; left: 2mm; top: -3.2mm; font-size: 9pt; color: #8a8a8a; background: inherit;
+}
+
+/* Cadre : double filet vert sapin et ocre */
+.ib-cadre {
+    position: absolute; inset: 3.5mm; pointer-events: none;
+    border: 0.45mm solid var(--ib-primaire);
+}
+.ib-cadre::after {
+    content: ""; position: absolute; inset: 0.9mm; border: 0.2mm solid var(--ib-accent);
+}
+.ib-sans-cadre .ib-cadre { display: none; }
+
+.ib-face-contenu {
+    position: absolute; inset: var(--ib-marge);
+    display: flex; flex-direction: column; gap: 2.2mm; overflow: hidden;
+}
+.ib-face-contenu.deborde { outline: 0.6mm solid #d32f2f; }
+
+.ib-ligne { display: flex; gap: 3mm; min-height: 0; flex: 0 0 auto; }
+.ib-ligne.remplir { flex: 1 1 0; }
+.ib-ligne.moitie-seule > .ib-bloc { max-width: calc(50% - 1.5mm); }
+.ib-bloc { flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.ib-bloc.fixe { flex: 1 1 0; }
+.ib-bloc-titre {
+    font-size: 1.02em; font-weight: 700; color: var(--ib-primaire); text-transform: uppercase;
+    letter-spacing: 0.09em; border-bottom: 0.25mm solid var(--ib-filet); margin: 0 0 1.3mm 0; padding-bottom: 0.6mm;
+}
+.ib-bloc-titre::before { content: "◆ "; color: var(--ib-accent); font-size: 0.8em; }
+
+/* En-tête */
+.ib-entete { display: flex; align-items: center; gap: 3.5mm; }
+.ib-entete-bandeau {
+    background: var(--ib-primaire); color: #fff; padding: 2.4mm 4mm; border-bottom: 0.9mm solid var(--ib-accent); border-radius: 0.8mm;
+}
+.ib-entete-simple { border-bottom: 0.5mm double var(--ib-primaire); padding-bottom: 1.5mm; color: var(--ib-primaire); }
+.ib-ornement { width: 9mm; height: 9mm; flex: none; color: var(--ib-accent); }
+.ib-ornement svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+.ib-entete-simple .ib-ornement { color: var(--ib-accent); }
+.ib-titre { font-size: 2.15em; font-weight: 700; line-height: 1.05; letter-spacing: 0.02em; }
+.ib-sous-titre { font-size: 1.05em; margin-top: 0.8mm; opacity: 0.92; }
+.ib-entete-bandeau .ib-sous-titre { color: #f1e3bd; }
+
+/* Informations pratiques */
+.ib-infos { display: flex; flex-wrap: wrap; gap: 1.6mm 4mm; }
+.ib-infos.colonne { flex-direction: column; }
+.ib-info { border-left: 0.7mm solid var(--ib-accent); padding: 0 0 0 2mm; min-width: 28mm; }
+.ib-info span { display: block; font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ib-secondaire); }
+.ib-info strong { font-size: 1.12em; color: var(--ib-texte); }
+
+/* Encart pour écrire les numéros de poste à la main */
+.ib-encart { display: grid; gap: 1.6mm 3mm; }
+.ib-encart-traque {
+    border: 0.3mm solid var(--ib-secondaire); border-radius: 1.2mm; padding: 1.2mm 2mm 0.6mm 2mm; background: rgba(255,255,255,0.55);
+}
+.ib-encart-nom { display: flex; align-items: center; gap: 1.5mm; font-weight: 700; font-size: 1.02em; color: var(--ib-primaire); }
+.ib-pastille { width: 3.2mm; height: 3.2mm; border-radius: 50%; display: inline-block; flex: none; border: 0.2mm solid rgba(0,0,0,0.25); }
+.ib-ecriture { display: flex; align-items: flex-end; gap: 1.5mm; font-size: 0.9em; color: #555; }
+.ib-ecriture::after { content: ""; flex: 1; border-bottom: 0.3mm solid #555; height: 0; }
+
+/* Textes (consignes, notes, libres) */
+.ib-texte { white-space: pre-line; line-height: 1.32; }
+.ib-texte.cadre { border: 0.3mm solid var(--ib-filet); border-radius: 1.2mm; padding: 1.5mm 2.2mm; background: rgba(255,255,255,0.55); }
+.ib-texte.centre { text-align: center; }
+
+/* Tableaux */
+.ib-table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+.ib-table th, .ib-table td { border: 0.2mm solid #9a9a8a; padding: 0.7mm 1.4mm; text-align: left; vertical-align: middle; }
+.ib-table th { background: #ece3cf; color: var(--ib-primaire); font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.05em; }
+.ib-table td.libre { height: var(--ib-h-ligne, 7mm); }
+.ib-table tr.nom-traque td { background: var(--ib-primaire); color: #fff; font-weight: 700; padding: 0.8mm 1.6mm; }
+.ib-table .num { width: 8mm; text-align: center; font-weight: 700; }
+.ib-sous-tableaux { display: grid; gap: 2.5mm 4mm; align-items: start; }
+.ib-expiree { color: #b00020; font-weight: 700; }
+
+/* Lignes d'écriture (incidents) */
+.ib-lignes-ecriture div { border-bottom: 0.25mm solid #888; height: var(--ib-h-ligne, 7mm); }
+.ib-signature { display: flex; gap: 5mm; margin-top: 1mm; }
+.ib-signature div { flex: 1; border-top: 0.3mm solid #333; padding-top: 0.8mm; font-size: 0.85em; color: #444; min-height: 12mm; }
+
+/* Carte */
+.ib-bloc-carte { flex: 1 1 0; min-height: 0; }
+.ib-carte-zone { position: relative; flex: 1 1 0; min-height: 18mm; border: 0.35mm solid var(--ib-primaire); border-radius: 1mm; overflow: hidden; background: #e8e6dd; }
+.ib-carte-leaflet { position: absolute; inset: 0; }
+.ib-racine .leaflet-container { font-family: var(--ib-police); background: #e8e6dd; }
+.ib-racine .leaflet-control-attribution { font-size: 5.5pt; background: rgba(255,255,255,0.75); }
+.ib-legende { display: flex; flex-wrap: wrap; gap: 1mm 3.5mm; font-size: 0.78em; color: #444; margin-top: 1mm; }
+.ib-legende i { display: inline-block; width: 6mm; height: 0; border-top: 0.9mm solid; vertical-align: middle; margin-right: 1mm; }
+
+/* Espace et filet */
+.ib-filet { border-top: 0.4mm solid var(--ib-filet); margin: 0.6mm 0; }
+
+/* ---------------------------------------------------------------------------
+   Page d'édition (hors impression)
+   --------------------------------------------------------------------------- */
+
+.ib-ecran { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 1000px) { .ib-ecran { grid-template-columns: 1fr; } }
+.ib-panneau { position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow-y: auto; padding-right: 4px; }
+@media (max-width: 1000px) { .ib-panneau { position: static; max-height: none; } }
+.ib-section { background: white; border: 1px solid var(--couleur-bordure); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+.ib-section h3 { margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; color: #6b6b60; letter-spacing: 0.05em; }
+.ib-section label.etiquette { margin-top: 6px; }
+.ib-bloc-edit { border: 1px solid var(--couleur-bordure); border-radius: 8px; margin-bottom: 6px; background: #fcfbf7; }
+.ib-bloc-edit.inactif { opacity: 0.55; }
+.ib-bloc-edit .entete-bloc { display: flex; align-items: center; gap: 4px; padding: 5px 6px; }
+.ib-bloc-edit .entete-bloc .nom { flex: 1; font-size: 13px; font-weight: 600; cursor: pointer; }
+.ib-bloc-edit .entete-bloc button { padding: 1px 6px; font-size: 12px; line-height: 1.3; min-width: 26px; }
+.ib-bloc-edit .options-bloc { padding: 4px 10px 10px 10px; border-top: 1px dashed var(--couleur-bordure); display: none; }
+.ib-bloc-edit.ouvert .options-bloc { display: block; }
+.ib-bloc-edit .options-bloc label.etiquette { font-size: 11px; }
+.ib-bloc-edit .options-bloc input[type=text], .ib-bloc-edit .options-bloc input[type=number], .ib-bloc-edit .options-bloc select, .ib-bloc-edit .options-bloc textarea { padding: 4px 6px; font-size: 12px; }
+.ib-apercu-zone { min-width: 0; }
+.ib-alerte-debordement { background: #fdecea; border: 1px solid #f5c2c0; color: #8a1c14; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px; }
+.ib-legende-feuille { font-size: 12px; color: #6b6b60; margin: 10px 0 4px 0; }
+.ib-echelle { transform-origin: top left; width: 210mm; }
+.ib-apercu-boite { overflow: hidden; }
+.ib-apercu-boite .ib-feuille { box-shadow: 0 2px 12px rgba(0,0,0,0.25); margin-bottom: 0; }
+
+/* ---------------------------------------------------------------------------
+   Impression
+   --------------------------------------------------------------------------- */
+
+@page { size: A4 portrait; margin: 0; }
+
+@media print {
+    html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+    .ib-hors-impression { display: none !important; }
+    .ib-ecran { display: block; }
+    .ib-apercu-boite { height: auto !important; overflow: visible; }
+    .ib-echelle { transform: none !important; width: 210mm; }
+    .ib-apercu-boite .ib-feuille { box-shadow: none; margin: 0; }
+    main.contenu { max-width: none !important; padding: 0 !important; margin: 0 !important; }
+}

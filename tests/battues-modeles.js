@@ -28,7 +28,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  t('modèle : 1 traque, 2 postes', /Grands Marais\s+Nord\s+1\s+2/.test(ligneModele));
  // plan du modèle
  await p.goto(B+'pages/plan-battue.html?id='+idModele); await p.waitForTimeout(900);
- t('plan du modèle : titre dédié, sans fiche à imprimer', (await p.locator('#titre-page').innerText()).includes('Modèle de battue : Grands Marais') && !(await p.locator('#lien-fiche-impression').isVisible()));
+ t('plan du modèle : titre dédié, sans fiche à imprimer', (await p.locator('#titre-page').innerText()).includes('Modèle de battue : Grands Marais') && await p.locator('.lien-impression').count()===0);
  await p.goto(B+'pages/battues.html'); await p.waitForTimeout(500);
  // battue depuis le modèle (date future)
  await p.click('#corps-tableau-modeles >> text=Créer une battue'); await p.fill('#champ-date-nouvelle','2099-11-15'); await p.click('#bouton-creer-nouvelle'); await p.waitForTimeout(1200);

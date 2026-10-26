@@ -157,6 +157,20 @@ create table if not exists traques (
 -- type : mouvement, rabatteurs, sens, trace, zone, interdite ; forme : ligne, courbe, polygone.
 alter table traques add column if not exists elements jsonb;
 
+-- Équipe de la traque : conducteur, chef (ou cheffe) de ligne, véhicules (texte libre).
+alter table traques add column if not exists conducteur text;
+alter table traques add column if not exists chef_de_ligne text;
+alter table traques add column if not exists vehicules text;
+
+-- Mises en page enregistrées des cartons (A5) et de la fiche de gestion (A4).
+create table if not exists modeles_impression (
+    id uuid primary key default gen_random_uuid(),
+    type text not null,            -- "carton" ou "fiche"
+    nom text not null,
+    config jsonb not null,         -- voir js/impression-blocs.js
+    created_at timestamptz default now()
+);
+
 -- Versions enregistrées du plan de battue (retour en arrière).
 create table if not exists versions_plan (
     id uuid primary key default gen_random_uuid(),
@@ -275,7 +289,7 @@ begin
             'proprietaires', 'parcelles', 'essences_parcelle',
             'chasseurs', 'especes_gibier', 'plans_chasse', 'battues',
             'participants_battue', 'prelevements',
-            'postes_chasse', 'traques', 'postes_traque', 'versions_plan',
+            'postes_chasse', 'traques', 'postes_traque', 'versions_plan', 'modeles_impression',
             'prestataires', 'chantiers',
             'cotisations', 'factures', 'baux_chasse', 'documents'
         ])

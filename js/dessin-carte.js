@@ -22,6 +22,16 @@ function iconePosteAssigne(numero, assigne) {
     });
 }
 
+/** Poste numéroté, à la couleur de sa traque (cartes imprimées : le n° 1 de deux traques ne se confond pas). */
+function iconePosteCouleur(numero, couleur) {
+    return L.divIcon({
+        className: "icone-point-carte",
+        html: `<span style="background:${couleur};">${numero}</span>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+    });
+}
+
 /** Angle (en degrés, 0° = est/droite) entre deux points [lat,lng], pour une flèche écran. */
 function angleEntreDeuxPoints(depart, arrivee) {
     const latMoyenne = (depart[0] + arrivee[0]) / 2;

@@ -112,12 +112,9 @@ function prepareEntete(battue) {
     const dateFormatee = new Date(battue.date_battue + "T00:00:00").toLocaleDateString("fr-FR");
     titre.textContent = `Plan de battue, ${dateFormatee}${battue.secteur ? " · " + battue.secteur : ""}`;
     const barre = document.querySelector(".entete-page .barre-outils");
-    const lien = (libelle, page, type) =>
-        `<a class="bouton bouton-secondaire lien-impression" target="_blank" href="${page}?id=${battue.id}${type ? "&type=" + type : ""}">${libelle}</a>`;
-    barre.insertAdjacentHTML("afterbegin",
-        lien("Fiche de battue", "../battue-impression.html") +
-        lien("Carnet de battue", "../carnet-impression.html", "battue") +
-        lien("Carnets des chasseurs", "../carnet-impression.html", "chasseurs"));
+    const lien = (libelle, doc) =>
+        `<a class="bouton bouton-secondaire lien-impression" target="_blank" href="impression.html?id=${battue.id}&doc=${doc}">${libelle}</a>`;
+    barre.insertAdjacentHTML("afterbegin", lien("Cartons de battue", "carton") + lien("Fiche de gestion", "fiche"));
     barre.querySelectorAll(".lien-impression").forEach((a) => {
         a.addEventListener("click", (e) => {
             if (modifie && !confirm("Le plan a des modifications non enregistrées. Imprimer quand même la dernière version enregistrée ?")) e.preventDefault();
@@ -156,6 +153,7 @@ function nouvelEtatTraque() {
     const numero = traquesEtat.reduce((max, t) => Math.max(max, t.numero), 0) + 1;
     return {
         cle: nouvelleCle(), id: null, numero, nom: null, parcelle_id: null, notes: null,
+        conducteur: null, chef_de_ligne: null, vehicules: null,
         elements: [], parkings: [], acces: [], postes: [],
     };
 }
@@ -173,6 +171,9 @@ async function ajouterTraqueDepuisDB(ligne) {
     etat.nom = ligne.nom;
     etat.parcelle_id = ligne.parcelle_id;
     etat.notes = ligne.notes;
+    etat.conducteur = ligne.conducteur;
+    etat.chef_de_ligne = ligne.chef_de_ligne;
+    etat.vehicules = ligne.vehicules;
     etat.elements = elementsDeTraque(ligne).map((e) => ({ ...e, cle: nouvelleCle() }));
     etat.parkings = (ligne.parkings || []).map((p) => ({ ...p, cle: nouvelleCle() }));
     etat.acces = (ligne.acces || []).map((a) => ({ ...a, cle: nouvelleCle() }));
@@ -695,6 +696,15 @@ function redessinerPanneau() {
         <label class="etiquette">Parcelle / secteur</label>
         <select onchange="majChampTraque('parcelle_id', this.value)">${optionsParcelles}</select>
 
+        <div class="titre-bloc" style="margin-top:14px;">Équipe de la traque</div>
+        <label class="etiquette" style="margin-top:0;">Conducteur</label>
+        <input type="text" list="liste-noms-chasseurs" value="${echapper(t.conducteur)}" oninput="majChampTraque('conducteur', this.value)">
+        <label class="etiquette">Chef ou cheffe de ligne</label>
+        <input type="text" list="liste-noms-chasseurs" value="${echapper(t.chef_de_ligne)}" oninput="majChampTraque('chef_de_ligne', this.value)">
+        <label class="etiquette">Véhicules</label>
+        <input type="text" value="${echapper(t.vehicules)}" placeholder="ex : Hilux blanche, remorque à chiens" oninput="majChampTraque('vehicules', this.value)">
+        <datalist id="liste-noms-chasseurs">${chasseursCache.map((c) => `<option value="${echapper(nomAffichePersonne(c))}"></option>`).join("")}</datalist>
+
         <div class="titre-bloc" style="margin-top:14px;">Contenu de cette traque</div>
         <div class="liste-elements">
             ${lignes.length === 0 ? '<em style="color:#888;">Rien de dessiné pour l\'instant.</em>' : lignes.map(([categorie, item]) => `
@@ -856,6 +866,9 @@ async function enregistrerTraque(etat) {
         numero: etat.numero,
         nom: etat.nom,
         parcelle_id: etat.parcelle_id,
+        conducteur: etat.conducteur,
+        chef_de_ligne: etat.chef_de_ligne,
+        vehicules: etat.vehicules,
         // Les anciens champs sont remplacés par les tracés libres (elements).
         mouvement: null,
         ligne_rabatteurs: null,
@@ -956,6 +969,7 @@ function instantane() {
     return {
         traques: traquesEtat.map((t) => ({
             numero: t.numero, nom: t.nom, parcelle_id: t.parcelle_id, notes: t.notes,
+            conducteur: t.conducteur, chef_de_ligne: t.chef_de_ligne, vehicules: t.vehicules,
             elements: t.elements.map(sansCle),
             parkings: t.parkings.map(sansCle),
             acces: t.acces.map(sansCle),
@@ -1040,6 +1054,7 @@ async function restaurerVersion(id) {
         return {
             cle: nouvelleCle(), id: correspondante ? correspondante.id : null,
             numero: vt.numero, nom: vt.nom, parcelle_id: vt.parcelle_id, notes: vt.notes,
+            conducteur: vt.conducteur || null, chef_de_ligne: vt.chef_de_ligne || null, vehicules: vt.vehicules || null,
             elements: (vt.elements || []).map((e) => ({ ...e, cle: nouvelleCle() })),
             parkings: (vt.parkings || []).map((p) => ({ ...p, cle: nouvelleCle() })),
             acces: (vt.acces || []).map((a) => ({ ...a, cle: nouvelleCle() })),

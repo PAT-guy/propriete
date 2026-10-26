@@ -9,7 +9,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>{console.log('  [dialog] '+d.message());d.accept();});
  await ctx.route(/unpkg\.com/, r=>{const u=r.request().url();const k=Object.keys(map).find(k=>u.includes(k));k?r.fulfill({path:map[k]}):r.abort();});
  await ctx.route(/geopf\.fr/, r=>{tuilesServies++; r.fulfill({body:PNG,contentType:'image/png',headers:{'access-control-allow-origin':'*'}});});
- await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/tableau-de-bord.html');
+ await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/pages/battues.html');
  await p.goto(B+'pages/parcelles.html'); await p.waitForTimeout(1500);
  await p.evaluate(()=>navigator.serviceWorker.ready); 
  await p.reload(); await p.waitForTimeout(1500);
@@ -23,7 +23,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await p.click('#bouton-hors-ligne'); await p.waitForTimeout(800);
  await p.evaluate(()=>carteParcelles.setView([46.6,2.5],15));
  // navigation vers d'autres pages pour les mettre en cache
- for (const u of ['pages/chasse.html','tableau-de-bord.html']) { await p.goto(B+u); await p.waitForTimeout(800); }
+ for (const u of ['pages/chasse.html','pages/battues.html']) { await p.goto(B+u); await p.waitForTimeout(800); }
  await p.goto(B+'pages/parcelles.html'); await p.waitForTimeout(800);
  // Hors ligne
  await ctx.setOffline(true); tuilesServies=0;

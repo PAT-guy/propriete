@@ -2,9 +2,17 @@
 
 Site accessible par lien, utilisable sur PC et téléphone, avec cartes IGN et satellite, tracé des parcelles numérotées, plans de battue détaillés (postes, mouvement de chaque traque, ligne des rabatteurs, parkings, accès, prélèvements par traque) et fiches imprimables pour les invités, ainsi que des cartes de chantier imprimables.
 
+## Battues (page d'accueil)
+
+La page Battues est le point central du site. Elle affiche en haut la prochaine battue (date, rendez-vous, responsable, participants, nombre de traques et de postes), avec les boutons "Plan de battue" et "Fiche à imprimer". En dessous : les modèles de battue, les battues à venir et les battues passées.
+
+**Modèles.** Un modèle est une battue sans date, avec ses traques, ses tracés, ses postes, ses parkings, son lieu de rendez-vous et ses consignes. Deux façons d'en avoir un : "Nouveau modèle" (puis bouton "Plan" pour dessiner les traques), ou "Enregistrer comme modèle" sur une battue déjà préparée.
+
+**Créer une battue.** "Nouvelle battue" (ou "Créer une battue" sur un modèle) : tu choisis le modèle et la date. Tout est recopié, puis la fiche s'ouvre pour choisir le responsable et cocher les participants de la journée. Les chasseurs affectés aux postes et les participants ne sont volontairement pas recopiés : ils changent d'une fois sur l'autre. Modifier une battue n'a jamais d'effet sur son modèle, et inversement.
+
 ## Plans de battue
 
-Chaque battue (une journée) peut compter plusieurs traques. Depuis l'onglet "Battues", le bouton "Plan de battue" ouvre une page dédiée où, pour chaque traque :
+Chaque battue (une journée) peut compter plusieurs traques. Le bouton "Plan de battue" ouvre une page dédiée où, pour chaque traque :
 
 - tu traces le mouvement de la traque et la ligne de départ des rabatteurs (chaque ligne affiche une flèche de direction) ;
 - tu places les postes, soit depuis une bibliothèque de postes réutilisables (les emplacements habituels du territoire), soit en ajoutant un poste ponctuel directement sur la carte (avec la possibilité de l'enregistrer dans la bibliothèque pour la prochaine fois) ;
@@ -12,7 +20,7 @@ Chaque battue (une journée) peut compter plusieurs traques. Depuis l'onglet "Ba
 - tu places les parkings et les accès ;
 - tu notes, pour cette traque précise, le nombre d'animaux prélevés par espèce.
 
-La fiche imprimable de la battue (bouton "Fiche à imprimer") reprend tout cela sur une carte unique de la journée, avec le détail de chaque traque (postes affectés et animaux prélevés), les règles de sécurité et les instructions pour les invités.
+La fiche imprimable de la battue reprend tout cela sur une carte unique de la journée, avec le détail de chaque traque (postes affectés et animaux prélevés), les règles de sécurité et les instructions pour les invités.
 
 ## Ajouter une parcelle par sa référence cadastrale
 
@@ -65,7 +73,7 @@ Ces deux valeurs ne sont pas secrètes au sens strict : elles seront visibles pa
 ## Étape 5 — Publier sur GitHub Pages
 
 1. Crée un dépôt GitHub (public ou privé, les deux fonctionnent avec GitHub Pages si ton compte le permet).
-2. Mets-y tout le contenu de ce dossier (`index.html`, `tableau-de-bord.html`, `css/`, `js/`, `pages/`, etc., y compris `js/config.js` une fois rempli).
+2. Mets-y tout le contenu de ce dossier (`index.html`, `css/`, `js/`, `pages/`, etc., y compris `js/config.js` une fois rempli).
 3. Dans le dépôt GitHub, va dans **Settings → Pages**.
 4. Dans "Build and deployment", choisis **Deploy from a branch**, branche `main`, dossier `/ (root)`.
 5. Attends une minute, GitHub affiche le lien du site (de la forme `https://tonpseudo.github.io/nomdudepot/`).

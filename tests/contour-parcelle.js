@@ -8,7 +8,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>d.accept());
  await ctx.route(/unpkg\.com/, r=>{const u=r.request().url();const k=Object.keys(map).find(k=>u.includes(k));k?r.fulfill({path:map[k]}):r.abort();});
  await ctx.route(/geopf\.fr/, r=>r.abort());
- await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/tableau-de-bord.html');
+ await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/pages/battues.html');
  await p.goto(B+'pages/parcelles.html'); await p.waitForTimeout(600);
  const id=await p.evaluate(async()=>(await clientSupabase.from('parcelles').insert({nom:'P1',contour:[[46.60,2.50],[46.60,2.52],[46.62,2.52],[46.62,2.50]],centre:{lat:46.61,lng:2.51}}).select().single()).data.id);
  await p.reload(); await p.waitForTimeout(1000);

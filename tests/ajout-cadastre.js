@@ -12,7 +12,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await ctx.route(/apicarto\.ign\.fr/, r=>{reqCadastre=r.request().url(); const u=new URL(reqCadastre);
    if(u.searchParams.get('numero')==='0099') return r.fulfill({json:{type:'FeatureCollection',features:[]},headers:{'access-control-allow-origin':'*'}});
    r.fulfill({json:{type:'FeatureCollection',features:[{type:'Feature',properties:{contenance:25000,section:'AB',numero:'0012'},geometry:{type:'MultiPolygon',coordinates:[[[[1.33,47.58],[1.34,47.58],[1.34,47.59],[1.33,47.59],[1.33,47.58]]],[[[1.35,47.58],[1.351,47.58],[1.351,47.581],[1.35,47.58]]]]}}]},headers:{'access-control-allow-origin':'*'}});});
- await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/tableau-de-bord.html');
+ await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/pages/battues.html');
  await p.goto(B+'pages/parcelles.html'); await p.waitForTimeout(800);
  await p.click('#bouton-ajouter-cadastre');
  await p.fill('#champ-commune-cadastre','Blois'); await p.waitForTimeout(700);

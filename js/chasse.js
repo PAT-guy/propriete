@@ -1,32 +1,12 @@
 /**
- * Module Gestion de la chasse : chasseurs, plan de chasse, battues
- * (avec carte des parkings) et carnet de prélèvements.
+ * Module Gestion de la chasse : chasseurs, plan de chasse et carnet de prélèvements.
+ * Les battues ont leur propre page (battues.js).
  */
-
-const MODELE_REGLES_SECURITE =
-    "- Chaque participant porte un gilet ou une tenue fluorescente visible en permanence.\n"
-    + "- Angle de tir à 30° de part et d'autre de la ligne de battue interdit.\n"
-    + "- Pas de tir en direction des routes, chemins ouverts au public ou habitations.\n"
-    + "- Arme déchargée pendant les déplacements et aux postes avant le lancement.\n"
-    + "- Un seul signal de début et de fin de battue, donné par le responsable.\n"
-    + "- En cas d'accident, prévenir immédiatement le responsable et les secours (18 ou 112).";
-
-const MODELE_INSTRUCTIONS =
-    "- Rendez-vous à l'heure indiquée au lieu de rendez-vous.\n"
-    + "- Chacun rejoint son poste indiqué par le responsable avant le lancer des chiens.\n"
-    + "- Respecter les consignes de sécurité ci-dessus en toutes circonstances.\n"
-    + "- Ne pas quitter son poste avant le signal de fin de battue.";
 
 let chasseursCache = [];
 let especesCache = [];
-let parcellesPourSelectCache = [];
 let battuesCache = [];
 
-let carteBattue = null;
-let coucheParkingsBattue = null;
-let coucheContourParcelleBattue = null;
-let parkingsEnAttente = [];
-let battueEnEditionId = null;
 let chasseurEnEditionId = null;
 let planEnEditionId = null;
 
@@ -38,21 +18,17 @@ let planEnEditionId = null;
 
     await chargerChasseurs();
     await chargerEspeces();
-    await chargerParcellesPourSelect();
     await chargerPlan();
-    await chargerBattues();
+    await chargerBattuesPourSelect();
     await chargerPrelevements();
 
     document.getElementById("formulaire-chasseur").addEventListener("submit", enregistrerChasseur);
     document.getElementById("formulaire-plan").addEventListener("submit", enregistrerPlan);
-    document.getElementById("formulaire-battue").addEventListener("submit", enregistrerBattue);
     document.getElementById("formulaire-prelevement").addEventListener("submit", enregistrerPrelevement);
-    document.getElementById("champ-parcelle-battue").addEventListener("change", afficherContourParcelleBattue);
 })();
 
 function onChangementOnglet(idOnglet) {
     if (idOnglet === "onglet-plan") chargerPlan();
-    if (idOnglet === "onglet-battues") chargerBattues();
     if (idOnglet === "onglet-prelevements") chargerPrelevements();
 }
 
@@ -244,243 +220,11 @@ async function supprimerPlan(id) {
     await chargerPlan();
 }
 
-// ----------------------------------------------------------------------------
-// Parcelles (pour le formulaire battue)
-// ----------------------------------------------------------------------------
-
-async function chargerParcellesPourSelect() {
-    const { data } = await clientSupabase.from("parcelles").select().order("nom");
-    parcellesPourSelectCache = data || [];
-    const options = '<option value="">— Non précisé —</option>' +
-        parcellesPourSelectCache.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
-    document.getElementById("champ-parcelle-battue").innerHTML = options;
-
-    const optionsResponsable = '<option value="">— Non précisé —</option>' +
-        chasseursCache.filter((c) => c.actif).map((c) => `<option value="${c.id}">${echapper(nomAffichePersonne(c))}</option>`).join("");
-    document.getElementById("champ-responsable-battue").innerHTML = optionsResponsable;
-}
-
-// ----------------------------------------------------------------------------
-// Carte des parkings (dans la modale battue)
-// ----------------------------------------------------------------------------
-
-function initialiserCarteBattueSiBesoin() {
-    if (carteBattue) return;
-    carteBattue = L.map("carte-battue").setView([46.6, 2.5], 6);
-    const fonds = creerFondsCarteIGN();
-    brancherBoutonsFondCarte(carteBattue, fonds, "bouton-fond-plan-battue", "bouton-fond-satellite-battue");
-    coucheParkingsBattue = L.featureGroup().addTo(carteBattue);
-    coucheContourParcelleBattue = L.featureGroup().addTo(carteBattue);
-
-    carteBattue.on("click", (evenement) => {
-        const nom = prompt("Nom de cet emplacement de parking :", `Parking ${parkingsEnAttente.length + 1}`);
-        if (!nom) return;
-        parkingsEnAttente.push({ nom, lat: evenement.latlng.lat, lng: evenement.latlng.lng });
-        redessinerParkings();
-    });
-}
-
-function redessinerParkings() {
-    coucheParkingsBattue.clearLayers();
-    parkingsEnAttente.forEach((parking, index) => {
-        const marqueur = L.marker([parking.lat, parking.lng]).bindPopup(echapper(parking.nom));
-        coucheParkingsBattue.addLayer(marqueur);
-    });
-
-    const liste = document.getElementById("liste-parkings");
-    if (parkingsEnAttente.length === 0) {
-        liste.innerHTML = '<em style="color:#888;">Aucun parking placé. Clique sur la carte pour en ajouter.</em>';
-    } else {
-        liste.innerHTML = parkingsEnAttente.map((p, i) =>
-            `🅿️ ${echapper(p.nom)} <button type="button" class="bouton bouton-danger" style="padding:2px 6px; margin-left:6px;" onclick="retirerParking(${i})">×</button>`
-        ).join("<br>");
-    }
-}
-
-function retirerParking(index) {
-    parkingsEnAttente.splice(index, 1);
-    redessinerParkings();
-}
-
-function afficherContourParcelleBattue() {
-    coucheContourParcelleBattue.clearLayers();
-    const parcelleId = document.getElementById("champ-parcelle-battue").value;
-    const parcelle = parcellesPourSelectCache.find((p) => p.id === parcelleId);
-    if (!parcelle || !parcelle.contour) return;
-    const polygone = L.polygon(parcelle.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.15 });
-    coucheContourParcelleBattue.addLayer(polygone);
-    carteBattue.fitBounds(polygone.getBounds(), { maxZoom: 15, padding: [20, 20] });
-}
-
-// ----------------------------------------------------------------------------
-// Battues
-// ----------------------------------------------------------------------------
-
-async function chargerBattues() {
-    const { data } = await clientSupabase.from("battues").select().order("date_battue", { ascending: false });
-    battuesCache = data || [];
-
-    const { data: participants } = await clientSupabase.from("participants_battue").select();
-    const { data: traques } = await clientSupabase.from("traques").select();
-
-    const corps = document.getElementById("corps-tableau-battues");
-    if (battuesCache.length === 0) {
-        corps.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">Aucune battue</td></tr>`;
-        return;
-    }
-
-    corps.innerHTML = battuesCache.map((battue) => {
-        const responsable = chasseursCache.find((c) => c.id === battue.responsable_id);
-        const nbParticipants = (participants || []).filter((p) => p.battue_id === battue.id).length;
-        const nbTraques = (traques || []).filter((t) => t.battue_id === battue.id).length;
-        const dateFormatee = new Date(battue.date_battue).toLocaleDateString("fr-FR");
-        return `
-            <tr>
-                <td data-etiquette="Date">${dateFormatee}</td>
-                <td data-etiquette="Secteur">${echapper(battue.secteur)}</td>
-                <td data-etiquette="Responsable">${responsable ? echapper(nomAffichePersonne(responsable)) : ""}</td>
-                <td data-etiquette="Participants">${nbParticipants}</td>
-                <td data-etiquette="Traques">${nbTraques}</td>
-                <td data-etiquette="">
-                    <a class="bouton bouton-principal" style="padding:4px 8px;" href="plan-battue.html?id=${battue.id}">Plan de battue</a>
-                    <a class="bouton bouton-secondaire" style="padding:4px 8px;" href="../battue-impression.html?id=${battue.id}" target="_blank">Fiche à imprimer</a>
-                    <button class="bouton bouton-secondaire" style="padding:4px 8px;" onclick="ouvrirModificationBattue('${battue.id}')">Modifier</button>
-                    <button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerBattue('${battue.id}')">Supprimer</button>
-                </td>
-            </tr>
-        `;
-    }).join("");
-
-    remplirListeParticipantsCochables([]);
-}
-
-function remplirListeParticipantsCochables(idsCoches) {
-    const zone = document.getElementById("liste-participants-cochables");
-    const actifs = chasseursCache.filter((c) => c.actif);
-    if (actifs.length === 0) {
-        zone.innerHTML = '<em style="color:#888;">Aucun chasseur actif. Ajoute des chasseurs dans l\'onglet précédent.</em>';
-        return;
-    }
-    zone.innerHTML = actifs.map((c) => `
-        <label style="display:block; padding:3px 0;">
-            <input type="checkbox" value="${c.id}" class="case-participant" ${idsCoches.includes(c.id) ? "checked" : ""}>
-            ${echapper(nomAffichePersonne(c))}
-        </label>
-    `).join("");
-}
-
-function ouvrirCreationBattue() {
-    battueEnEditionId = null;
-    document.getElementById("titre-modale-battue").textContent = "Nouvelle battue";
-    document.getElementById("formulaire-battue").reset();
-    document.getElementById("message-modale-battue").innerHTML = "";
-    document.getElementById("champ-securite-battue").value = MODELE_REGLES_SECURITE;
-    document.getElementById("champ-instructions-battue").value = MODELE_INSTRUCTIONS;
-    parkingsEnAttente = [];
-    remplirListeParticipantsCochables([]);
-
-    ouvrirModale("modale-battue");
-    try {
-        initialiserCarteBattueSiBesoin();
-        setTimeout(() => { carteBattue.invalidateSize(); redessinerParkings(); }, 150);
-    } catch (erreur) {
-        console.error("Carte indisponible :", erreur);
-        document.getElementById("carte-battue").innerHTML =
-            '<div class="message-alerte" style="margin:0;">Carte indisponible (connexion internet nécessaire). Les parkings déjà enregistrés sont conservés.</div>';
-    }
-}
-
-async function ouvrirModificationBattue(id) {
-    const battue = battuesCache.find((b) => b.id === id);
-    if (!battue) return;
-    battueEnEditionId = id;
-
-    document.getElementById("titre-modale-battue").textContent = "Modifier la battue";
-    document.getElementById("message-modale-battue").innerHTML = "";
-    document.getElementById("champ-date-battue").value = battue.date_battue || "";
-    document.getElementById("champ-secteur-battue").value = battue.secteur || "";
-    document.getElementById("champ-parcelle-battue").value = battue.parcelle_id || "";
-    document.getElementById("champ-responsable-battue").value = battue.responsable_id || "";
-    document.getElementById("champ-lieu-rdv-battue").value = battue.lieu_rdv || "";
-    document.getElementById("champ-heure-rdv-battue").value = battue.heure_rdv || "";
-    document.getElementById("champ-securite-battue").value = battue.regles_securite || MODELE_REGLES_SECURITE;
-    document.getElementById("champ-instructions-battue").value = battue.instructions || MODELE_INSTRUCTIONS;
-    document.getElementById("champ-notes-battue").value = battue.notes || "";
-
-    parkingsEnAttente = battue.parkings ? [...battue.parkings] : [];
-
-    const { data: participants } = await clientSupabase.from("participants_battue").select().eq("battue_id", id);
-    remplirListeParticipantsCochables((participants || []).map((p) => p.chasseur_id));
-
-    ouvrirModale("modale-battue");
-    try {
-        initialiserCarteBattueSiBesoin();
-        setTimeout(() => {
-            carteBattue.invalidateSize();
-            redessinerParkings();
-            afficherContourParcelleBattue();
-        }, 150);
-    } catch (erreur) {
-        console.error("Carte indisponible :", erreur);
-        document.getElementById("carte-battue").innerHTML =
-            '<div class="message-alerte" style="margin:0;">Carte indisponible (connexion internet nécessaire). Les parkings déjà enregistrés sont conservés.</div>';
-    }
-}
-
-async function enregistrerBattue(evenement) {
-    evenement.preventDefault();
-    const date = document.getElementById("champ-date-battue").value;
-    if (!date) {
-        document.getElementById("message-modale-battue").innerHTML = '<div class="message-alerte">La date est obligatoire.</div>';
-        return;
-    }
-
-    const valeurs = {
-        date_battue: date,
-        secteur: document.getElementById("champ-secteur-battue").value.trim() || null,
-        parcelle_id: document.getElementById("champ-parcelle-battue").value || null,
-        responsable_id: document.getElementById("champ-responsable-battue").value || null,
-        lieu_rdv: document.getElementById("champ-lieu-rdv-battue").value.trim() || null,
-        heure_rdv: document.getElementById("champ-heure-rdv-battue").value || null,
-        parkings: parkingsEnAttente,
-        regles_securite: document.getElementById("champ-securite-battue").value.trim() || null,
-        instructions: document.getElementById("champ-instructions-battue").value.trim() || null,
-        notes: document.getElementById("champ-notes-battue").value.trim() || null,
-    };
-
-    const idsParticipants = Array.from(document.querySelectorAll(".case-participant:checked")).map((c) => c.value);
-
-    let idBattue = battueEnEditionId;
-    if (idBattue) {
-        await clientSupabase.from("battues").update(valeurs).eq("id", idBattue);
-        await clientSupabase.from("participants_battue").delete().eq("battue_id", idBattue);
-    } else {
-        const { data } = await clientSupabase.from("battues").insert(valeurs).select().single();
-        idBattue = data.id;
-    }
-
-    if (idsParticipants.length > 0) {
-        await clientSupabase.from("participants_battue").insert(
-            idsParticipants.map((chasseurId) => ({ battue_id: idBattue, chasseur_id: chasseurId }))
-        );
-    }
-
-    fermerModale("modale-battue");
-    await chargerBattues();
-}
-
-async function supprimerBattue(id) {
-    if (!confirm("Supprimer cette battue, ses traques et ses participants ?")) return;
-    const { data: traques } = await clientSupabase.from("traques").select().eq("battue_id", id);
-    for (const traque of traques || []) {
-        await clientSupabase.from("postes_traque").delete().eq("traque_id", traque.id);
-    }
-    await clientSupabase.from("prelevements").update({ traque_id: null }).eq("battue_id", id);
-    await clientSupabase.from("traques").delete().eq("battue_id", id);
-    await clientSupabase.from("participants_battue").delete().eq("battue_id", id);
-    await clientSupabase.from("prelevements").update({ battue_id: null }).eq("battue_id", id);
-    await clientSupabase.from("battues").delete().eq("id", id);
-    await chargerBattues();
+async function chargerBattuesPourSelect() {
+    const { data } = await clientSupabase.from("battues").select();
+    battuesCache = (data || [])
+        .filter((b) => !b.est_modele && b.date_battue)
+        .sort((a, b) => b.date_battue.localeCompare(a.date_battue));
 }
 
 // ----------------------------------------------------------------------------
@@ -522,7 +266,7 @@ function ouvrirCreationPrelevement() {
     document.getElementById("champ-chasseur-prelevement").innerHTML = optionsChasseurs;
 
     const optionsBattues = '<option value="">— Hors battue —</option>' +
-        battuesCache.map((b) => `<option value="${b.id}">${new Date(b.date_battue).toLocaleDateString("fr-FR")}${b.secteur ? " — " + echapper(b.secteur) : ""}</option>`).join("");
+        battuesCache.map((b) => `<option value="${b.id}">${new Date(b.date_battue + "T00:00:00").toLocaleDateString("fr-FR")}${b.secteur ? " — " + echapper(b.secteur) : ""}</option>`).join("");
     document.getElementById("champ-battue-prelevement").innerHTML = optionsBattues;
 
     ouvrirModale("modale-prelevement");

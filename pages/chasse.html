@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chasse — Forêt &amp; Chasse</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
@@ -15,14 +14,13 @@
     <div class="entete-page">
         <div>
             <h1>Gestion de la chasse</h1>
-            <p class="sous-titre">Chasseurs, plan de chasse, battues et carnet de prélèvements</p>
+            <p class="sous-titre">Chasseurs, plan de chasse et carnet de prélèvements</p>
         </div>
     </div>
 
     <div class="onglets">
         <button class="actif" data-onglet="onglet-chasseurs">Chasseurs</button>
         <button data-onglet="onglet-plan">Plan de chasse</button>
-        <button data-onglet="onglet-battues">Battues</button>
         <button data-onglet="onglet-prelevements">Prélèvements</button>
     </div>
 
@@ -48,19 +46,6 @@
             <table class="tableau-donnees">
                 <thead><tr><th>Saison</th><th>Espèce</th><th>Attribution</th><th>Réalisé</th><th></th></tr></thead>
                 <tbody id="corps-tableau-plan"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Onglet Battues -->
-    <div class="panneau-onglet" id="onglet-battues">
-        <div class="barre-outils"><span class="espace"></span>
-            <button class="bouton bouton-principal" onclick="ouvrirCreationBattue()">Nouvelle battue</button>
-        </div>
-        <div class="carte">
-            <table class="tableau-donnees">
-                <thead><tr><th>Date</th><th>Secteur</th><th>Responsable</th><th>Participants</th><th>Traques</th><th></th></tr></thead>
-                <tbody id="corps-tableau-battues"></tbody>
             </table>
         </div>
     </div>
@@ -123,53 +108,6 @@
     </div>
 </div>
 
-<!-- Modale Battue -->
-<div class="fond-modale" id="modale-battue">
-    <div class="boite-modale" style="max-width:640px;">
-        <h2 id="titre-modale-battue">Battue</h2>
-        <div id="message-modale-battue"></div>
-        <form id="formulaire-battue">
-            <div class="ligne-champs">
-                <div><label class="etiquette">Date *</label><input type="date" id="champ-date-battue" required></div>
-                <div><label class="etiquette">Secteur</label><input type="text" id="champ-secteur-battue"></div>
-            </div>
-            <div class="ligne-champs">
-                <div><label class="etiquette">Parcelle</label><select id="champ-parcelle-battue"></select></div>
-                <div><label class="etiquette">Responsable</label><select id="champ-responsable-battue"></select></div>
-            </div>
-            <div class="ligne-champs">
-                <div><label class="etiquette">Lieu de rendez-vous</label><input type="text" id="champ-lieu-rdv-battue"></div>
-                <div><label class="etiquette">Heure de rendez-vous</label><input type="time" id="champ-heure-rdv-battue"></div>
-            </div>
-
-            <label class="etiquette">Places de parking (clique sur la carte pour en ajouter)</label>
-            <div class="controles-fond-carte">
-                <button type="button" id="bouton-fond-plan-battue" class="bouton bouton-secondaire">Plan IGN</button>
-                <button type="button" id="bouton-fond-satellite-battue" class="bouton bouton-secondaire">Satellite</button>
-            </div>
-            <div id="carte-battue" class="conteneur-carte" style="height:280px;"></div>
-            <div id="liste-parkings" style="margin-top:8px; font-size:13px;"></div>
-
-            <label class="etiquette">Participants</label>
-            <div id="liste-participants-cochables" class="carte" style="max-height:160px; overflow-y:auto; padding:10px;"></div>
-
-            <label class="etiquette">Règles de sécurité</label>
-            <textarea id="champ-securite-battue" rows="4"></textarea>
-
-            <label class="etiquette">Instructions</label>
-            <textarea id="champ-instructions-battue" rows="3"></textarea>
-
-            <label class="etiquette">Notes</label>
-            <textarea id="champ-notes-battue" rows="2"></textarea>
-
-            <div class="actions-modale">
-                <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-battue')">Annuler</button>
-                <button type="submit" class="bouton bouton-principal">Enregistrer</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Modale Prélèvement -->
 <div class="fond-modale" id="modale-prelevement">
     <div class="boite-modale">
@@ -207,8 +145,6 @@
 <script src="../js/auth.js"></script>
 <script src="../js/modales.js"></script>
 <script src="../js/onglets.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="../js/fonds-carte.js"></script>
 <script src="../js/chasse.js"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@ const B='http://localhost:8123/'; let ko=0;
  const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:1280,height:760}}); const p=await ctx.newPage();
  await ctx.route(/unpkg\.com/, r=>{const u=r.request().url();const k=Object.keys(map).find(k=>u.includes(k));k?r.fulfill({path:map[k]}):r.abort();});
  await ctx.route(/geopf\.fr/, r=>r.abort());
- await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/tableau-de-bord.html');
+ await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/pages/battues.html');
  for (const [page,ouvrir,modale] of [['pages/parcelles.html','#bouton-ajouter-cadastre','#modale-cadastre'],['pages/parcelles.html',"()=>ouvrirCreationParcelle([[46,2],[46,2.1],[46.1,2.1]],{lat:46,lng:2})",'#modale-parcelle']]) {
   await p.goto(B+page); await p.waitForTimeout(800);
   if (ouvrir.startsWith('#')) await p.click(ouvrir); else await p.evaluate(eval(ouvrir));

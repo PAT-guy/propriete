@@ -98,6 +98,12 @@ create table if not exists battues (
     created_at timestamptz default now()
 );
 
+-- Battues prédéfinies ("modèles") : une battue sans date, avec ses traques et ses postes,
+-- dont on tire une battue datée en un clic.
+alter table battues alter column date_battue drop not null;
+alter table battues add column if not exists est_modele boolean default false;
+alter table battues add column if not exists nom_modele text;
+
 create table if not exists participants_battue (
     id uuid primary key default gen_random_uuid(),
     battue_id uuid not null references battues(id) on delete cascade,

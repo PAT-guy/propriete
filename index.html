@@ -48,7 +48,7 @@
     (async () => {
         const { data } = await clientSupabase.auth.getSession();
         if (data.session) {
-            window.location.href = "tableau-de-bord.html";
+            window.location.href = "pages/battues.html";
         }
     })();
 
@@ -67,7 +67,7 @@
             return;
         }
 
-        window.location.href = "tableau-de-bord.html";
+        window.location.href = "pages/battues.html";
     });
 </script>
 

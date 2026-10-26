@@ -5,7 +5,7 @@
  */
 
 const PAGES_NAVIGATION = [
-    { fichier: "tableau-de-bord.html", libelle: "Tableau de bord" },
+    { fichier: "pages/battues.html", libelle: "Battues" },
     { fichier: "pages/parcelles.html", libelle: "Parcelles" },
     { fichier: "pages/chasse.html", libelle: "Chasse" },
     { fichier: "pages/travaux.html", libelle: "Travaux" },

@@ -19,7 +19,7 @@ const COULEUR_RABATTEURS = "#3a6b8a";
 (async () => {
     const estConnecte = await protegerPage();
     if (!estConnecte) return;
-    injecterNavigation("pages/chasse.html");
+    injecterNavigation("pages/battues.html");
     afficherBandeauDemoSiBesoin();
 
     const idBattue = new URLSearchParams(window.location.search).get("id");
@@ -47,10 +47,15 @@ const COULEUR_RABATTEURS = "#3a6b8a";
     especesCache = especes.data || [];
     postesChasseCache = postesChasse.data || [];
 
-    const dateFormatee = new Date(battue.date_battue).toLocaleDateString("fr-FR");
-    document.getElementById("titre-page").textContent =
-        `Plan de battue — ${dateFormatee}${battue.secteur ? " — " + battue.secteur : ""}`;
-    document.getElementById("lien-fiche-impression").href = `../battue-impression.html?id=${battue.id}`;
+    if (battue.est_modele) {
+        document.getElementById("titre-page").textContent = `Modèle de battue : ${battue.nom_modele || ""}`;
+        document.getElementById("lien-fiche-impression").style.display = "none";
+    } else {
+        const dateFormatee = new Date(battue.date_battue).toLocaleDateString("fr-FR");
+        document.getElementById("titre-page").textContent =
+            `Plan de battue — ${dateFormatee}${battue.secteur ? " — " + battue.secteur : ""}`;
+        document.getElementById("lien-fiche-impression").href = `../battue-impression.html?id=${battue.id}`;
+    }
 
     document.getElementById("zone-chargement").style.display = "none";
     document.getElementById("zone-contenu").style.display = "block";

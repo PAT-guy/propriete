@@ -16,6 +16,11 @@ let tableAbsente = false;
 let blocsOuverts = new Set();
 let minuterieApercu = null;
 let attenteCartes = Promise.resolve();
+let pileAnnuler = [];
+let pileRefaire = [];
+let etatCourantJSON = "";
+let dernierGroupe = null;
+let dernierInstant = 0;
 
 const FACES = { recto: "Recto", verso: "Verso" };
 
@@ -59,6 +64,8 @@ const FACES = { recto: "Recto", verso: "Verso" };
 
     await chargerModeles();
     choisirConfigInitiale();
+    etatCourantJSON = JSON.stringify(config);
+    document.addEventListener("keydown", raccourcisHistorique);
 
     const dateTexte = ctx.battue.date_battue ? parseDate(ctx.battue.date_battue).toLocaleDateString("fr-FR") : "";
     document.getElementById("titre-page").textContent = typeDoc === "carton" ? "Cartons de battue (A5)" : "Fiche de gestion (A4)";
@@ -135,6 +142,7 @@ function chargerConfig(id) {
     modeleCourantId = id;
     config = c;
     referenceJSON = instantaneConfig(c);
+    noterChangement();
     sauverBrouillon();
     construirePanneau();
     rendreApercu();
@@ -235,13 +243,17 @@ function construirePanneau() {
     const s = config.style;
     document.getElementById("panneau").innerHTML = `
         <div class="ib-section">
+            <div style="display:flex; gap:6px; margin-bottom:8px;">
+                <button type="button" class="bouton bouton-secondaire" id="bouton-annuler-action" title="Annuler la dernière modification (Ctrl+Z)" ${pileAnnuler.length ? "" : "disabled"}>↶ Annuler</button>
+                <button type="button" class="bouton bouton-secondaire" id="bouton-refaire-action" title="Rétablir (Ctrl+Y ou Ctrl+Maj+Z)" ${pileRefaire.length ? "" : "disabled"}>↷ Rétablir</button>
+            </div>
             <h3>Mise en page ${modifie ? '<span style="color:#a3442f; text-transform:none;">(modifiée)</span>' : ""}</h3>
             <select id="select-modele">${optionsModeles}</select>
             ${tableAbsente ? '<p style="font-size:12px; color:#a3442f; margin:6px 0 0;">Pour enregistrer des mises en page, recopie schema.sql dans l\'éditeur SQL de Supabase (Run).</p>' : ""}
             <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
                 <button type="button" class="bouton bouton-principal" id="bouton-enregistrer-modele" ${tableAbsente || modeleCourantId === "defaut" || !modifie ? "disabled" : ""}>Enregistrer</button>
                 <button type="button" class="bouton bouton-secondaire" id="bouton-enregistrer-sous" ${tableAbsente ? "disabled" : ""}>Enregistrer sous…</button>
-                <button type="button" class="bouton bouton-secondaire" id="bouton-reinitialiser" ${modifie ? "" : "disabled"}>Annuler mes changements</button>
+                <button type="button" class="bouton bouton-secondaire" id="bouton-reinitialiser" ${modifie ? "" : "disabled"}>Revenir à l’enregistré</button>
                 <button type="button" class="bouton bouton-danger" id="bouton-supprimer-modele" ${modeleCourantId === "defaut" ? "disabled" : ""}>Supprimer</button>
             </div>
         </div>
@@ -286,7 +298,8 @@ function trouverBloc(uid) {
     return null;
 }
 
-function changementConfig(structure) {
+function changementConfig(structure, groupe) {
+    noterChangement(groupe);
     sauverBrouillon();
     if (structure) construirePanneau();
     else majIndicateurModifie();
@@ -309,6 +322,8 @@ function brancherPanneau() {
         if (estModifie() && !confirm("Tes changements non enregistrés seront perdus. Continuer ?")) { e.target.value = modeleCourantId; return; }
         chargerConfig(e.target.value);
     });
+    document.getElementById("bouton-annuler-action").addEventListener("click", annulerAction);
+    document.getElementById("bouton-refaire-action").addEventListener("click", refaireAction);
     document.getElementById("bouton-enregistrer-modele").addEventListener("click", enregistrerModele);
     document.getElementById("bouton-enregistrer-sous").addEventListener("click", enregistrerSous);
     document.getElementById("bouton-supprimer-modele").addEventListener("click", supprimerModele);
@@ -318,19 +333,19 @@ function brancherPanneau() {
         champ.addEventListener(champ.type === "number" || champ.type === "text" ? "input" : "change", () => {
             const cle = champ.dataset.style;
             config.style[cle] = champ.type === "checkbox" ? champ.checked : champ.type === "number" ? Number(champ.value) : champ.value;
-            changementConfig(cle === "palette");   // la palette personnalisée affiche des sélecteurs de couleur en plus
+            changementConfig(cle === "palette", groupeDeSaisie(champ));   // la palette personnalisée affiche des sélecteurs de couleur en plus
         });
     });
     panneau.querySelectorAll("[data-couleur]").forEach((champ) => champ.addEventListener("input", () => {
         config.style.couleursPerso = { ...(config.style.couleursPerso || {}), [champ.dataset.couleur]: champ.value };
-        changementConfig(false);
+        changementConfig(false, "couleur:" + champ.dataset.couleur);
     }));
     panneau.querySelectorAll("[data-opt]").forEach((champ) => {
         champ.addEventListener(champ.type === "number" || champ.type === "text" || champ.tagName === "TEXTAREA" ? "input" : "change", () => {
             const t = trouverBloc(champ.dataset.uid);
             if (!t) return;
             t.bloc.options[champ.dataset.opt] = champ.type === "checkbox" ? champ.checked : champ.type === "number" ? Number(champ.value) : champ.value;
-            changementConfig(false);
+            changementConfig(false, groupeDeSaisie(champ));
         });
     });
     panneau.querySelectorAll("[data-opt-traque]").forEach((champ) => champ.addEventListener("change", () => {
@@ -364,7 +379,7 @@ function brancherPanneau() {
             const t = trouverBloc(champ.dataset.uid);
             if (!t) return;
             t.bloc[champ.dataset.general] = champ.type === "number" ? Number(champ.value) : champ.value;
-            changementConfig(champ.dataset.general === "taille");
+            changementConfig(champ.dataset.general === "taille", groupeDeSaisie(champ));
         });
     });
     panneau.querySelectorAll("[data-actif]").forEach((champ) => champ.addEventListener("change", () => {
@@ -482,4 +497,68 @@ async function imprimer() {
         bouton.disabled = false;
     }
     window.print();
+}
+
+// ----------------------------------------------------------------------------
+// Annuler / rétablir (Ctrl+Z, Ctrl+Y)
+// ----------------------------------------------------------------------------
+
+/** Clé de regroupement d'une saisie au clavier : les frappes successives dans un même champ ne comptent que pour une action. */
+function groupeDeSaisie(champ) {
+    const texte = champ.tagName === "TEXTAREA" || champ.type === "text" || champ.type === "number";
+    return texte ? `${champ.dataset.uid || ""}:${champ.dataset.opt || champ.dataset.style || champ.dataset.general || ""}` : undefined;
+}
+
+/** À appeler après chaque modification de la configuration : empile l'état précédent. */
+function noterChangement(groupe) {
+    const nouveau = JSON.stringify(config);
+    if (nouveau === etatCourantJSON) return;
+    const maintenant = Date.now();
+    const regroupe = groupe && groupe === dernierGroupe && maintenant - dernierInstant < 2000;
+    if (!regroupe) {
+        pileAnnuler.push(etatCourantJSON);
+        if (pileAnnuler.length > 100) pileAnnuler.shift();
+    }
+    pileRefaire = [];
+    etatCourantJSON = nouveau;
+    dernierGroupe = groupe || null;
+    dernierInstant = maintenant;
+    majBoutonsHistorique();
+}
+
+function majBoutonsHistorique() {
+    const annuler = document.getElementById("bouton-annuler-action");
+    const refaire = document.getElementById("bouton-refaire-action");
+    if (annuler) annuler.disabled = pileAnnuler.length === 0;
+    if (refaire) refaire.disabled = pileRefaire.length === 0;
+}
+
+function appliquerEtat(json) {
+    terminerCadrage();
+    config = JSON.parse(json);
+    etatCourantJSON = json;
+    dernierGroupe = null;
+    sauverBrouillon();
+    construirePanneau();
+    rendreApercu();
+}
+
+function annulerAction() {
+    if (pileAnnuler.length === 0) return;
+    pileRefaire.push(etatCourantJSON);
+    appliquerEtat(pileAnnuler.pop());
+}
+
+function refaireAction() {
+    if (pileRefaire.length === 0) return;
+    pileAnnuler.push(etatCourantJSON);
+    appliquerEtat(pileRefaire.pop());
+}
+
+function raccourcisHistorique(e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || "")) return;   // dans un champ, Ctrl+Z annule la frappe
+    const touche = e.key.toLowerCase();
+    if (touche === "z" && !e.shiftKey) { e.preventDefault(); annulerAction(); }
+    else if (touche === "y" || (touche === "z" && e.shiftKey)) { e.preventDefault(); refaireAction(); }
 }

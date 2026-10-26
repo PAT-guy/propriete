@@ -34,16 +34,21 @@ Pour imprimer : bouton « Imprimer », format A4, recto-verso avec retournement 
 **Tout est modulable**, avec un aperçu à l'échelle réelle qui se met à jour en direct :
 - chaque face est une liste de **blocs** (en-tête, informations pratiques, encart des numéros de poste, carte, règles de sécurité, instructions, notes, postes et chasseurs, équipes, tableaux de saisie, bilan, présence et émargement avec assurance, incidents, signatures, texte libre, espace) que l'on active, réordonne (▲ ▼), déplace d'une face à l'autre (⇄), ajoute ou retire ;
 - chaque bloc a ses réglages (titre, colonnes, taille du texte, hauteur des lignes, cases à cocher...), une largeur (pleine ou demi-largeur, deux blocs demi-largeur se placent côte à côte) et une hauteur (selon le contenu, place restante ou fixe en mm) ;
-- l'apparence se règle globalement : palette (Sologne vert sapin et ocre, Brique de Sologne, Étang, Noir et blanc), police, taille du texte, marges, cadre à double filet, fond papier crème ;
+- l'apparence se règle globalement : **10 palettes** (Sologne, Brique de Sologne, Étang, Bruyère, Chêne, Forêt profonde, Ardoise, Rouge vénerie, Noir et blanc, et **Personnalisée** où l'on choisit trois couleurs), **7 polices** (selon les polices installées sur l'appareil qui imprime), taille du texte, marges, **cadre** (double filet, simple, épais, pointillé, aucun), **titres de section** (soulignés, bandeau coloré, pastille, barre à gauche, majuscules ou casse normale), **tableaux** (grille, lignes horizontales, zébré, sans bordures), **coins** (arrondis, droits, très arrondis) et **fond** du papier (blanc, crème, vert ou gris très pâle) ;
+- l'**en-tête** a 5 styles (bandeau, double filet, centré, encadré, minimal), 4 ornements (feuille de chêne, gland, tête de cerf, cor de chasse) et une taille de titre réglable ;
 - le texte libre accepte `{date}`, `{secteur}`, `{rdv_lieu}`, `{rdv_heure}`, `{responsable}`, `{nb_traques}` ;
 - un cadre rouge et un message signalent quand une face dépasse la page (le bas serait coupé) ;
 - les mises en page se **nomment et s'enregistrent** (« Enregistrer sous… »), se rouvrent et se suppriment. Le travail en cours est aussi gardé dans le navigateur.
+
+## Gibier par catégorie : plan de chasse, prélèvements et autres espèces
+
+Le plan de chasse de la saison et les prélèvements se notent **par catégorie** : Chevreuil, Cerf -8, Cerf +8, Biche, Jeune. Le « réalisé » de chaque attribution se calcule sur sa catégorie. Les anciennes lignes saisies par espèce restent lisibles. Avec « Gérer le gibier et les sonneries » (page Chasse, onglet Plan de chasse, ou fiche d'une battue), on ajoute en un clic une **autre espèce** (sanglier, daim, renard, lièvre, faisan, perdrix, lapin, pigeon ramier, corneille, pie, ragondin, blaireau, mouflon, chamois) ou une catégorie de son choix, on règle la sonnerie, on réordonne et on supprime.
 
 ## Plan de chasse du jour et sonneries
 
 Dans la fiche d'une battue (ou d'un modèle), la rubrique **Plan de chasse du jour** liste les catégories de gibier : on coche celles qui peuvent être tirées ce jour-là, avec un nombre autorisé facultatif. La ligne **Chevreuil** propose de préciser chevreuil, chevrette ou chevrillard (aucune case cochée : la ligne affiche « Chevreuil »).
 
-La liste des catégories et leur **sonnerie** sont communes à toutes les battues et se modifient avec « Gérer les catégories et les sonneries » : nom, sonnerie (texte libre), choix possibles (séparés par des virgules), ordre, ajout et suppression. La liste de départ est : Chevreuil (2), Cerf -8 (6), Cerf +8 (6), Biche (4), Jeune (3). Le bloc « Plan de chasse du jour (sonneries) » des cartons et de la fiche affiche les catégories cochées avec leur sonnerie en gros ; il peut ajouter une colonne « nombre autorisé » et une colonne « prélevé » à remplir. Le plan du jour se recopie avec les modèles de battue.
+La liste des catégories et leur **sonnerie** sont communes à toutes les battues et se modifient avec « Gérer le gibier et les sonneries » : nom, sonnerie (texte libre), choix possibles (séparés par des virgules), ordre, ajout et suppression. La liste de départ est : Chevreuil (2), Cerf -8 (6), Cerf +8 (6), Biche (4), Jeune (3). Le bloc « Plan de chasse du jour (sonneries) » des cartons et de la fiche affiche les catégories cochées avec leur sonnerie en gros ; il peut ajouter une colonne « nombre autorisé » et une colonne « prélevé » à remplir. Le plan du jour se recopie avec les modèles de battue.
 
 ## Plusieurs cartes et cadrage
 
@@ -51,6 +56,12 @@ Un bloc **Carte** peut être ajouté autant de fois que nécessaire (par exemple
 - ses **traques affichées** (aucune case cochée : toutes), avec sa propre légende ;
 - son **fond** : plan IGN, photo aérienne, ou aucun (tracés seuls) ;
 - son **cadrage** : « Cadrer » rend la carte déplaçable et zoomable dans l'aperçu (souris, molette ou doigt ; sur un carton, les deux exemplaires suivent), « Figer le cadrage » verrouille la vue et l'enregistre dans la mise en page, « Automatique » revient au cadrage sur les traques. Le cadrage fixe est mémorisé en centre et niveau de zoom : si tu changes la taille du bloc, la zone visible change un peu.
+
+## Annuler et rétablir (Ctrl+Z)
+
+Dans le **plan de battue** et dans la **page d'impression**, Ctrl+Z annule la dernière action et Ctrl+Y (ou Ctrl+Maj+Z) la rétablit ; les boutons « ↶ Annuler » et « ↷ Rétablir » font la même chose. Dans le plan, cela couvre : tracés, suppressions, déplacement d'un point, d'un poste ou d'une poignée, changement de chasseur, ajout et suppression d'une traque, nom, parcelle, équipe et notes d'une traque, réouverture d'une version. Pendant un tracé, Ctrl+Z retire le dernier point posé. Les frappes successives dans un champ ne comptent que pour une action. Dans un champ de saisie, Ctrl+Z reste l'annulation de frappe du navigateur. Ctrl+Z ne fait rien tant qu'une fenêtre est ouverte.
+
+La suppression d'une traque n'est effective en base qu'à « Enregistrer le plan » : on peut donc la défaire par Ctrl+Z jusque-là. Après un enregistrement, on peut encore annuler : la modification est alors à enregistrer de nouveau. L'historique est celui de la page ouverte (100 actions) : il disparaît quand on la quitte.
 
 ## Sauvegarde et versions
 

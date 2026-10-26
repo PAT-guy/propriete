@@ -19,6 +19,12 @@ let traqueActiveCle = null;
 let compteurCle = 0;
 let modifie = false;
 let idsTraquesASupprimer = [];
+let idParCle = new Map();            // clé locale d'une traque -> identifiant en base (pour l'annulation)
+let idsEnBase = new Set();          // identifiants des traques existant en base (pour l'annulation)
+let pileAnnuler = [];
+let pileRefaire = [];
+let dernierGroupeAnnuler = null;
+let dernierInstantAnnuler = 0;
 
 let carte = null;
 let coucheParcelles = null;
@@ -168,6 +174,8 @@ function nouvelleTraque() {
 async function ajouterTraqueDepuisDB(ligne) {
     const etat = nouvelEtatTraque();
     etat.id = ligne.id;
+    idsEnBase.add(ligne.id);
+    idParCle.set(etat.cle, ligne.id);
     etat.numero = ligne.numero;
     etat.nom = ligne.nom;
     etat.parcelle_id = ligne.parcelle_id;
@@ -227,7 +235,10 @@ function brancherEvenements() {
     document.getElementById("bouton-enregistrer-plan").addEventListener("click", enregistrerPlan);
     document.getElementById("bouton-versions").addEventListener("click", ouvrirVersions);
     document.getElementById("bouton-creer-version").addEventListener("click", creerVersion);
+    document.getElementById("bouton-annuler-action").addEventListener("click", annulerAction);
+    document.getElementById("bouton-refaire-action").addEventListener("click", refaireAction);
     document.getElementById("bouton-ajouter-traque").addEventListener("click", () => {
+        memoriser();
         const t = nouvelleTraque();
         traqueActiveCle = t.cle;
         marquerModifie();
@@ -249,6 +260,11 @@ function brancherEvenements() {
     document.addEventListener("keydown", (e) => {
         const enSaisie = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || "");
         if (enSaisie) return;
+        if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+            const touche = e.key.toLowerCase();
+            if (touche === "z" && !e.shiftKey) { e.preventDefault(); annulerAction(); return; }
+            if (touche === "y" || (touche === "z" && e.shiftKey)) { e.preventDefault(); refaireAction(); return; }
+        }
         if (e.key === "Escape") { if (editionForme) terminerEditionForme(); else abandonnerDessin(); }
         if (e.key === "Enter" && outil && outil !== "point") terminerDessin();
         if (e.key === "Backspace" && outil && pointsEnCours.length) { e.preventDefault(); annulerDernierPoint(); }
@@ -290,6 +306,7 @@ function choisirOutil(nom) {
 function quitterOutil() {
     outil = null;
     pointsEnCours = [];
+    majBoutonsHistorique();
     positionSouris = null;
     if (carte) {
         coucheApercu.clearLayers();
@@ -335,6 +352,7 @@ function annulerDernierPoint() {
 }
 
 function redessinerApercu() {
+    majBoutonsHistorique();
     coucheApercu.clearLayers();
     if (pointsEnCours.length === 0) return;
     const avecSouris = positionSouris ? [...pointsEnCours, positionSouris] : pointsEnCours;
@@ -469,6 +487,7 @@ function fermerElementSansValider() {
 function validerElement(evenement) {
     evenement.preventDefault();
     if (!edition) return;
+    memoriser();
     const type = typeChoisi();
     const traqueCible = traquesEtat.find((t) => t.cle === document.getElementById("champ-traque-element").value) || traqueActive();
     const nomSaisi = document.getElementById("champ-nom-element").value.trim();
@@ -517,6 +536,7 @@ function validerElement(evenement) {
 function supprimerElementEnEdition() {
     if (!edition || edition.nouveau) return;
     if (!confirm("Supprimer cet élément ?")) return;
+    memoriser();
     const trouve = trouverItem(edition.item.cle);
     if (trouve) trouve.liste.splice(trouve.liste.indexOf(edition.item), 1);
     fermerModale("modale-element");
@@ -558,6 +578,7 @@ function redessinerPoignees() {
 
     element.points.forEach((p, i) => {
         const poignee = L.marker(p, { icon: icone(false), draggable: true, bubblingMouseEvents: false });
+        poignee.on("dragstart", () => memoriser());
         poignee.on("drag", (e) => {
             element.points[i] = [e.latlng.lat, e.latlng.lng];
             marquerModifie();
@@ -565,6 +586,7 @@ function redessinerPoignees() {
         });
         poignee.on("dblclick", () => {
             if (element.points.length <= minimum) return;
+            memoriser();
             element.points.splice(i, 1);
             marquerModifie();
             redessinerElements();
@@ -579,6 +601,7 @@ function redessinerPoignees() {
         const b = element.points[(i + 1) % element.points.length];
         const milieu = L.marker([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], { icon: icone(true), bubblingMouseEvents: false });
         milieu.on("click", () => {
+            memoriser();
             element.points.splice(i + 1, 0, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]);
             marquerModifie();
             redessinerElements();
@@ -605,6 +628,7 @@ function marqueurPoint(item, icone, texte, categorie) {
         if (outil) { clicCarte(marqueur.getLatLng()); return; }
         ouvrirDescriptionItem(item.cle);
     });
+    marqueur.on("dragstart", () => memoriser());
     marqueur.on("dragend", () => {
         const pos = marqueur.getLatLng();
         item.lat = pos.lat;
@@ -761,6 +785,7 @@ function choisirTraque(cle) {
 
 function majChampTraque(champ, valeur) {
     const t = traqueActive();
+    memoriser(`champ:${t.cle}:${champ}`);
     t[champ] = valeur.trim ? (valeur.trim() === "" ? null : valeur) : valeur;
     if (champ === "parcelle_id") {
         t.parcelle_id = valeur || null;
@@ -778,6 +803,7 @@ function majChampTraque(champ, valeur) {
 function affecterChasseur(cle, chasseurId) {
     const trouve = trouverItem(cle);
     if (!trouve) return;
+    memoriser();
     trouve.item.chasseur_id = chasseurId || null;
     marquerModifie();
     redessinerElements();
@@ -792,6 +818,7 @@ function ajouterPosteDepuisBibliotheque() {
     const poste = postesChasseCache.find((p) => p.id === select.value);
     if (!poste) return;
     const t = traqueActive();
+    memoriser();
     t.postes.push({ cle: nouvelleCle(), id: null, poste_id: poste.id, nom: poste.nom, lat: poste.lat, lng: poste.lng, chasseur_id: null });
     marquerModifie();
     redessinerTout();
@@ -843,9 +870,9 @@ async function enregistrerPlan() {
     bouton.textContent = "Enregistrement…";
     try {
         // Traques retirées par une restauration de version : supprimées maintenant, pas avant.
-        for (const id of idsTraquesASupprimer) await supprimerTraqueEnBase(id);
+        for (const id of idsTraquesASupprimer) { await supprimerTraqueEnBase(id); idsEnBase.delete(id); }
         idsTraquesASupprimer = [];
-        for (const etat of traquesEtat) await enregistrerTraque(etat);
+        for (const etat of traquesEtat) { await enregistrerTraque(etat); idsEnBase.add(etat.id); idParCle.set(etat.cle, etat.id); }
         modifie = false;
         bouton.textContent = "Plan enregistré ✓";
         redessinerPanneau();
@@ -906,11 +933,14 @@ async function supprimerTraqueEnBase(id) {
 
 async function supprimerTraque() {
     const etat = traqueActive();
-    if (!confirm(`Supprimer « ${libelleTraque(etat)} », son plan et ses postes ?`)) return;
-    if (etat.id) await supprimerTraqueEnBase(etat.id);
+    if (!confirm(`Supprimer « ${libelleTraque(etat)} » avec son plan et ses postes ? (Annulable avec Ctrl+Z tant que le plan n'est pas enregistré.)`)) return;
+    memoriser();
+    // La suppression en base n'a lieu qu'à « Enregistrer le plan » : on peut donc l'annuler (Ctrl+Z).
+    if (etat.id) idsTraquesASupprimer.push(etat.id);
     traquesEtat = traquesEtat.filter((t) => t.cle !== etat.cle);
     if (traquesEtat.length === 0) nouvelleTraque();
     traqueActiveCle = traquesEtat[0].cle;
+    marquerModifie();
     redessinerTout();
 }
 
@@ -1062,6 +1092,7 @@ async function restaurerVersion(id) {
             postes: (vt.postes || []).map((p) => ({ ...p, cle: nouvelleCle(), id: null })),
         };
     });
+    memoriser();
     idsTraquesASupprimer.push(...existantes.filter((e) => e.id && !nouvelles.some((n) => n.id === e.id)).map((e) => e.id));
     traquesEtat = nouvelles;
     if (traquesEtat.length === 0) nouvelleTraque();
@@ -1071,4 +1102,70 @@ async function restaurerVersion(id) {
     quitterOutil();
     redessinerTout();
     if (carte) ajusterVue();
+}
+
+// ----------------------------------------------------------------------------
+// Annuler / rétablir (Ctrl+Z, Ctrl+Y)
+// ----------------------------------------------------------------------------
+
+function instantanePlanEditeur() {
+    return JSON.stringify({ traques: traquesEtat, active: traqueActiveCle, aSupprimer: idsTraquesASupprimer });
+}
+
+/**
+ * À appeler juste AVANT une modification : garde l'état actuel pour pouvoir y revenir.
+ * Avec un groupe (saisie d'un champ), les frappes successives ne comptent que pour une action.
+ */
+function memoriser(groupe) {
+    const maintenant = Date.now();
+    const regroupe = groupe && groupe === dernierGroupeAnnuler && maintenant - dernierInstantAnnuler < 2000;
+    dernierGroupeAnnuler = groupe || null;
+    dernierInstantAnnuler = maintenant;
+    if (regroupe) return;
+    pileAnnuler.push(instantanePlanEditeur());
+    if (pileAnnuler.length > 100) pileAnnuler.shift();
+    pileRefaire = [];
+    majBoutonsHistorique();
+}
+
+function majBoutonsHistorique() {
+    const annuler = document.getElementById("bouton-annuler-action");
+    const refaire = document.getElementById("bouton-refaire-action");
+    if (annuler) annuler.disabled = pileAnnuler.length === 0 && pointsEnCours.length === 0;
+    if (refaire) refaire.disabled = pileRefaire.length === 0;
+}
+
+function restaurerInstantane(json) {
+    const etat = JSON.parse(json);
+    terminerEditionForme();
+    traquesEtat = etat.traques;
+    // Une traque enregistrée depuis cet instantané garde son identifiant en base (pas de doublon, prélèvements conservés).
+    traquesEtat.forEach((t) => { if (!t.id && idParCle.has(t.cle)) t.id = idParCle.get(t.cle); });
+    traqueActiveCle = traquesEtat.some((t) => t.cle === etat.active) ? etat.active : (traquesEtat[0] && traquesEtat[0].cle);
+    idsTraquesASupprimer = etat.aSupprimer;
+    // Une traque enregistrée depuis, absente de cet état, doit disparaître de la base au prochain enregistrement.
+    const presentes = new Set(traquesEtat.map((t) => t.id).filter(Boolean));
+    idsEnBase.forEach((id) => { if (!presentes.has(id) && !idsTraquesASupprimer.includes(id)) idsTraquesASupprimer.push(id); });
+    if (traquesEtat.length === 0) { const t = nouvelleTraque(); traqueActiveCle = t.cle; }
+    marquerModifie();
+    redessinerTout();
+    majBoutonsHistorique();
+}
+
+function annulerAction() {
+    if (document.querySelector(".fond-modale.ouverte")) return;
+    // Pendant un tracé : annuler = retirer le dernier point posé.
+    if (outil && pointsEnCours.length > 0) { annulerDernierPoint(); majBoutonsHistorique(); return; }
+    if (pileAnnuler.length === 0) return;
+    pileRefaire.push(instantanePlanEditeur());
+    dernierGroupeAnnuler = null;
+    restaurerInstantane(pileAnnuler.pop());
+}
+
+function refaireAction() {
+    if (document.querySelector(".fond-modale.ouverte")) return;
+    if (pileRefaire.length === 0) return;
+    pileAnnuler.push(instantanePlanEditeur());
+    dernierGroupeAnnuler = null;
+    restaurerInstantane(pileRefaire.pop());
 }

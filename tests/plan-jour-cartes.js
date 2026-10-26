@@ -26,7 +26,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  t('réouverture : cases et nombre conservés', await l(0).locator('.plan-autorise').isChecked() && await l(0).locator('.plan-nombre').inputValue()==='3' && await l(0).locator('.plan-precision[value=Chevrette]').isChecked() && !(await l(2).locator('.plan-autorise').isChecked()));
  await p.click('text=Gérer le gibier et les sonneries'); await p.waitForTimeout(300);
  await p.locator('#corps-categories tr').nth(4).locator('.cat-sonnerie').fill('5'); await p.locator('#corps-categories tr').nth(4).locator('.cat-sonnerie').dispatchEvent('change'); await p.waitForTimeout(300);
- await p.click('text=+ Ajouter une catégorie'); await p.waitForTimeout(300);
+ await p.click('text=+ Autre catégorie'); await p.waitForTimeout(300);
  const nouvelle=p.locator('#corps-categories tr').nth(5); await nouvelle.locator('.cat-nom').fill('Sanglier'); await nouvelle.locator('.cat-nom').dispatchEvent('change'); await nouvelle.locator('.cat-sonnerie').fill('1'); await nouvelle.locator('.cat-sonnerie').dispatchEvent('change'); await p.waitForTimeout(300);
  await p.locator('#corps-categories tr').nth(5).locator('text=▲').click(); await p.waitForTimeout(300);
  t('catégorie ajoutée et déplacée (Sanglier en 5e position)', (await p.locator('#corps-categories tr').nth(4).locator('.cat-nom').inputValue())==='Sanglier');

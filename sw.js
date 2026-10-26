@@ -12,7 +12,7 @@
  * Incrémenter VERSION_SITE à chaque déploiement qui doit forcer un rafraîchissement.
  */
 
-const VERSION_SITE = "v1";
+const VERSION_SITE = "v2";
 const CACHE_SITE = `foret-site-${VERSION_SITE}`;
 const CACHE_TUILES = "foret-tuiles-v1";
 const CACHE_DONNEES = "foret-donnees-v1";
@@ -57,7 +57,9 @@ async function cacheDAbord(requete) {
 async function siteRevalidation(requete) {
     const cache = await caches.open(CACHE_SITE);
     const enCache = await cache.match(requete, { ignoreSearch: true });
-    const miseAJour = fetch(requete).then((reponse) => {
+    // "no-cache" : revalider auprès du serveur, sinon le cache HTTP du navigateur
+    // (10 minutes sur GitHub Pages) resservirait l'ancienne version du fichier.
+    const miseAJour = fetch(requete, { cache: "no-cache" }).then((reponse) => {
         if (reponse.ok) cache.put(requete, reponse.clone());
         return reponse;
     }).catch(() => null);

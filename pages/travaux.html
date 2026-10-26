@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travaux — Forêt &amp; Chasse</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div id="zone-navigation"></div>
+
+<main class="contenu">
+    <div class="entete-page">
+        <div>
+            <h1>Travaux forestiers</h1>
+            <p class="sous-titre">Chantiers, prestataires, coûts et planning</p>
+        </div>
+    </div>
+
+    <div class="onglets">
+        <button class="actif" data-onglet="onglet-chantiers">Chantiers</button>
+        <button data-onglet="onglet-prestataires">Prestataires</button>
+    </div>
+
+    <div class="panneau-onglet actif" id="onglet-chantiers">
+        <div class="barre-outils">
+            <select id="champ-filtre-statut">
+                <option value="">Tous les statuts</option>
+                <option>Planifié</option><option>En cours</option><option>Terminé</option><option>Annulé</option>
+            </select>
+            <span class="espace"></span>
+            <button class="bouton bouton-principal" onclick="ouvrirCreationChantier()">Nouveau chantier</button>
+        </div>
+        <div class="carte">
+            <table class="tableau-donnees">
+                <thead><tr><th>Titre</th><th>Type</th><th>Statut</th><th>Parcelle</th><th>Début</th><th>Coût réel</th><th></th></tr></thead>
+                <tbody id="corps-tableau-chantiers"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panneau-onglet" id="onglet-prestataires">
+        <div class="barre-outils"><span class="espace"></span>
+            <button class="bouton bouton-principal" onclick="ouvrirCreationPrestataire()">Nouveau prestataire</button>
+        </div>
+        <div class="carte">
+            <table class="tableau-donnees">
+                <thead><tr><th>Nom</th><th>Spécialité</th><th>Contact</th><th>Téléphone</th><th></th></tr></thead>
+                <tbody id="corps-tableau-prestataires"></tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- Modale Chantier -->
+<div class="fond-modale" id="modale-chantier">
+    <div class="boite-modale" style="max-width:640px;">
+        <h2 id="titre-modale-chantier">Chantier</h2>
+        <div id="message-modale-chantier"></div>
+        <form id="formulaire-chantier">
+            <label class="etiquette">Titre *</label><input type="text" id="champ-titre-chantier" required>
+            <div class="ligne-champs">
+                <div>
+                    <label class="etiquette">Type de travaux *</label>
+                    <select id="champ-type-chantier">
+                        <option>Coupe</option><option>Plantation</option><option>Entretien</option>
+                        <option>Débroussaillage</option><option>Élagage</option><option>Création de layon</option><option>Autre</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="etiquette">Statut</label>
+                    <select id="champ-statut-chantier">
+                        <option>Planifié</option><option>En cours</option><option>Terminé</option><option>Annulé</option>
+                    </select>
+                </div>
+            </div>
+            <div class="ligne-champs">
+                <div><label class="etiquette">Parcelle</label><select id="champ-parcelle-chantier"></select></div>
+                <div><label class="etiquette">Prestataire</label><select id="champ-prestataire-chantier"></select></div>
+            </div>
+            <div class="ligne-champs">
+                <div><label class="etiquette">Date de début</label><input type="date" id="champ-date-debut-chantier"></div>
+                <div><label class="etiquette">Fin prévue</label><input type="date" id="champ-date-fin-chantier"></div>
+            </div>
+            <div class="ligne-champs">
+                <div><label class="etiquette">Coût estimé (€)</label><input type="number" min="0" step="0.01" id="champ-cout-estime-chantier"></div>
+                <div><label class="etiquette">Coût réel (€)</label><input type="number" min="0" step="0.01" id="champ-cout-reel-chantier"></div>
+            </div>
+
+            <label class="etiquette">Points à signaler (accès engins, dépôt de bois...) — clique sur la carte</label>
+            <div class="controles-fond-carte">
+                <button type="button" id="bouton-fond-plan-chantier" class="bouton bouton-secondaire">Plan IGN</button>
+                <button type="button" id="bouton-fond-satellite-chantier" class="bouton bouton-secondaire">Satellite</button>
+            </div>
+            <div id="carte-chantier" class="conteneur-carte" style="height:280px;"></div>
+            <div id="liste-points-interet" style="margin-top:8px; font-size:13px;"></div>
+
+            <label class="etiquette">Description</label>
+            <textarea id="champ-description-chantier" rows="3"></textarea>
+
+            <div class="actions-modale">
+                <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-chantier')">Annuler</button>
+                <button type="submit" class="bouton bouton-principal">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modale Prestataire -->
+<div class="fond-modale" id="modale-prestataire">
+    <div class="boite-modale">
+        <h2 id="titre-modale-prestataire">Prestataire</h2>
+        <div id="message-modale-prestataire"></div>
+        <form id="formulaire-prestataire">
+            <label class="etiquette">Nom / Entreprise *</label><input type="text" id="champ-nom-prestataire" required>
+            <label class="etiquette">Spécialité</label><input type="text" id="champ-specialite-prestataire" placeholder="Ex : Bûcheronnage, débardage...">
+            <div class="ligne-champs">
+                <div><label class="etiquette">Contact</label><input type="text" id="champ-contact-prestataire"></div>
+                <div><label class="etiquette">Téléphone</label><input type="text" id="champ-telephone-prestataire"></div>
+            </div>
+            <div class="actions-modale">
+                <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-prestataire')">Annuler</button>
+                <button type="submit" class="bouton bouton-principal">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/mode-demo.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/modales.js"></script>
+<script src="../js/onglets.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../js/fonds-carte.js"></script>
+<script src="../js/travaux.js"></script>
+</body>
+</html>

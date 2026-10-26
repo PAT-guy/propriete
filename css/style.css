@@ -1,0 +1,423 @@
+/* ============================================================================
+   Feuille de style commune. Palette forestière, mise en page responsive
+   (PC et téléphone), pensée mobile-first.
+   ============================================================================ */
+
+:root {
+    --couleur-fond: #f4f1ea;
+    --couleur-panneau: #ffffff;
+    --couleur-barre: #2d3b2d;
+    --couleur-barre-survol: #3f5240;
+    --couleur-accent: #5a7d4a;
+    --couleur-accent-fonce: #44603a;
+    --couleur-texte: #2b2b26;
+    --couleur-texte-clair: #ffffff;
+    --couleur-bordure: #d8d2c2;
+    --couleur-danger: #a3442f;
+    --couleur-alerte-fond: #fbeee9;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    background-color: var(--couleur-fond);
+    color: var(--couleur-texte);
+    padding-bottom: 60px; /* évite que la barre mobile basse ne cache le contenu */
+}
+
+a { color: var(--couleur-accent-fonce); }
+
+/* ---------------------------------------------------------------------------
+   Barre de navigation
+   --------------------------------------------------------------------------- */
+
+header.barre-haut {
+    background-color: var(--couleur-barre);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+header.barre-haut .titre {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+header.barre-haut .titre span.icone { margin-right: 6px; }
+
+nav.navigation {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    background-color: var(--couleur-barre);
+    padding: 0 8px 8px 8px;
+}
+
+nav.navigation a {
+    color: #dfe6d8;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+nav.navigation a:hover { background-color: var(--couleur-barre-survol); }
+nav.navigation a.actif { background-color: var(--couleur-accent); color: white; font-weight: 600; }
+
+button.bouton-deconnexion {
+    background: none;
+    border: 1px solid #6b7d66;
+    color: #dfe6d8;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* ---------------------------------------------------------------------------
+   Mise en page générale
+   --------------------------------------------------------------------------- */
+
+main.contenu {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px 16px 40px 16px;
+}
+
+.entete-page {
+    margin-bottom: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.entete-page h1 {
+    font-size: 21px;
+    margin: 0 0 2px 0;
+}
+
+.entete-page p.sous-titre {
+    margin: 0;
+    color: #6b6b60;
+    font-size: 13px;
+}
+
+.carte {
+    background-color: var(--couleur-panneau);
+    border: 1px solid var(--couleur-bordure);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.grille-cartes-stat {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.carte-stat .valeur { font-size: 24px; font-weight: 700; color: var(--couleur-barre); }
+.carte-stat .libelle { font-size: 12px; color: #6b6b60; margin-top: 2px; }
+
+/* ---------------------------------------------------------------------------
+   Boutons
+   --------------------------------------------------------------------------- */
+
+.bouton {
+    display: inline-block;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+}
+
+.bouton-principal { background-color: var(--couleur-accent); color: white; }
+.bouton-principal:hover { background-color: var(--couleur-accent-fonce); }
+
+.bouton-secondaire { background-color: transparent; color: var(--couleur-accent-fonce); border: 1px solid var(--couleur-accent); }
+.bouton-secondaire:hover { background-color: #eaf0e5; }
+
+.bouton-danger { background-color: transparent; color: var(--couleur-danger); border: 1px solid var(--couleur-danger); }
+.bouton-danger:hover { background-color: #f7e9e6; }
+
+.barre-outils {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+}
+.barre-outils .espace { flex: 1; }
+
+/* ---------------------------------------------------------------------------
+   Formulaires
+   --------------------------------------------------------------------------- */
+
+label.etiquette {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    margin: 10px 0 4px 0;
+}
+
+input[type="text"], input[type="number"], input[type="date"], input[type="time"],
+input[type="email"], input[type="password"], select, textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--couleur-bordure);
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: inherit;
+    background-color: white;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--couleur-accent);
+}
+
+.ligne-champs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+/* ---------------------------------------------------------------------------
+   Tableaux (empilés en carte sur mobile)
+   --------------------------------------------------------------------------- */
+
+table.tableau-donnees {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+table.tableau-donnees th {
+    background-color: #ece7d9;
+    text-align: left;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+table.tableau-donnees td {
+    padding: 10px;
+    border-top: 1px solid #eeeadf;
+    font-size: 13px;
+}
+
+table.tableau-donnees tr:hover td { background-color: #f8f6ef; }
+
+@media (max-width: 680px) {
+    table.tableau-donnees thead { display: none; }
+    table.tableau-donnees, table.tableau-donnees tbody, table.tableau-donnees tr, table.tableau-donnees td {
+        display: block;
+        width: 100%;
+    }
+    table.tableau-donnees tr {
+        border: 1px solid var(--couleur-bordure);
+        border-radius: 8px;
+        margin-bottom: 10px;
+        padding: 6px 0;
+    }
+    table.tableau-donnees td {
+        border-top: none;
+        padding: 6px 12px;
+    }
+    table.tableau-donnees td::before {
+        content: attr(data-etiquette);
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: #888;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Onglets
+   --------------------------------------------------------------------------- */
+
+.onglets { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--couleur-bordure); margin-bottom: 16px; }
+.onglets button {
+    background: none;
+    border: none;
+    padding: 10px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #666;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+}
+.onglets button.actif { color: var(--couleur-accent-fonce); font-weight: 600; border-bottom-color: var(--couleur-accent); }
+.panneau-onglet { display: none; }
+.panneau-onglet.actif { display: block; }
+
+/* ---------------------------------------------------------------------------
+   Fenêtres modales
+   --------------------------------------------------------------------------- */
+
+.fond-modale {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px 12px;
+    overflow-y: auto;
+    z-index: 100;
+}
+.fond-modale.ouverte { display: flex; }
+
+.boite-modale {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    width: 100%;
+    max-width: 520px;
+    margin-top: 20px;
+}
+.boite-modale h2 { margin-top: 0; font-size: 17px; }
+.boite-modale .actions-modale {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+/* ---------------------------------------------------------------------------
+   Carte Leaflet
+   --------------------------------------------------------------------------- */
+
+.conteneur-carte {
+    height: 420px;
+    border-radius: 10px;
+    border: 1px solid var(--couleur-bordure);
+    overflow: hidden;
+}
+
+.controles-fond-carte {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.controles-fond-carte button.actif { background-color: var(--couleur-accent); color: white; }
+
+/* ---------------------------------------------------------------------------
+   Alertes / messages
+   --------------------------------------------------------------------------- */
+
+.message-alerte {
+    background-color: var(--couleur-alerte-fond);
+    border: 1px solid #e2b7a8;
+    color: var(--couleur-danger);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.message-chargement { text-align: center; padding: 30px; color: #888; font-size: 13px; }
+
+/* ---------------------------------------------------------------------------
+   Plans de battue détaillés (traques, postes, tracés)
+   --------------------------------------------------------------------------- */
+
+.etiquette-parcelle {
+    background: rgba(255, 255, 255, 0.85);
+    border: none;
+    box-shadow: none;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--couleur-accent-fonce);
+    padding: 1px 5px;
+}
+.etiquette-parcelle::before { display: none; }
+
+.icone-point-carte span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.icone-fleche-carte div {
+    width: 0;
+    height: 0;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-left: 14px solid;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+}
+
+.carte-traque {
+    border: 1px solid var(--couleur-bordure);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 18px;
+    background-color: var(--couleur-panneau);
+}
+
+.barre-outils-dessin {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.barre-outils-dessin button.actif {
+    background-color: var(--couleur-accent);
+    color: white;
+    border-color: var(--couleur-accent);
+}
+
+.liste-postes-traque {
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+.ligne-poste-traque {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--couleur-bordure);
+}
+
+.ligne-poste-traque .nom-poste { flex: 1; font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+   Impression (fiche de battue, cartes de chantier)
+   --------------------------------------------------------------------------- */
+
+@media print {
+    header.barre-haut, nav.navigation, .barre-outils, .sans-impression { display: none !important; }
+    body { background: white; padding: 0; }
+    main.contenu { max-width: none; padding: 0; }
+    .carte { border: none; padding: 0; }
+}

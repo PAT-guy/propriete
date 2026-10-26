@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan de battue — Forêt &amp; Chasse</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div id="zone-navigation"></div>
+
+<main class="contenu">
+    <div class="entete-page">
+        <div>
+            <h1 id="titre-page">Plan de battue</h1>
+            <p class="sous-titre">Postes, mouvement de chaque traque, parkings, accès et prélèvements</p>
+        </div>
+    </div>
+
+    <div class="barre-outils">
+        <a href="chasse.html" class="bouton bouton-secondaire">← Retour à la chasse</a>
+        <a id="lien-fiche-impression" href="#" target="_blank" class="bouton bouton-secondaire">Fiche à imprimer</a>
+        <span class="espace"></span>
+        <button class="bouton bouton-secondaire" id="bouton-bibliotheque">Bibliothèque de postes</button>
+        <button class="bouton bouton-principal" id="bouton-ajouter-traque">Ajouter une traque</button>
+    </div>
+
+    <div id="zone-chargement" class="message-chargement">Chargement…</div>
+
+    <div id="zone-contenu" style="display:none;">
+        <div id="liste-traques"></div>
+    </div>
+</main>
+
+<!-- Modale Bibliothèque de postes -->
+<div class="fond-modale" id="modale-bibliotheque">
+    <div class="boite-modale">
+        <h2>Bibliothèque de postes</h2>
+        <p style="font-size:13px; color:#6b6b60;">
+            Les postes habituels du territoire, réutilisables d'une traque à l'autre. Un poste s'ajoute à cette
+            bibliothèque quand tu choisis de l'enregistrer au moment de le placer sur une traque.
+        </p>
+        <table class="tableau-donnees">
+            <thead><tr><th>Nom</th><th></th></tr></thead>
+            <tbody id="corps-tableau-bibliotheque"></tbody>
+        </table>
+        <div class="actions-modale">
+            <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-bibliotheque')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/mode-demo.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/modales.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../js/fonds-carte.js"></script>
+<script src="../js/dessin-carte.js"></script>
+<script src="../js/plan-battue.js"></script>
+</body>
+</html>

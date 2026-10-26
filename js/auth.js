@@ -1,0 +1,52 @@
+/**
+ * Protection des pages et navigation commune.
+ * Toutes les pages sauf index.html (connexion) appellent protegerPage()
+ * au chargement : si personne n'est connecté, retour à l'écran de connexion.
+ */
+
+const PAGES_NAVIGATION = [
+    { fichier: "tableau-de-bord.html", libelle: "Tableau de bord" },
+    { fichier: "pages/parcelles.html", libelle: "Parcelles" },
+    { fichier: "pages/chasse.html", libelle: "Chasse" },
+    { fichier: "pages/travaux.html", libelle: "Travaux" },
+    { fichier: "pages/finances.html", libelle: "Finances" },
+];
+
+async function protegerPage() {
+    const { data } = await clientSupabase.auth.getSession();
+    if (!data.session) {
+        window.location.href = cheminRacine() + "index.html";
+        return false;
+    }
+    return true;
+}
+
+/** Calcule le préfixe relatif vers la racine du site depuis la page courante. */
+function cheminRacine() {
+    return window.location.pathname.includes("/pages/") ? "../" : "";
+}
+
+async function deconnexion() {
+    await clientSupabase.auth.signOut();
+    window.location.href = cheminRacine() + "index.html";
+}
+
+function injecterNavigation(pageActiveFichier) {
+    const racine = cheminRacine();
+    const zone = document.getElementById("zone-navigation");
+    if (!zone) return;
+
+    const liensNav = PAGES_NAVIGATION.map((page) => {
+        const chemin = racine + page.fichier;
+        const estActif = pageActiveFichier === page.fichier;
+        return `<a href="${chemin}" class="${estActif ? "actif" : ""}">${page.libelle}</a>`;
+    }).join("");
+
+    zone.innerHTML = `
+        <header class="barre-haut">
+            <span class="titre"><span class="icone">🌲</span>Forêt &amp; Chasse</span>
+            <button class="bouton-deconnexion" onclick="deconnexion()">Déconnexion</button>
+        </header>
+        <nav class="navigation">${liensNav}</nav>
+    `;
+}

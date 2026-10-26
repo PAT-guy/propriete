@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parcelles — Forêt &amp; Chasse</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div id="zone-navigation"></div>
+
+<main class="contenu">
+    <div class="entete-page">
+        <div>
+            <h1>Cadastre des parcelles</h1>
+            <p class="sous-titre">Trace les contours sur la carte, renseigne les essences et le propriétaire</p>
+        </div>
+    </div>
+
+    <div class="controles-fond-carte">
+        <button id="bouton-fond-plan" class="bouton bouton-secondaire">Plan IGN</button>
+        <button id="bouton-fond-satellite" class="bouton bouton-secondaire">Satellite</button>
+        <span class="espace" style="flex:1"></span>
+        <button id="bouton-dessiner" class="bouton bouton-principal">Tracer une nouvelle parcelle</button>
+    </div>
+
+    <div id="carte-parcelles" class="conteneur-carte"></div>
+
+    <div class="barre-outils" style="margin-top:18px;">
+        <input type="text" id="champ-recherche" placeholder="Rechercher une parcelle...">
+        <button id="bouton-proprietaires" class="bouton bouton-secondaire">Gérer les propriétaires</button>
+    </div>
+
+    <div class="carte">
+        <table class="tableau-donnees">
+            <thead>
+                <tr><th>Nom</th><th>Commune</th><th>Surface</th><th>Propriétaire</th><th></th></tr>
+            </thead>
+            <tbody id="corps-tableau-parcelles"></tbody>
+        </table>
+    </div>
+
+    <div class="carte" id="panneau-detail" style="display:none;">
+        <div class="barre-outils">
+            <h2 id="titre-detail" style="margin:0; flex:1;"></h2>
+            <button id="bouton-modifier-parcelle" class="bouton bouton-secondaire">Modifier la fiche</button>
+            <button id="bouton-supprimer-parcelle" class="bouton bouton-danger">Supprimer</button>
+        </div>
+        <p id="infos-detail" style="font-size:13px; color:#555; white-space:pre-line;"></p>
+
+        <div class="barre-outils">
+            <strong style="flex:1;">Composition en essences</strong>
+            <button id="bouton-ajouter-essence" class="bouton bouton-secondaire">Ajouter une essence</button>
+        </div>
+        <table class="tableau-donnees">
+            <thead><tr><th>Essence</th><th>Surface</th><th>Âge moyen</th><th></th></tr></thead>
+            <tbody id="corps-tableau-essences"></tbody>
+        </table>
+    </div>
+</main>
+
+<!-- Modale : fiche parcelle -->
+<div class="fond-modale" id="modale-parcelle">
+    <div class="boite-modale">
+        <h2 id="titre-modale-parcelle">Nouvelle parcelle</h2>
+        <div id="message-modale-parcelle"></div>
+        <form id="formulaire-parcelle">
+            <label class="etiquette">Nom de la parcelle *</label>
+            <input type="text" id="champ-nom-parcelle" required>
+
+            <div class="ligne-champs">
+                <div>
+                    <label class="etiquette">Référence cadastrale</label>
+                    <input type="text" id="champ-reference-parcelle">
+                </div>
+                <div>
+                    <label class="etiquette">Commune</label>
+                    <input type="text" id="champ-commune-parcelle">
+                </div>
+            </div>
+
+            <div class="ligne-champs">
+                <div>
+                    <label class="etiquette">Lieu-dit</label>
+                    <input type="text" id="champ-lieu-dit-parcelle">
+                </div>
+                <div>
+                    <label class="etiquette">Surface (ha)</label>
+                    <input type="number" step="0.01" min="0" id="champ-surface-parcelle">
+                </div>
+            </div>
+
+            <div class="ligne-champs">
+                <div>
+                    <label class="etiquette">Type de peuplement</label>
+                    <input type="text" id="champ-peuplement-parcelle">
+                </div>
+                <div>
+                    <label class="etiquette">Date d'acquisition</label>
+                    <input type="date" id="champ-date-acquisition-parcelle">
+                </div>
+            </div>
+
+            <label class="etiquette">Propriétaire</label>
+            <select id="champ-proprietaire-parcelle"></select>
+
+            <label class="etiquette">Notes</label>
+            <textarea id="champ-notes-parcelle" rows="2"></textarea>
+
+            <div class="actions-modale">
+                <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-parcelle')">Annuler</button>
+                <button type="submit" class="bouton bouton-principal">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modale : essence -->
+<div class="fond-modale" id="modale-essence">
+    <div class="boite-modale">
+        <h2>Essence</h2>
+        <div id="message-modale-essence"></div>
+        <form id="formulaire-essence">
+            <label class="etiquette">Essence *</label>
+            <input type="text" id="champ-nom-essence" placeholder="Ex : Chêne, Hêtre, Pin sylvestre..." required>
+            <div class="ligne-champs">
+                <div>
+                    <label class="etiquette">Surface (ha)</label>
+                    <input type="number" step="0.01" min="0" id="champ-surface-essence">
+                </div>
+                <div>
+                    <label class="etiquette">Âge moyen (ans)</label>
+                    <input type="number" min="0" id="champ-age-essence">
+                </div>
+            </div>
+            <div class="actions-modale">
+                <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-essence')">Annuler</button>
+                <button type="submit" class="bouton bouton-principal">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modale : propriétaires -->
+<div class="fond-modale" id="modale-proprietaires">
+    <div class="boite-modale">
+        <h2>Propriétaires</h2>
+        <table class="tableau-donnees"><tbody id="corps-tableau-proprietaires"></tbody></table>
+        <div id="formulaire-proprietaire-rapide" style="margin-top:14px; border-top:1px solid #eee; padding-top:12px;">
+            <label class="etiquette">Nom *</label>
+            <input type="text" id="champ-nom-proprietaire">
+            <label class="etiquette">Prénom</label>
+            <input type="text" id="champ-prenom-proprietaire">
+            <label class="etiquette">Téléphone</label>
+            <input type="text" id="champ-telephone-proprietaire">
+            <div class="actions-modale">
+                <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-proprietaires')">Fermer</button>
+                <button type="button" id="bouton-ajouter-proprietaire" class="bouton bouton-principal">Ajouter</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/mode-demo.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/modales.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="../js/fonds-carte.js"></script>
+<script src="../js/parcelles.js"></script>
+</body>
+</html>

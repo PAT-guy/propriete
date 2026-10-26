@@ -71,6 +71,7 @@ const TYPES_POINT = {
         clientSupabase.from("postes_chasse").select().order("nom"),
         clientSupabase.from("traques").select().eq("battue_id", idBattue).order("numero"),
     ]);
+    await chargerCategories();
     chasseursCache = chasseurs.data || [];
     parcellesCache = parcelles.data || [];
     especesCache = especes.data || [];
@@ -684,7 +685,7 @@ function redessinerPanneau() {
         ...t.postes.map((x) => ["poste", x]), ...t.parkings.map((x) => ["parking", x]),
         ...t.acces.map((x) => ["acces", x]), ...t.elements.map((x) => ["element", x]),
     ];
-    const optionsEspeces = especesCache.map((e) => `<option value="${e.id}">${echapper(e.nom)}</option>`).join("");
+    const optionsEspeces = optionsCategories();
     const optionsChasseurs = '<option value="">— Non précisé —</option>' +
         chasseursCache.filter((c) => c.actif).map((c) => `<option value="${c.id}">${echapper(nomAffichePersonne(c))}</option>`).join("");
     const estModele = !!battueCourante.est_modele;
@@ -923,13 +924,13 @@ async function ajouterPrelevementTraque() {
         alert("Enregistre d'abord le plan (bouton « Enregistrer le plan ») avant d'ajouter un prélèvement.");
         return;
     }
-    const especeId = document.getElementById("champ-espece-traque").value;
-    if (!especeId) return;
+    const categorieId = document.getElementById("champ-espece-traque").value;
+    if (!categorieId) return;
 
     await clientSupabase.from("prelevements").insert({
         date_prelevement: battueCourante.date_battue,
         saison: saisonPourDate(battueCourante.date_battue),
-        espece_id: especeId,
+        categorie_id: categorieId,
         chasseur_id: document.getElementById("champ-chasseur-traque").value || null,
         battue_id: battueCourante.id,
         traque_id: etat.id,
@@ -955,7 +956,7 @@ async function rafraichirTallyPrelevements(etat) {
     }
     const parEspece = {};
     liste.forEach((p) => {
-        const nom = (especesCache.find((e) => e.id === p.espece_id) || {}).nom || "?";
+        const nom = nomGibierDe(p, categoriesCache, especesCache);
         parEspece[nom] = (parEspece[nom] || 0) + 1;
     });
     zone.innerHTML = "<strong>Prélevés :</strong> " + Object.entries(parEspece).map(([nom, n]) => `${n} ${echapper(nom)}`).join(", ");

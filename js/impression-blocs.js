@@ -384,9 +384,8 @@ const BLOCS = {
         rendre(ctx, o) {
             const plans = ctx.plans.filter((p) => p.saison === saisonDeLaBattuePour(ctx));
             const lignes = plans.length ? plans.map((plan) => {
-                const espece = ctx.especes.find((e) => e.id === plan.espece_id);
-                const realise = ctx.prelevements.filter((p) => p.espece_id === plan.espece_id && p.saison === plan.saison).length;
-                return `<tr><td class="libre">${espece ? esc(espece.nom) : ""}</td>${o.attribution ? `<td class="libre">${esc(plan.attribution)}</td><td class="libre">${realise}</td>` : ""}<td class="libre"></td></tr>`;
+                const realise = ctx.prelevements.filter((p) => prelevementCompte(p, plan)).length;
+                return `<tr><td class="libre">${esc(nomGibierDe(plan, ctx.categories, ctx.especes))}</td>${o.attribution ? `<td class="libre">${esc(plan.attribution)}</td><td class="libre">${realise}</td>` : ""}<td class="libre"></td></tr>`;
             }).join("") : lignesVidesTable(4, o.attribution ? 4 : 2);
             return `${titreDuBloc(o, "Bilan de la journée")}
             <table class="ib-table" ${styleLigne(o)}><thead><tr><th>Espèce</th>${o.attribution ? "<th>Attribution</th><th>Déjà réalisé</th>" : ""}<th>Prélevé aujourd'hui</th></tr></thead><tbody>${lignes}</tbody></table>`;

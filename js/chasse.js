@@ -17,6 +17,7 @@ let planEnEditionId = null;
     afficherBandeauDemoSiBesoin();
 
     await chargerChasseurs();
+    await chargerCategories();
     await chargerEspeces();
     await chargerPlan();
     await chargerBattuesPourSelect();
@@ -155,11 +156,23 @@ async function supprimerChasseur(id) {
 // ----------------------------------------------------------------------------
 
 async function chargerEspeces() {
+    // Les anciennes espèces ne servent plus qu'à nommer les lignes saisies avant les catégories.
     const { data } = await clientSupabase.from("especes_gibier").select().order("nom");
     especesCache = data || [];
-    const options = especesCache.map((e) => `<option value="${e.id}">${echapper(e.nom)}</option>`).join("");
+    remplirSelectsGibier();
+}
+
+function remplirSelectsGibier() {
+    const options = optionsCategories();
     document.getElementById("champ-espece-plan").innerHTML = options;
     document.getElementById("champ-espece-prelevement").innerHTML = options;
+}
+
+/** Après la gestion du gibier : met à jour les listes et les tableaux. */
+async function rechargerGibier() {
+    remplirSelectsGibier();
+    await chargerPlan();
+    await chargerPrelevements();
 }
 
 async function chargerPlan() {
@@ -173,13 +186,12 @@ async function chargerPlan() {
     }
 
     corps.innerHTML = plans.map((plan) => {
-        const espece = especesCache.find((e) => e.id === plan.espece_id);
-        const realise = (prelevements || []).filter((p) => p.espece_id === plan.espece_id && p.saison === plan.saison).length;
+        const realise = (prelevements || []).filter((p) => prelevementCompte(p, plan)).length;
         const depasse = plan.attribution && realise >= plan.attribution;
         return `
             <tr>
                 <td data-etiquette="Saison">${echapper(plan.saison)}</td>
-                <td data-etiquette="Espèce">${espece ? echapper(espece.nom) : ""}</td>
+                <td data-etiquette="Gibier">${echapper(nomGibierDe(plan, categoriesCache, especesCache))}</td>
                 <td data-etiquette="Attribution">${plan.attribution}</td>
                 <td data-etiquette="Réalisé" style="${depasse ? "color:#a3442f; font-weight:600;" : ""}">${realise} / ${plan.attribution}</td>
                 <td data-etiquette="">
@@ -207,7 +219,7 @@ async function enregistrerPlan(evenement) {
     }
     await clientSupabase.from("plans_chasse").insert({
         saison,
-        espece_id: document.getElementById("champ-espece-plan").value,
+        categorie_id: document.getElementById("champ-espece-plan").value || null,
         attribution: parseInt(document.getElementById("champ-attribution-plan").value) || 0,
     });
     fermerModale("modale-plan");
@@ -242,12 +254,11 @@ async function chargerPrelevements() {
     }
 
     corps.innerHTML = prelevements.map((p) => {
-        const espece = especesCache.find((e) => e.id === p.espece_id);
         const chasseur = chasseursCache.find((c) => c.id === p.chasseur_id);
         return `
             <tr>
                 <td data-etiquette="Date">${new Date(p.date_prelevement).toLocaleDateString("fr-FR")}</td>
-                <td data-etiquette="Espèce">${espece ? echapper(espece.nom) : ""}</td>
+                <td data-etiquette="Gibier">${echapper(nomGibierDe(p, categoriesCache, especesCache))}</td>
                 <td data-etiquette="Chasseur">${chasseur ? echapper(nomAffichePersonne(chasseur)) : ""}</td>
                 <td data-etiquette="Sexe">${echapper(p.sexe)}</td>
                 <td data-etiquette="Poids">${p.poids_kg ? p.poids_kg.toFixed(1) + " kg" : ""}</td>
@@ -283,7 +294,7 @@ async function enregistrerPrelevement(evenement) {
     await clientSupabase.from("prelevements").insert({
         date_prelevement: date,
         saison,
-        espece_id: document.getElementById("champ-espece-prelevement").value,
+        categorie_id: document.getElementById("champ-espece-prelevement").value || null,
         chasseur_id: document.getElementById("champ-chasseur-prelevement").value || null,
         battue_id: document.getElementById("champ-battue-prelevement").value || null,
         sexe: document.getElementById("champ-sexe-prelevement").value,

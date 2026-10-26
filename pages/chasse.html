@@ -40,11 +40,12 @@
     <!-- Onglet Plan de chasse -->
     <div class="panneau-onglet" id="onglet-plan">
         <div class="barre-outils"><span class="espace"></span>
+            <button class="bouton bouton-secondaire" onclick="ouvrirCategories(rechargerGibier)">Gérer le gibier et les sonneries</button>
             <button class="bouton bouton-principal" onclick="ouvrirCreationPlan()">Nouvelle attribution</button>
         </div>
         <div class="carte">
             <table class="tableau-donnees">
-                <thead><tr><th>Saison</th><th>Espèce</th><th>Attribution</th><th>Réalisé</th><th></th></tr></thead>
+                <thead><tr><th>Saison</th><th>Gibier</th><th>Attribution</th><th>Réalisé</th><th></th></tr></thead>
                 <tbody id="corps-tableau-plan"></tbody>
             </table>
         </div>
@@ -57,7 +58,7 @@
         </div>
         <div class="carte">
             <table class="tableau-donnees">
-                <thead><tr><th>Date</th><th>Espèce</th><th>Chasseur</th><th>Sexe</th><th>Poids</th><th></th></tr></thead>
+                <thead><tr><th>Date</th><th>Gibier</th><th>Chasseur</th><th>Sexe</th><th>Poids</th><th></th></tr></thead>
                 <tbody id="corps-tableau-prelevements"></tbody>
             </table>
         </div>
@@ -98,7 +99,7 @@
         <div id="message-modale-plan"></div>
         <form id="formulaire-plan">
             <label class="etiquette">Saison *</label><input type="text" id="champ-saison-plan" required>
-            <label class="etiquette">Espèce *</label><select id="champ-espece-plan" required></select>
+            <label class="etiquette">Gibier *</label><select id="champ-espece-plan" required></select>
             <label class="etiquette">Attribution</label><input type="number" min="0" id="champ-attribution-plan">
             <div class="actions-modale">
                 <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-plan')">Annuler</button>
@@ -118,7 +119,7 @@
                 <div><label class="etiquette">Date *</label><input type="date" id="champ-date-prelevement" required></div>
                 <div><label class="etiquette">Saison *</label><input type="text" id="champ-saison-prelevement" required></div>
             </div>
-            <label class="etiquette">Espèce *</label><select id="champ-espece-prelevement" required></select>
+            <label class="etiquette">Gibier *</label><select id="champ-espece-prelevement" required></select>
             <label class="etiquette">Chasseur</label><select id="champ-chasseur-prelevement"></select>
             <label class="etiquette">Battue</label><select id="champ-battue-prelevement"></select>
             <div class="ligne-champs">
@@ -145,6 +146,7 @@
 <script src="../js/auth.js"></script>
 <script src="../js/modales.js"></script>
 <script src="../js/onglets.js"></script>
+<script src="../js/categories.js"></script>
 <script src="../js/chasse.js"></script>
 </body>
 </html>

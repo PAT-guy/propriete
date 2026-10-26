@@ -28,7 +28,6 @@ let participantsCache = [];
 let traquesCache = [];
 let postesTraqueCache = [];
 
-let categoriesCache = [];
 let battueEnEditionId = null;
 let editionEstModele = false;
 
@@ -438,29 +437,10 @@ async function supprimerBattue(id) {
 // Plan de chasse du jour et catégories (avec leur sonnerie)
 // ----------------------------------------------------------------------------
 
-const CATEGORIES_PAR_DEFAUT = [
-    { nom: "Chevreuil", sonnerie: "2", precisions: ["Chevreuil", "Chevrette", "Chevrillard"] },
-    { nom: "Cerf -8", sonnerie: "6", precisions: [] },
-    { nom: "Cerf +8", sonnerie: "6", precisions: [] },
-    { nom: "Biche", sonnerie: "4", precisions: [] },
-    { nom: "Jeune", sonnerie: "3", precisions: [] },
-];
-
-async function chargerCategories() {
-    let { data } = await clientSupabase.from("categories_chasse").select();
-    if (data && data.length === 0) {
-        // Première utilisation : on installe la liste de départ (modifiable ensuite).
-        const { data: creees } = await clientSupabase.from("categories_chasse").insert(
-            CATEGORIES_PAR_DEFAUT.map((c, i) => ({ ...c, ordre: i + 1 }))).select();
-        data = creees || [];
-    }
-    categoriesCache = (data || []).sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
-}
-
 function remplirPlanJour(planJour) {
     const zone = document.getElementById("liste-plan-jour");
     if (categoriesCache.length === 0) {
-        zone.innerHTML = '<em style="color:#888;">Aucune catégorie : ajoute-en avec « Gérer les catégories et les sonneries ».</em>';
+        zone.innerHTML = '<em style="color:#888;">Aucune catégorie : ajoute-en avec « Gérer le gibier et les sonneries ».</em>';
         return;
     }
     const parId = new Map((planJour || []).map((l) => [l.id, l]));
@@ -491,75 +471,7 @@ function lirePlanJour() {
     return lignes.length ? lignes : null;
 }
 
-function ouvrirCategories() {
-    document.getElementById("message-categories").innerHTML = "";
-    afficherCategories();
-    ouvrirModale("modale-categories");
-}
-
-function afficherCategories() {
-    const corps = document.getElementById("corps-categories");
-    corps.innerHTML = categoriesCache.length === 0
-        ? '<tr><td colspan="4" style="text-align:center; color:#888;">Aucune catégorie.</td></tr>'
-        : categoriesCache.map((c, i) => `
-        <tr data-id="${c.id}">
-            <td><input type="text" class="cat-nom" value="${echapper(c.nom)}" onchange="majCategorie('${c.id}')" style="padding:4px 6px;"></td>
-            <td><input type="text" class="cat-sonnerie" value="${echapper(c.sonnerie)}" onchange="majCategorie('${c.id}')" style="padding:4px 6px;"></td>
-            <td><input type="text" class="cat-precisions" value="${echapper((c.precisions || []).join(", "))}" placeholder="facultatif" onchange="majCategorie('${c.id}')" style="padding:4px 6px;"></td>
-            <td style="white-space:nowrap; text-align:right;">
-                <button type="button" class="bouton bouton-secondaire" style="padding:2px 6px;" onclick="deplacerCategorie('${c.id}', -1)" ${i === 0 ? "disabled" : ""}>▲</button>
-                <button type="button" class="bouton bouton-secondaire" style="padding:2px 6px;" onclick="deplacerCategorie('${c.id}', 1)" ${i === categoriesCache.length - 1 ? "disabled" : ""}>▼</button>
-                <button type="button" class="bouton bouton-danger" style="padding:2px 6px;" onclick="supprimerCategorie('${c.id}')">✕</button>
-            </td>
-        </tr>`).join("");
-}
-
-async function majCategorie(id) {
-    const ligne = document.querySelector(`#corps-categories tr[data-id="${id}"]`);
-    if (!ligne) return;
-    const nom = ligne.querySelector(".cat-nom").value.trim();
-    if (!nom) { afficherCategories(); return; }
-    const valeurs = {
-        nom,
-        sonnerie: ligne.querySelector(".cat-sonnerie").value.trim() || null,
-        precisions: ligne.querySelector(".cat-precisions").value.split(",").map((p) => p.trim()).filter(Boolean),
-    };
-    await clientSupabase.from("categories_chasse").update(valeurs).eq("id", id);
-    Object.assign(categoriesCache.find((c) => c.id === id), valeurs);
-}
-
-async function ajouterCategorie() {
-    const ordre = categoriesCache.reduce((m, c) => Math.max(m, c.ordre || 0), 0) + 1;
-    const { data } = await clientSupabase.from("categories_chasse").insert({ nom: "Nouvelle catégorie", sonnerie: null, precisions: [], ordre }).select().single();
-    if (data) categoriesCache.push(data);
-    afficherCategories();
-}
-
-async function deplacerCategorie(id, sens) {
-    const i = categoriesCache.findIndex((c) => c.id === id);
-    const j = i + sens;
-    if (i < 0 || j < 0 || j >= categoriesCache.length) return;
-    [categoriesCache[i], categoriesCache[j]] = [categoriesCache[j], categoriesCache[i]];
-    for (let k = 0; k < categoriesCache.length; k++) {
-        if (categoriesCache[k].ordre !== k + 1) {
-            categoriesCache[k].ordre = k + 1;
-            await clientSupabase.from("categories_chasse").update({ ordre: k + 1 }).eq("id", categoriesCache[k].id);
-        }
-    }
-    afficherCategories();
-}
-
-async function supprimerCategorie(id) {
-    const c = categoriesCache.find((x) => x.id === id);
-    if (!confirm(`Supprimer la catégorie « ${c ? c.nom : ""} » ? Elle disparaît du plan de chasse de toutes les battues.`)) return;
-    await clientSupabase.from("categories_chasse").delete().eq("id", id);
-    categoriesCache = categoriesCache.filter((x) => x.id !== id);
-    afficherCategories();
-}
-
-/** Ferme la liste et met à jour les cases du formulaire de la battue, en gardant ce qui est déjà coché. */
-function fermerCategories() {
-    const encours = lirePlanJour();
-    fermerModale("modale-categories");
-    remplirPlanJour(encours);
+/** Après la gestion des catégories : met à jour les cases du formulaire en gardant ce qui est déjà coché. */
+function rafraichirPlanJourDepuisFormulaire() {
+    remplirPlanJour(lirePlanJour());
 }

@@ -6,7 +6,7 @@
 
 const TABLES_SAUVEGARDE = [
     ["proprietaires", "Propriétaires"], ["especes_gibier", "Espèces de gibier"], ["chasseurs", "Chasseurs"],
-    ["parcelles", "Parcelles"], ["essences_parcelle", "Essences"], ["plans_chasse", "Plan de chasse"], ["categories_chasse", "Catégories et sonneries"],
+    ["parcelles", "Parcelles"], ["essences_parcelle", "Essences"], ["categories_chasse", "Catégories et sonneries"], ["plans_chasse", "Plan de chasse"],
     ["battues", "Battues et modèles"], ["participants_battue", "Participants aux battues"],
     ["traques", "Traques"], ["postes_chasse", "Bibliothèque de postes"], ["postes_traque", "Postes placés"],
     ["versions_plan", "Versions de plans"], ["modeles_impression", "Mises en page d'impression"], ["prelevements", "Prélèvements"], ["prestataires", "Prestataires"],

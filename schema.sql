@@ -208,6 +208,12 @@ create table if not exists postes_traque (
 
 alter table prelevements add column if not exists traque_id uuid references traques(id) on delete set null;
 
+-- Plan de chasse de la saison et prélèvements : par catégorie (Cerf -8, Biche...). L'espèce devient facultative.
+alter table plans_chasse add column if not exists categorie_id uuid references categories_chasse(id) on delete set null;
+alter table prelevements add column if not exists categorie_id uuid references categories_chasse(id) on delete set null;
+alter table plans_chasse alter column espece_id drop not null;
+alter table prelevements alter column espece_id drop not null;
+
 -- ----------------------------------------------------------------------------
 -- Travaux forestiers
 -- ----------------------------------------------------------------------------

@@ -2,8 +2,9 @@
  * Service worker : permet d'ouvrir le site et de consulter les données déjà
  * chargées sans réseau (en forêt, par exemple).
  *
- * - Fichiers du site et bibliothèques (Leaflet, Supabase) : réponse du cache
- *   puis mise à jour en arrière-plan.
+ * - Fichiers du site : réseau d'abord (toujours la dernière version, pages et scripts
+ *   cohérents entre eux), cache en secours hors ligne ou si le réseau met plus de 4 s.
+ * - Bibliothèques (Leaflet, Supabase) : cache d'abord, elles ne changent pas.
  * - Tuiles de carte IGN : cache d'abord. Elles y arrivent quand on les a
  *   affichées, ou via le bouton « Télécharger la zone hors ligne ».
  * - Lectures Supabase (GET /rest/v1/) : réseau d'abord, dernière réponse
@@ -12,7 +13,7 @@
  * Incrémenter VERSION_SITE à chaque déploiement qui doit forcer un rafraîchissement.
  */
 
-const VERSION_SITE = "v2";
+const VERSION_SITE = "v3";
 const CACHE_SITE = `foret-site-${VERSION_SITE}`;
 const CACHE_TUILES = "foret-tuiles-v1";
 const CACHE_DONNEES = "foret-donnees-v1";
@@ -41,7 +42,7 @@ self.addEventListener("fetch", (evenement) => {
     } else if (url.hostname === "unpkg.com") {
         evenement.respondWith(cacheDAbord(requete));
     } else if (url.origin === self.location.origin) {
-        evenement.respondWith(siteRevalidation(requete));
+        evenement.respondWith(siteReseauDAbord(requete));
     }
 });
 
@@ -54,20 +55,24 @@ async function cacheDAbord(requete) {
     return reponse;
 }
 
-async function siteRevalidation(requete) {
+async function siteReseauDAbord(requete) {
     const cache = await caches.open(CACHE_SITE);
-    const enCache = await cache.match(requete, { ignoreSearch: true });
-    // "no-cache" : revalider auprès du serveur, sinon le cache HTTP du navigateur
-    // (10 minutes sur GitHub Pages) resservirait l'ancienne version du fichier.
-    const miseAJour = fetch(requete, { cache: "no-cache" }).then((reponse) => {
+    try {
+        const reponse = await Promise.race([
+            // "no-cache" : revalider auprès du serveur, sinon le cache HTTP du navigateur
+            // (10 minutes sur GitHub Pages) resservirait l'ancienne version du fichier.
+            fetch(requete, { cache: "no-cache" }),
+            new Promise((_, rejeter) => setTimeout(() => rejeter(new Error("délai dépassé")), 4000)),
+        ]);
         if (reponse.ok) cache.put(requete, reponse.clone());
         return reponse;
-    }).catch(() => null);
-    if (enCache) return enCache;
-    const reponse = await miseAJour;
-    return reponse || new Response("Hors ligne : cette page n'a pas encore été ouverte avec du réseau.", {
-        status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
+    } catch (erreur) {
+        const enCache = await cache.match(requete, { ignoreSearch: true });
+        if (enCache) return enCache;
+        return new Response("Hors ligne : cette page n'a pas encore été ouverte avec du réseau.", {
+            status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" },
+        });
+    }
 }
 
 async function tuileCacheDAbord(requete) {

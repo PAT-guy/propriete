@@ -1,0 +1,20 @@
+const { chromium } = require('playwright');
+const L = process.argv[2] + '/node_modules';
+const map = {'leaflet@1.9.4/dist/leaflet.js':L+'/leaflet/dist/leaflet.js','leaflet@1.9.4/dist/leaflet.css':L+'/leaflet/dist/leaflet.css','@supabase/supabase-js@2':L+'/@supabase/supabase-js/dist/umd/supabase.js'};
+const B='http://localhost:8123/'; let ok=0,ko=0; const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
+(async()=>{
+ const b=await chromium.launch(); const ctx=await b.newContext(); const p=await ctx.newPage(); const messages=[];
+ p.on('dialog',d=>{messages.push(d.message());d.accept();});
+ await ctx.route(/unpkg\.com/, r=>{const u=r.request().url();const k=Object.keys(map).find(k=>u.includes(k));k?r.fulfill({path:map[k]}):r.abort();});
+ await p.goto(B+'index.html'); await p.waitForTimeout(500);
+ await p.evaluate(()=>{ window.fetch=async()=>new Response(JSON.stringify({message:"Could not find the assurance_assureur column of chasseurs in the schema cache"}),{status:400}); });
+ await p.evaluate(()=>fetchSansEcritureHorsLigne('https://x.supabase.co/rest/v1/chasseurs',{method:'POST'}));
+ t('écriture refusée : message affiché avec la cause', messages.length===1 && messages[0].includes("assurance_assureur"));
+ t('base obsolète : consigne de relancer schema.sql', messages[0].includes('schema.sql'));
+ await p.evaluate(()=>{ window.fetch=async()=>new Response('[]',{status:200}); });
+ await p.evaluate(()=>fetchSansEcritureHorsLigne('https://x.supabase.co/rest/v1/chasseurs',{method:'GET'}));
+ await p.evaluate(()=>{ window.fetch=async()=>new Response('{}',{status:404}); });
+ await p.evaluate(()=>fetchSansEcritureHorsLigne('https://x.supabase.co/rest/v1/chasseurs',{method:'GET'}));
+ t('lecture, même en erreur : aucun message', messages.length===1);
+ console.log(ok+' OK, '+ko+' FAIL'); await b.close();
+})();

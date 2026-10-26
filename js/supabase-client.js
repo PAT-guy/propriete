@@ -18,7 +18,19 @@ function fetchSansEcritureHorsLigne(url, options) {
         alert("Pas de réseau : cette modification n'a pas été enregistrée. Réessaie quand la connexion est revenue.");
         return Promise.reject(new TypeError("Hors ligne"));
     }
-    return fetch(url, options);
+    return fetch(url, options).then(async (reponse) => {
+        if (!reponse.ok && methode !== "GET" && methode !== "HEAD") await signalerEchecEcriture(reponse);
+        return reponse;
+    });
+}
+
+/** Une écriture refusée par la base ne doit jamais passer inaperçue (le code appelant ignore souvent l'erreur). */
+async function signalerEchecEcriture(reponse) {
+    let detail = "";
+    try { detail = (await reponse.clone().json()).message || ""; } catch (e) { /* réponse sans JSON */ }
+    const baseObsolete = /column|schema cache|does not exist|relation/i.test(detail);
+    alert("L'enregistrement a échoué" + (detail ? " : " + detail : ` (erreur ${reponse.status})`) +
+        (baseObsolete ? "\n\nLa base de données n'est probablement pas à jour : recopie le fichier schema.sql dans l'éditeur SQL de Supabase puis clique sur Run." : ""));
 }
 
 /** Enregistre le service worker (mode hors ligne) : seulement en https ou sur localhost. */

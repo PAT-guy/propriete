@@ -38,14 +38,6 @@
 .ib-carton { height: 148.5mm; }
 .ib-page { height: 297mm; }
 
-.ib-trait-coupe {
-    position: absolute; left: 0; right: 0; top: 148.5mm; z-index: 5;
-    border-top: 0.3mm dashed #8a8a8a;
-}
-.ib-trait-coupe::before {
-    content: "✂"; position: absolute; left: 2mm; top: -3.2mm; font-size: 9pt; color: #8a8a8a; background: inherit;
-}
-
 /* Cadre : double filet vert sapin et ocre */
 .ib-cadre {
     position: absolute; inset: 3.5mm; pointer-events: none;
@@ -67,9 +59,11 @@
 .ib-ligne.moitie-seule > .ib-bloc { max-width: calc(50% - 1.5mm); }
 .ib-bloc { flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .ib-bloc.fixe { flex: 1 1 0; }
+/* Titre de section : identique partout (une ligne, même hauteur), pour que les blocs côte à côte s'alignent. */
 .ib-bloc-titre {
-    font-size: 1.02em; font-weight: 700; color: var(--ib-primaire); text-transform: uppercase;
-    letter-spacing: 0.09em; border-bottom: 0.25mm solid var(--ib-filet); margin: 0 0 1.3mm 0; padding-bottom: 0.6mm;
+    flex: none; display: block; box-sizing: border-box; height: 5.6mm; line-height: 5mm; margin: 0 0 1.6mm 0;
+    font-size: 1em; font-weight: 700; color: var(--ib-primaire); text-transform: uppercase; letter-spacing: 0.09em;
+    border-bottom: 0.25mm solid var(--ib-filet); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ib-bloc-titre::before { content: "◆ "; color: var(--ib-accent); font-size: 0.8em; }
 
@@ -117,6 +111,9 @@
 .ib-table .num { width: 8mm; text-align: center; font-weight: 700; }
 .ib-sous-tableaux { display: grid; gap: 2.5mm 4mm; align-items: start; }
 .ib-expiree { color: #b00020; font-weight: 700; }
+.ib-sonnerie { font-weight: 700; color: var(--ib-primaire); }
+.ib-table td, .ib-table th { white-space: normal; }
+.ib-table td.libre { white-space: nowrap; }
 
 /* Lignes d'écriture (incidents) */
 .ib-lignes-ecriture div { border-bottom: 0.25mm solid #888; height: var(--ib-h-ligne, 7mm); }

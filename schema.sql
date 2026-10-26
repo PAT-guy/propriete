@@ -104,6 +104,19 @@ alter table battues alter column date_battue drop not null;
 alter table battues add column if not exists est_modele boolean default false;
 alter table battues add column if not exists nom_modele text;
 
+-- Plan de chasse du jour : [{"id": <categories_chasse.id>, "autorise": true, "nombre": 3, "choix": ["Chevreuil","Chevrette"]}, ...]
+alter table battues add column if not exists plan_jour jsonb;
+
+-- Catégories de gibier avec leur sonnerie (cerf -8, biche, chevreuil...), modifiables dans le site.
+create table if not exists categories_chasse (
+    id uuid primary key default gen_random_uuid(),
+    nom text not null,
+    sonnerie text,                 -- texte libre affiché sur les cartons (ex : "6")
+    precisions jsonb,              -- choix possibles sur la ligne (ex : ["Chevreuil","Chevrette","Chevrillard"])
+    ordre int default 0,
+    created_at timestamptz default now()
+);
+
 create table if not exists participants_battue (
     id uuid primary key default gen_random_uuid(),
     battue_id uuid not null references battues(id) on delete cascade,
@@ -289,7 +302,7 @@ begin
             'proprietaires', 'parcelles', 'essences_parcelle',
             'chasseurs', 'especes_gibier', 'plans_chasse', 'battues',
             'participants_battue', 'prelevements',
-            'postes_chasse', 'traques', 'postes_traque', 'versions_plan', 'modeles_impression',
+            'postes_chasse', 'traques', 'postes_traque', 'versions_plan', 'modeles_impression', 'categories_chasse',
             'prestataires', 'chantiers',
             'cotisations', 'factures', 'baux_chasse', 'documents'
         ])

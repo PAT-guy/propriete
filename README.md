@@ -26,18 +26,31 @@ La courbe est une courbe lissée qui passe par les points cliqués (pas de poign
 
 Deux boutons dans le plan de battue (et sur la page Battues) : **Cartons de battue** et **Fiche de gestion**. Les anciens carnets et l'ancienne fiche de battue sont remplacés par ces deux documents.
 
-- **Cartons de battue** : A5 paysage, recto-verso, **2 par feuille A4** (même carton répété deux fois, trait de coupe pointillé). Par défaut, le recto porte l'en-tête, le rendez-vous, un **encart pour écrire à la main les numéros de poste de chaque traque** et les consignes ; le verso porte la grande carte avec les postes numérotés à la couleur de leur traque.
+- **Cartons de battue** : A5 paysage, recto-verso, **2 par feuille A4** (même carton répété deux fois ; pas de trait de coupe, la feuille se coupe en deux au milieu). Par défaut, le recto porte l'en-tête, le rendez-vous, un **encart pour écrire à la main les numéros de poste de chaque traque**, le **plan de chasse du jour avec les sonneries** et les consignes ; le verso porte la grande carte avec les postes numérotés à la couleur de leur traque.
 - **Fiche de gestion** : A4 recto-verso. Par défaut, le recto porte le conducteur, le chef ou la cheffe de ligne et les véhicules de chaque traque (à saisir dans le plan, rubrique « Équipe de la traque »), puis le nom du chasseur à chaque poste, traque par traque. Le verso porte la grande carte et les cases à remplir (prélèvements par poste, heures des traques, incidents, signatures).
 
-Pour imprimer : bouton « Imprimer », format A4, recto-verso avec retournement sur le **bord long**, échelle 100 %, sans marges ni mise à l'échelle. Pour les cartons, découper ensuite sur le trait pointillé.
+Pour imprimer : bouton « Imprimer », format A4, recto-verso avec retournement sur le **bord long**, échelle 100 %, sans marges ni mise à l'échelle. Pour les cartons, couper ensuite la feuille en deux.
 
 **Tout est modulable**, avec un aperçu à l'échelle réelle qui se met à jour en direct :
 - chaque face est une liste de **blocs** (en-tête, informations pratiques, encart des numéros de poste, carte, règles de sécurité, instructions, notes, postes et chasseurs, équipes, tableaux de saisie, bilan, présence et émargement avec assurance, incidents, signatures, texte libre, espace) que l'on active, réordonne (▲ ▼), déplace d'une face à l'autre (⇄), ajoute ou retire ;
 - chaque bloc a ses réglages (titre, colonnes, taille du texte, hauteur des lignes, cases à cocher...), une largeur (pleine ou demi-largeur, deux blocs demi-largeur se placent côte à côte) et une hauteur (selon le contenu, place restante ou fixe en mm) ;
-- l'apparence se règle globalement : palette (Sologne vert sapin et ocre, Brique de Sologne, Étang, Noir et blanc), police, taille du texte, marges, cadre à double filet, fond papier crème, trait de coupe ;
+- l'apparence se règle globalement : palette (Sologne vert sapin et ocre, Brique de Sologne, Étang, Noir et blanc), police, taille du texte, marges, cadre à double filet, fond papier crème ;
 - le texte libre accepte `{date}`, `{secteur}`, `{rdv_lieu}`, `{rdv_heure}`, `{responsable}`, `{nb_traques}` ;
 - un cadre rouge et un message signalent quand une face dépasse la page (le bas serait coupé) ;
 - les mises en page se **nomment et s'enregistrent** (« Enregistrer sous… »), se rouvrent et se suppriment. Le travail en cours est aussi gardé dans le navigateur.
+
+## Plan de chasse du jour et sonneries
+
+Dans la fiche d'une battue (ou d'un modèle), la rubrique **Plan de chasse du jour** liste les catégories de gibier : on coche celles qui peuvent être tirées ce jour-là, avec un nombre autorisé facultatif. La ligne **Chevreuil** propose de préciser chevreuil, chevrette ou chevrillard (aucune case cochée : la ligne affiche « Chevreuil »).
+
+La liste des catégories et leur **sonnerie** sont communes à toutes les battues et se modifient avec « Gérer les catégories et les sonneries » : nom, sonnerie (texte libre), choix possibles (séparés par des virgules), ordre, ajout et suppression. La liste de départ est : Chevreuil (2), Cerf -8 (6), Cerf +8 (6), Biche (4), Jeune (3). Le bloc « Plan de chasse du jour (sonneries) » des cartons et de la fiche affiche les catégories cochées avec leur sonnerie en gros ; il peut ajouter une colonne « nombre autorisé » et une colonne « prélevé » à remplir. Le plan du jour se recopie avec les modèles de battue.
+
+## Plusieurs cartes et cadrage
+
+Un bloc **Carte** peut être ajouté autant de fois que nécessaire (par exemple une carte par groupe de traques éloignées). Chaque carte a :
+- ses **traques affichées** (aucune case cochée : toutes), avec sa propre légende ;
+- son **fond** : plan IGN, photo aérienne, ou aucun (tracés seuls) ;
+- son **cadrage** : « Cadrer » rend la carte déplaçable et zoomable dans l'aperçu (souris, molette ou doigt ; sur un carton, les deux exemplaires suivent), « Figer le cadrage » verrouille la vue et l'enregistre dans la mise en page, « Automatique » revient au cadrage sur les traques. Le cadrage fixe est mémorisé en centre et niveau de zoom : si tu changes la taille du bloc, la zone visible change un peu.
 
 ## Sauvegarde et versions
 

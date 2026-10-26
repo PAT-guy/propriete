@@ -91,6 +91,12 @@
                 <div><label class="etiquette">Heure de rendez-vous</label><input type="time" id="champ-heure-rdv-battue"></div>
             </div>
 
+            <div id="bloc-plan-jour">
+                <label class="etiquette">Plan de chasse du jour <span style="font-weight:400; color:#666;">(coche ce qui peut être tiré ce jour-là)</span></label>
+                <div id="liste-plan-jour" class="carte" style="padding:8px 10px;"></div>
+                <button type="button" class="bouton bouton-secondaire" style="margin-top:6px;" onclick="ouvrirCategories()">Gérer les catégories et les sonneries</button>
+            </div>
+
             <div id="bloc-participants">
                 <label class="etiquette">Participants</label>
                 <div id="liste-participants-cochables" class="carte" style="max-height:160px; overflow-y:auto; padding:10px;"></div>
@@ -110,6 +116,24 @@
                 <button type="submit" class="bouton bouton-principal">Enregistrer</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modale : catégories et sonneries -->
+<div class="fond-modale" id="modale-categories">
+    <div class="boite-modale" style="max-width:640px;">
+        <h2>Catégories et sonneries</h2>
+        <p style="font-size:13px; color:#6b6b60; margin-top:0;">La liste commune à toutes les battues. La sonnerie est un texte libre (par exemple 6). « Choix possibles » permet de préciser une ligne au moment de cocher (par exemple chevreuil, chevrette, chevrillard : séparés par des virgules).</p>
+        <div id="message-categories"></div>
+        <table class="tableau-donnees">
+            <thead><tr><th>Catégorie</th><th style="width:16%">Sonnerie</th><th>Choix possibles</th><th style="width:25%"></th></tr></thead>
+            <tbody id="corps-categories"></tbody>
+        </table>
+        <div class="actions-modale">
+            <button type="button" class="bouton bouton-secondaire" onclick="ajouterCategorie()">+ Ajouter une catégorie</button>
+            <span class="espace"></span>
+            <button type="button" class="bouton bouton-principal" onclick="fermerCategories()">Terminer</button>
+        </div>
     </div>
 </div>
 

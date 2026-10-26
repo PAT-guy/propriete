@@ -34,7 +34,7 @@ const FACES = { recto: "Recto", verso: "Verso" };
     const { data: battue } = await clientSupabase.from("battues").select().eq("id", idBattue).single();
     if (!battue || battue.est_modele) { zoneChargement.textContent = "Battue introuvable (les modèles de battue ne s'impriment pas : crée d'abord une battue datée)."; return; }
 
-    const [chasseurs, participants, parcelles, especes, plans, prelevements, traques] = await Promise.all([
+    const [chasseurs, participants, parcelles, especes, plans, prelevements, traques, categories] = await Promise.all([
         clientSupabase.from("chasseurs").select(),
         clientSupabase.from("participants_battue").select().eq("battue_id", idBattue),
         clientSupabase.from("parcelles").select(),
@@ -42,6 +42,7 @@ const FACES = { recto: "Recto", verso: "Verso" };
         clientSupabase.from("plans_chasse").select(),
         clientSupabase.from("prelevements").select(),
         clientSupabase.from("traques").select().eq("battue_id", idBattue).order("numero"),
+        clientSupabase.from("categories_chasse").select(),
     ]);
     const listeTraques = traques.data || [];
     let postes = [];
@@ -53,6 +54,7 @@ const FACES = { recto: "Recto", verso: "Verso" };
         battue, chasseurs: chasseurs.data || [], participants: participants.data || [], parcelles: parcelles.data || [],
         especes: especes.data || [], plans: plans.data || [], prelevements: prelevements.data || [],
         traques: listeTraques, postes,
+        categories: ((categories && categories.data) || []).sort((a, b) => (a.ordre || 0) - (b.ordre || 0)),
     };
 
     await chargerModeles();
@@ -67,7 +69,7 @@ const FACES = { recto: "Recto", verso: "Verso" };
     document.getElementById(typeDoc === "carton" ? "lien-carton" : "lien-fiche").classList.add("bouton-principal");
     document.getElementById(typeDoc === "carton" ? "lien-carton" : "lien-fiche").classList.remove("bouton-secondaire");
     document.getElementById("aide-impression").textContent = typeDoc === "carton"
-        ? "2 cartons A5 par feuille A4 : imprime en recto-verso (retournement sur le bord long), à 100 %, sans marges ni mise à l'échelle, puis découpe sur le trait pointillé."
+        ? "2 cartons A5 par feuille A4 : imprime en recto-verso (retournement sur le bord long), à 100 %, sans marges ni mise à l'échelle, puis coupe la feuille en deux."
         : "Feuille A4 en recto-verso (retournement sur le bord long), à 100 %, sans marges ni mise à l'échelle.";
     document.title = typeDoc === "carton" ? "Cartons de battue" : "Fiche de gestion";
 
@@ -178,6 +180,22 @@ function genererChampOption(def, valeur, uid) {
     if (def.type === "bool") {
         return `<label class="etiquette" style="font-weight:400;"><input type="checkbox" data-uid="${uid}" data-opt="${def.cle}" ${valeur ? "checked" : ""}> ${echapper(def.libelle)}</label>`;
     }
+    if (def.type === "traques") {
+        const cochees = Array.isArray(valeur) ? valeur : [];
+        return `<label class="etiquette">${echapper(def.libelle)}</label>
+            <div>${ctx.traques.length === 0 ? '<em style="color:#888; font-size:12px;">Aucune traque.</em>' : ctx.traques.map((t) =>
+                `<label style="display:inline-block; margin-right:12px; font-weight:400; font-size:12px;"><input type="checkbox" data-uid="${uid}" data-opt-traque="${def.cle}" value="${t.numero}" ${cochees.includes(t.numero) ? "checked" : ""}> ${echapper(libelleTraqueImpression(t))}</label>`).join("")}</div>
+            <small style="color:#888;">Aucune case cochée = toutes les traques.</small>`;
+    }
+    if (def.type === "cadrage") {
+        return `<label class="etiquette">${echapper(def.libelle)}</label>
+            <div class="cadrage-ui" data-uid="${uid}" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span class="cadrage-etat" style="font-size:12px; flex:1;">${valeur ? "Cadrage figé" : "Cadrage automatique"}</span>
+                <button type="button" class="bouton bouton-secondaire" data-cadrer="${uid}" style="padding:3px 8px;">Cadrer</button>
+                <button type="button" class="bouton bouton-secondaire" data-auto="${uid}" style="padding:3px 8px;" ${valeur ? "" : "disabled"}>Automatique</button>
+            </div>
+            <small style="color:#888;">Cadrer : déplace et zoome la carte dans l'aperçu (souris, molette ou doigt), puis clique sur « Figer ».</small>`;
+    }
     const etiquette = `<label class="etiquette" for="${id}">${echapper(def.libelle)}</label>`;
     if (def.type === "texte") return `${etiquette}<input type="text" id="${id}" data-uid="${uid}" data-opt="${def.cle}" value="${echapper(valeur)}">`;
     if (def.type === "zone") return `${etiquette}<textarea id="${id}" rows="3" data-uid="${uid}" data-opt="${def.cle}">${echapper(valeur)}</textarea>`;
@@ -240,7 +258,6 @@ function construirePanneau() {
             </div>
             <label class="etiquette" style="font-weight:400;"><input type="checkbox" data-style="cadre" ${s.cadre !== false ? "checked" : ""}> Cadre à double filet</label>
             <label class="etiquette" style="font-weight:400;"><input type="checkbox" data-style="fondPapier" ${s.fondPapier ? "checked" : ""}> Fond papier crème (consomme de l'encre)</label>
-            ${typeDoc === "carton" ? `<label class="etiquette" style="font-weight:400;"><input type="checkbox" data-style="traitsCoupe" ${s.traitsCoupe ? "checked" : ""}> Trait de coupe entre les deux cartons</label>` : ""}
         </div>
 
         ${["recto", "verso"].map((face) => `
@@ -308,6 +325,32 @@ function brancherPanneau() {
             changementConfig(false);
         });
     });
+    panneau.querySelectorAll("[data-opt-traque]").forEach((champ) => champ.addEventListener("change", () => {
+        const t = trouverBloc(champ.dataset.uid);
+        if (!t) return;
+        t.bloc.options[champ.dataset.optTraque] = Array.from(panneau.querySelectorAll(`[data-uid="${champ.dataset.uid}"][data-opt-traque]:checked`)).map((c) => Number(c.value));
+        changementConfig(false);
+    }));
+    panneau.querySelectorAll("[data-cadrer]").forEach((bouton) => bouton.addEventListener("click", () => {
+        const uid = bouton.dataset.cadrer;
+        const t = trouverBloc(uid);
+        if (!t) return;
+        if (cadrageEnCours === uid) {
+            t.bloc.options.cadrage = figerCadrage(uid);
+            changementConfig(false);
+            return;
+        }
+        if (!activerCadrage(uid)) { alert("La carte n'est pas affichée (bloc désactivé, ou carte indisponible)."); return; }
+        const premiere = cartesDuBloc(uid)[0];
+        if (premiere) premiere.getContainer().scrollIntoView({ block: "center", behavior: "smooth" });
+        majBoutonsCadrage();
+    }));
+    panneau.querySelectorAll("[data-auto]").forEach((bouton) => bouton.addEventListener("click", () => {
+        const t = trouverBloc(bouton.dataset.auto);
+        if (!t) return;
+        t.bloc.options.cadrage = null;
+        changementConfig(false);
+    }));
     panneau.querySelectorAll("[data-general]").forEach((champ) => {
         champ.addEventListener(champ.type === "number" ? "input" : "change", () => {
             const t = trouverBloc(champ.dataset.uid);
@@ -379,7 +422,22 @@ function ajusterEchelle() {
     boite.style.height = `${echelle.offsetHeight * facteur}px`;
 }
 
+/** Met à jour les boutons « Cadrer / Figer » selon l'état réel des cartes (retour à « Cadrer » après tout nouveau rendu). */
+function majBoutonsCadrage() {
+    document.querySelectorAll("#panneau .cadrage-ui").forEach((zone) => {
+        const uid = zone.dataset.uid;
+        const t = trouverBloc(uid);
+        const actif = cadrageEnCours === uid;
+        zone.querySelector("[data-cadrer]").textContent = actif ? "Figer le cadrage" : "Cadrer";
+        zone.querySelector("[data-cadrer]").classList.toggle("bouton-principal", actif);
+        zone.querySelector("[data-cadrer]").classList.toggle("bouton-secondaire", !actif);
+        zone.querySelector(".cadrage-etat").textContent = actif ? "Déplace et zoome la carte, puis fige" : (t && t.bloc.options.cadrage ? "Cadrage figé" : "Cadrage automatique");
+        zone.querySelector("[data-auto]").disabled = actif || !(t && t.bloc.options.cadrage);
+    });
+}
+
 function rendreApercu() {
+    terminerCadrage();
     const racine = document.getElementById("racine");
     const a = attributsRacine(config);
     racine.className = a.classes;
@@ -392,6 +450,7 @@ function rendreApercu() {
         `<div class="ib-legende-feuille ib-hors-impression">${legendes[f.nom]}</div>${f.html}`).join("");
     ajusterEchelle();
     attenteCartes = initialiserCartesImpression(racine, ctx);
+    majBoutonsCadrage();
     requestAnimationFrame(() => {
         const faces = detecterDebordements(racine);
         const alerte = document.getElementById("alerte-debordement");

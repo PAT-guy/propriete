@@ -23,7 +23,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  t('cartons : 2 feuilles A4 (recto, verso) et 4 cartons A5', await p.locator('.ib-feuille').count()===2 && await p.locator('.ib-carton').count()===4);
  const dim=await p.evaluate(()=>{const mm=(sel)=>{const e=document.querySelector(sel); return e.offsetWidth/3.7795+'x'+e.offsetHeight/3.7795;}; return {feuille:mm('.ib-feuille'),carton:mm('.ib-carton')};});
  t('dimensions réelles : feuille 210x297 mm, carton 210x148,5 mm', Math.abs(parseFloat(dim.feuille)-210)<0.6 && Math.abs(parseFloat(dim.feuille.split('x')[1])-297)<0.6 && Math.abs(parseFloat(dim.carton.split('x')[1])-148.5)<0.6);
- t('trait de coupe présent', await p.locator('.ib-trait-coupe').count()===2);
+ t('plus de trait de coupe, ni dans le rendu ni dans les réglages', await p.locator('.ib-trait-coupe').count()===0 && await p.locator('#panneau [data-style=traitsCoupe]').count()===0);
  const recto=await p.locator('.ib-feuille[data-face=recto] .ib-carton').first().innerText();
  t('recto : titre, date, rendez-vous, responsable', recto.includes('Battue') && /novembre 2026/.test(recto) && recto.includes('Étang du Chêne') && recto.includes('08:30') && recto.includes('Paul Martin'));
  t('recto : encart des numéros de poste, une ligne par traque', (await p.locator('.ib-feuille[data-face=recto] .ib-carton').first().locator('.ib-encart-traque').count())===2 && recto.includes('Postes n°'));

@@ -177,17 +177,17 @@ const BLOCS = {
         libelle: "Encart des numéros de poste (à écrire)",
         description: "Une ligne par traque pour noter à la main les numéros de poste.",
         options: [
-            { cle: "titre", type: "texte", libelle: "Titre", defaut: "Numéros de poste par traque" },
+            { cle: "titre", type: "texte", libelle: "Titre", defaut: "Postes par traque" },
             { cle: "colonnes", type: "choix", libelle: "Colonnes", defaut: "2", choix: [["1", "1"], ["2", "2"], ["3", "3"]] },
             { cle: "lignes", type: "nombre", libelle: "Lignes d'écriture par traque", defaut: 1, min: 1, max: 4 },
             { cle: "hauteurLigne", type: "nombre", libelle: "Hauteur d'une ligne (mm)", defaut: 7, min: 4, max: 20 },
             { cle: "texteDevant", type: "texte", libelle: "Texte devant la ligne", defaut: "Postes n°" },
         ],
         rendre(ctx, o) {
-            if (ctx.traques.length === 0) return titreDuBloc(o, "Numéros de poste par traque") + aucuneTraque();
+            if (ctx.traques.length === 0) return titreDuBloc(o, "Postes par traque") + aucuneTraque();
             const colonnes = Number(o.colonnes) || 2;
             const lignes = Math.max(1, Number(o.lignes) || 1);
-            return `${titreDuBloc(o, "Numéros de poste par traque")}
+            return `${titreDuBloc(o, "Postes par traque")}
                 <div class="ib-encart" style="grid-template-columns:repeat(${colonnes},1fr)">
                 ${ctx.traques.map((t) => `<div class="ib-encart-traque">
                     <div class="ib-encart-nom"><i class="ib-pastille" style="background:${couleurTraque(t.numero)}"></i>${esc(libelleTraqueImpression(t))}</div>
@@ -197,19 +197,51 @@ const BLOCS = {
     },
 
     carte: {
-        libelle: "Carte de la journée",
-        description: "Toutes les traques, les postes numérotés, les parkings et accès.",
+        libelle: "Carte",
+        description: "Les traques choisies, avec postes numérotés, parkings et accès. Plusieurs cartes possibles, chacune avec son cadrage.",
         options: [
-            { cle: "fond", type: "choix", libelle: "Fond de carte", defaut: "plan", choix: [["plan", "Plan IGN"], ["satellite", "Photo aérienne"]] },
+            { cle: "titre", type: "texte", libelle: "Titre (facultatif)", defaut: "" },
+            { cle: "traques", type: "traques", libelle: "Traques affichées", defaut: [] },
+            { cle: "fond", type: "choix", libelle: "Fond de carte", defaut: "plan", choix: [["plan", "Plan IGN"], ["satellite", "Photo aérienne"], ["aucun", "Aucun (tracés seuls)"]] },
             { cle: "etiquettes", type: "choix", libelle: "Étiquettes", defaut: "noms", choix: [["noms", "Noms des postes, parkings, accès"], ["numeros", "Numéros seulement"], ["aucune", "Aucune"]] },
             { cle: "legende", type: "bool", libelle: "Légende", defaut: true },
+            { cle: "cadrage", type: "cadrage", libelle: "Cadrage", defaut: null },
         ],
         defautsBloc: { taille: "remplir" },
-        rendre(ctx, o) {
-            const specification = esc(JSON.stringify({ fond: o.fond, etiquettes: o.etiquettes }));
-            return `<div class="ib-bloc-carte" style="display:flex; flex-direction:column; flex:1 1 0; min-height:0;">
+        rendre(ctx, o, bloc) {
+            const traques = traquesDuBloc(ctx, o);
+            if (traques.length === 0 && ctx.traques.length > 0) return titreDuBloc(o, "") + '<div class="ib-texte" style="color:#888;">Aucune traque cochée pour cette carte.</div>';
+            const specification = esc(JSON.stringify({
+                uid: bloc.uid, fond: o.fond, etiquettes: o.etiquettes, traques: traques.map((t) => t.numero), cadrage: o.cadrage || null,
+            }));
+            return `${titreDuBloc(o, "")}<div class="ib-bloc-carte" style="display:flex; flex-direction:column; flex:1 1 0; min-height:0;">
                 <div class="ib-carte-zone"><div class="ib-carte-leaflet" data-carte="${specification}"></div></div>
-                ${o.legende ? legendeCarte(ctx) : ""}</div>`;
+                ${o.legende ? legendeCarte(ctx, traques) : ""}</div>`;
+        },
+    },
+
+    plan_chasse_jour: {
+        libelle: "Plan de chasse du jour (sonneries)",
+        description: "Les catégories autorisées ce jour-là avec leur sonnerie (cochées dans la fiche de la battue).",
+        options: [
+            { cle: "titre", type: "texte", libelle: "Titre", defaut: "Plan de chasse du jour" },
+            { cle: "colonneSonnerie", type: "texte", libelle: "En-tête de la colonne sonnerie", defaut: "Sonnerie" },
+            { cle: "nombre", type: "bool", libelle: "Colonne « nombre autorisé »", defaut: false },
+            { cle: "prelevement", type: "bool", libelle: "Colonne « prélevé » à remplir", defaut: false },
+            { cle: "tailleSonnerie", type: "nombre", libelle: "Taille de la sonnerie (pt)", defaut: 14, min: 8, max: 30 },
+            { cle: "hauteurLigne", type: "nombre", libelle: "Hauteur d'une ligne (mm)", defaut: 6, min: 4, max: 15 },
+        ],
+        rendre(ctx, o) {
+            const plan = ctx.battue.plan_jour || [];
+            const lignes = (ctx.categories || []).map((c) => ({ c, l: plan.find((x) => x.id === c.id) })).filter((x) => x.l && x.l.autorise);
+            if (lignes.length === 0) {
+                return titreDuBloc(o, "Plan de chasse du jour") + '<div class="ib-texte" style="color:#888;">Plan de chasse du jour non renseigné : coche les catégories dans la fiche de la battue.</div>';
+            }
+            const libelle = ({ c, l }) => (l.choix && l.choix.length ? l.choix.join(", ") : c.nom);
+            return `${titreDuBloc(o, "Plan de chasse du jour")}
+            <table class="ib-table" ${styleLigne(o)}><thead><tr><th>Gibier</th><th class="num" style="width:${o.colonneSonnerie ? "20mm" : "12mm"}">${esc(o.colonneSonnerie)}</th>${o.nombre ? '<th class="num" style="width:16mm">Nombre</th>' : ""}${o.prelevement ? '<th style="width:22mm">Prélevé</th>' : ""}</tr></thead><tbody>
+            ${lignes.map((x) => `<tr><td class="libre">${esc(libelle(x))}</td><td class="num libre ib-sonnerie" style="font-size:${Number(o.tailleSonnerie) || 14}pt">${esc(x.c.sonnerie)}</td>${o.nombre ? `<td class="num libre">${x.l.nombre === null || x.l.nombre === undefined ? "" : esc(x.l.nombre)}</td>` : ""}${o.prelevement ? '<td class="libre"></td>' : ""}</tr>`).join("")}
+            </tbody></table>`;
         },
     },
 
@@ -288,13 +320,13 @@ const BLOCS = {
         libelle: "Conducteurs, chefs de ligne, véhicules",
         description: "Par traque : conducteur, chef ou cheffe de ligne et véhicules (saisis dans le plan).",
         options: [
-            { cle: "titre", type: "texte", libelle: "Titre", defaut: "Conducteurs, chefs de ligne et véhicules" },
+            { cle: "titre", type: "texte", libelle: "Titre", defaut: "Équipes des traques" },
             { cle: "hauteurLigne", type: "nombre", libelle: "Hauteur d'une ligne (mm)", defaut: 8, min: 5, max: 20 },
         ],
         rendre(ctx, o) {
-            if (ctx.traques.length === 0) return titreDuBloc(o, "Conducteurs, chefs de ligne et véhicules") + aucuneTraque();
-            return `${titreDuBloc(o, "Conducteurs, chefs de ligne et véhicules")}
-            <table class="ib-table" ${styleLigne(o)}><thead><tr><th style="width:22%">Traque</th><th style="width:25%">Conducteur</th><th style="width:25%">Chef ou cheffe de ligne</th><th>Véhicules</th></tr></thead><tbody>
+            if (ctx.traques.length === 0) return titreDuBloc(o, "Équipes des traques") + aucuneTraque();
+            return `${titreDuBloc(o, "Équipes des traques")}
+            <table class="ib-table" ${styleLigne(o)}><thead><tr><th style="width:22%">Traque</th><th style="width:25%">Conducteur</th><th style="width:25%">Chef de ligne</th><th>Véhicules</th></tr></thead><tbody>
             ${ctx.traques.map((t) => `<tr>
                 <td class="libre"><i class="ib-pastille" style="background:${couleurTraque(t.numero)}; margin-right:1.5mm; vertical-align:middle"></i><strong>${esc(libelleTraqueImpression(t))}</strong></td>
                 <td class="libre">${esc(t.conducteur)}</td><td class="libre">${esc(t.chef_de_ligne)}</td><td class="libre">${esc(t.vehicules)}</td></tr>`).join("")}
@@ -320,7 +352,7 @@ const BLOCS = {
                 }));
             }
             return `${titreDuBloc(o, "Prélèvements")}
-            <table class="ib-table" ${styleLigne(o)}><thead><tr><th style="width:17%">Traque</th><th class="num">Poste</th><th style="width:20%">Chasseur</th><th style="width:7%">Tirs</th><th>Animaux (espèce, sexe, poids)</th><th style="width:20%">Observations</th></tr></thead><tbody>
+            <table class="ib-table" ${styleLigne(o)}><thead><tr><th style="width:17%">Traque</th><th class="num">Poste</th><th style="width:20%">Chasseur</th><th style="width:7%">Tirs</th><th>Animaux prélevés</th><th style="width:20%">Observations</th></tr></thead><tbody>
             ${lignes.join("")}${lignesVidesTable(Number(o.lignesVides) || 0, 6)}</tbody></table>`;
         },
     },
@@ -388,12 +420,12 @@ const BLOCS = {
         libelle: "Incidents et observations (lignes)",
         description: "Lignes pour écrire à la main.",
         options: [
-            { cle: "titre", type: "texte", libelle: "Titre", defaut: "Incidents, observations" },
+            { cle: "titre", type: "texte", libelle: "Titre", defaut: "Incidents" },
             { cle: "lignes", type: "nombre", libelle: "Nombre de lignes", defaut: 4, min: 1, max: 30 },
             { cle: "hauteurLigne", type: "nombre", libelle: "Hauteur d'une ligne (mm)", defaut: 7, min: 5, max: 20 },
         ],
         rendre(ctx, o) {
-            return `${titreDuBloc(o, "Incidents, observations")}<div class="ib-lignes-ecriture" ${styleLigne(o)}>${"<div></div>".repeat(Math.max(1, Number(o.lignes) || 1))}</div>`;
+            return `${titreDuBloc(o, "Incidents")}<div class="ib-lignes-ecriture" ${styleLigne(o)}>${"<div></div>".repeat(Math.max(1, Number(o.lignes) || 1))}</div>`;
         },
     },
 
@@ -443,10 +475,16 @@ function blocTexteBattue(ctx, o, champ, titreDefaut) {
     return `${titreDuBloc(o, titreDefaut)}<div class="ib-texte" style="${style}">${esc(texte)}</div>`;
 }
 
-function legendeCarte(ctx) {
+/** Traques affichées par un bloc carte (aucune case cochée = toutes). */
+function traquesDuBloc(ctx, o) {
+    const numeros = Array.isArray(o.traques) ? o.traques : [];
+    return numeros.length === 0 ? ctx.traques : ctx.traques.filter((t) => numeros.includes(t.numero));
+}
+
+function legendeCarte(ctx, traques) {
     const utilises = new Set();
-    ctx.traques.forEach((t) => elementsDeTraque(t).forEach((e) => utilises.add(e.type)));
-    return `<div class="ib-legende">${ctx.traques.map((t) => `<span><i style="border-color:${couleurTraque(t.numero)}"></i>${esc(libelleTraqueImpression(t))}</span>`).join("")}
+    traques.forEach((t) => elementsDeTraque(t).forEach((e) => utilises.add(e.type)));
+    return `<div class="ib-legende">${traques.map((t) => `<span><i style="border-color:${couleurTraque(t.numero)}"></i>${esc(libelleTraqueImpression(t))}</span>`).join("")}
         ${utilises.has("sens") ? '<span><i style="border-color:#222; border-top-width:1.4mm"></i>Sens de la battue</span>' : ""}
         ${utilises.has("rabatteurs") ? '<span><i style="border-color:#444; border-top-style:dashed"></i>Rabatteurs</span>' : ""}
         <span>🎯 poste · 🅿️ parking · 🚪 accès</span></div>`;
@@ -476,14 +514,14 @@ function configParDefaut(type) {
     if (type === "carton") {
         return {
             version: 1, type: "carton", nom: "Carton Sologne",
-            style: { palette: "sologne", police: "serif", tailleBase: 9.5, fondPapier: false, cadre: true, traitsCoupe: true, marge: 8 },
+            style: { palette: "sologne", police: "serif", tailleBase: 9.5, fondPapier: false, cadre: true, marge: 8 },
             faces: {
                 recto: [
                     b("entete", { titre: "Battue" }),
                     b("infos", {}),
-                    b("encart_postes", { lignes: 1, colonnes: "2", hauteurLigne: 9 }),
+                    b("encart_postes", { lignes: 1, colonnes: "1", hauteurLigne: 8 }, { largeur: "moitie" }),
+                    b("plan_chasse_jour", { tailleSonnerie: 12, hauteurLigne: 5.5 }, { largeur: "moitie" }),
                     b("consignes", { taillePolice: 8, colonnes: "2" }),
-                    b("instructions", { taillePolice: 8, colonnes: "2" }),
                 ],
                 verso: [b("carte", { etiquettes: "numeros" }, { taille: "remplir" })],
             },
@@ -491,13 +529,14 @@ function configParDefaut(type) {
     }
     return {
         version: 1, type: "fiche", nom: "Fiche de gestion Sologne",
-        style: { palette: "sologne", police: "serif", tailleBase: 10, fondPapier: false, cadre: true, traitsCoupe: false, marge: 10 },
+        style: { palette: "sologne", police: "serif", tailleBase: 10, fondPapier: false, cadre: true, marge: 10 },
         faces: {
             recto: [
                 b("entete", { titre: "Fiche de gestion" }),
                 b("infos", { parcelle: true, nbParticipants: true }),
-                b("equipe_traques", { hauteurLigne: 10 }),
-                b("postes_chasseurs", { colonnes: "2", permis: false, lignesVides: 1, hauteurLigne: 8 }),
+                b("plan_chasse_jour", { nombre: true, prelevement: true }),
+                b("equipe_traques", { hauteurLigne: 9 }),
+                b("postes_chasseurs", { colonnes: "2", permis: false, lignesVides: 1, hauteurLigne: 7 }),
                 b("notes", {}),
             ],
             verso: [
@@ -519,6 +558,7 @@ function normaliserConfig(config, type) {
         style: { ...base.style, ...((config && config.style) || {}) },
         faces: { recto: [], verso: [] },
     };
+    delete c.style.traitsCoupe;   // option supprimée : plus de trait de coupe
     ["recto", "verso"].forEach((face) => {
         ((config && config.faces && config.faces[face]) || []).forEach((bloc) => {
             if (!BLOCS[bloc.bloc]) return;
@@ -540,7 +580,7 @@ function normaliserConfig(config, type) {
 
 function rendreBloc(bloc, ctx) {
     const def = BLOCS[bloc.bloc];
-    const interieur = def.rendre(ctx, bloc.options);
+    const interieur = def.rendre(ctx, bloc.options, bloc);
     if (!interieur) return null;
     const style = bloc.taille === "fixe" ? `flex:none; height:${Number(bloc.hauteurMm) || 30}mm;` : "";
     return { bloc, html: `<div class="ib-bloc ${bloc.taille === "remplir" ? "remplir" : ""}" style="${style}">${interieur}</div>` };
@@ -583,8 +623,7 @@ function rendreDocument(config, ctx) {
     ["recto", "verso"].forEach((face) => {
         let interieur;
         if (config.type === "carton") {
-            interieur = `<section class="ib-carton">${surface(face)}</section><section class="ib-carton">${surface(face)}</section>`
-                + (config.style.traitsCoupe ? '<div class="ib-trait-coupe"></div>' : "");
+            interieur = `<section class="ib-carton">${surface(face)}</section><section class="ib-carton">${surface(face)}</section>`;
         } else {
             interieur = `<section class="ib-page">${surface(face)}</section>`;
         }
@@ -608,10 +647,10 @@ function detecterDebordements(racine) {
 // Cartes
 // ----------------------------------------------------------------------------
 
-let cartesImpression = [];
+let cartesImpression = [];   // [{ uid, carte }]
 
 function detruireCartesImpression() {
-    cartesImpression.forEach((c) => { try { c.remove(); } catch (e) { /* déjà retirée */ } });
+    cartesImpression.forEach((c) => { try { c.carte.remove(); } catch (e) { /* déjà retirée */ } });
     cartesImpression = [];
 }
 
@@ -632,16 +671,21 @@ function initialiserCartesImpression(racine, ctx) {
 }
 
 function dessinerCarteImpression(zone, spec, ctx) {
-    const carte = L.map(zone, { zoomControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false, boxZoom: false, keyboard: false, attributionControl: true });
+    const carte = L.map(zone, {
+        zoomControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false, boxZoom: false,
+        keyboard: false, touchZoom: false, attributionControl: true, zoomSnap: 0.25, zoomDelta: 0.5,
+    });
     carte.attributionControl.setPrefix(false);
-    cartesImpression.push(carte);
+    cartesImpression.push({ uid: spec.uid, carte });
     const fonds = creerFondsCarteIGN();
-    const fond = spec.fond === "satellite" ? fonds.satelliteIGN : fonds.planIGN;
-    fond.addTo(carte);
+    const fond = spec.fond === "satellite" ? fonds.satelliteIGN : spec.fond === "aucun" ? null : fonds.planIGN;
+    if (fond) fond.addTo(carte);
+    else zone.style.background = "#fbfaf5";
     const groupe = L.featureGroup().addTo(carte);
     const avecNoms = spec.etiquettes === "noms";
+    const traques = ctx.traques.filter((t) => spec.traques.includes(t.numero));
 
-    const idsParcelles = new Set([ctx.battue.parcelle_id, ...ctx.traques.map((t) => t.parcelle_id)].filter(Boolean));
+    const idsParcelles = new Set([ctx.battue.parcelle_id, ...traques.map((t) => t.parcelle_id)].filter(Boolean));
     idsParcelles.forEach((id) => {
         const parcelle = ctx.parcelles.find((p) => p.id === id);
         if (!parcelle || !parcelle.contour) return;
@@ -649,7 +693,7 @@ function dessinerCarteImpression(zone, spec, ctx) {
         if (spec.etiquettes !== "aucune") polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
         groupe.addLayer(polygone);
     });
-    ctx.traques.forEach((t) => {
+    traques.forEach((t) => {
         elementsDeTraque(t).forEach((e) => dessinerElement(groupe, e, t.numero, { sansInfobulle: true }));
         (t.parkings || []).forEach((p) => {
             const m = L.marker([p.lat, p.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") });
@@ -669,13 +713,73 @@ function dessinerCarteImpression(zone, spec, ctx) {
     });
 
     carte.invalidateSize();
-    if (groupe.getLayers().length > 0) carte.fitBounds(groupe.getBounds(), { padding: [22, 22], maxZoom: 17 });
+    if (spec.cadrage && Array.isArray(spec.cadrage.centre)) carte.setView(spec.cadrage.centre, spec.cadrage.zoom, { animate: false });
+    else if (groupe.getLayers().length > 0) carte.fitBounds(groupe.getBounds(), { padding: [22, 22], maxZoom: 17 });
     else carte.setView([46.6, 2.5], 6);
 
+    if (!fond) return Promise.resolve();
     return new Promise((resolve) => {
         let termine = false;
         const fin = () => { if (!termine) { termine = true; resolve(); } };
         fond.once("load", fin);
         setTimeout(fin, 9000);
     });
+}
+
+// ----------------------------------------------------------------------------
+// Cadrage manuel : « Cadrer » rend les cartes d'un bloc déplaçables et zoomables, « Figer » les verrouille
+// ----------------------------------------------------------------------------
+
+let cadrageEnCours = null;   // uid du bloc en cours de cadrage
+let synchroCadrage = false;
+
+function cartesDuBloc(uid) {
+    return cartesImpression.filter((c) => c.uid === uid).map((c) => c.carte);
+}
+
+function interactionCarte(carte, active) {
+    ["dragging", "scrollWheelZoom", "doubleClickZoom", "boxZoom", "keyboard", "touchZoom"].forEach((h) => {
+        if (carte[h]) carte[h][active ? "enable" : "disable"]();
+    });
+    if (active && !carte._zoomControlCadrage) {
+        carte._zoomControlCadrage = L.control.zoom({ position: "topleft" }).addTo(carte);
+    }
+    if (!active && carte._zoomControlCadrage) {
+        carte._zoomControlCadrage.remove();
+        carte._zoomControlCadrage = null;
+    }
+    carte.getContainer().style.cursor = active ? "grab" : "";
+}
+
+function activerCadrage(uid) {
+    terminerCadrage();
+    const cartes = cartesDuBloc(uid);
+    if (cartes.length === 0) return false;
+    cadrageEnCours = uid;
+    cartes.forEach((carte) => {
+        interactionCarte(carte, true);
+        carte.on("moveend", () => {
+            if (synchroCadrage) return;
+            synchroCadrage = true;
+            cartes.forEach((autre) => { if (autre !== carte) autre.setView(carte.getCenter(), carte.getZoom(), { animate: false }); });
+            synchroCadrage = false;
+        });
+    });
+    return true;
+}
+
+function terminerCadrage() {
+    if (!cadrageEnCours) return;
+    cartesDuBloc(cadrageEnCours).forEach((carte) => { carte.off("moveend"); interactionCarte(carte, false); });
+    cadrageEnCours = null;
+}
+
+/** Verrouille les cartes du bloc et retourne le cadrage à enregistrer : { centre: [lat, lng], zoom }. */
+function figerCadrage(uid) {
+    const cartes = cartesDuBloc(uid);
+    const reference = cartes[0];
+    terminerCadrage();
+    if (!reference) return null;
+    const c = reference.getCenter();
+    return { centre: [Number(c.lat.toFixed(6)), Number(c.lng.toFixed(6))], zoom: reference.getZoom() };
 }

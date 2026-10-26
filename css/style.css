@@ -283,7 +283,7 @@ table.tableau-donnees tr:hover td { background-color: #f8f6ef; }
     justify-content: center;
     padding: 20px 12px;
     overflow-y: auto;
-    z-index: 100;
+    z-index: 2000; /* au-dessus des panneaux et contrôles Leaflet (jusqu'à 1000) */
 }
 .fond-modale.ouverte { display: flex; }
 

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carte de chantier — Forêt &amp; Chasse</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+<style>
+    body { background: white; }
+    main.contenu { max-width: 760px; }
+    .entete-fiche { text-align: center; margin-bottom: 20px; border-bottom: 3px solid var(--couleur-accent); padding-bottom: 14px; }
+    .entete-fiche h1 { margin: 0; font-size: 24px; }
+    .entete-fiche p { margin: 4px 0 0 0; color: #555; }
+    .grille-infos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .grille-infos .champ-info .etiquette-info { font-size: 11px; color: #888; text-transform: uppercase; }
+    .grille-infos .champ-info .valeur-info { font-size: 15px; font-weight: 600; }
+    .section-fiche { margin-bottom: 18px; }
+    .section-fiche h2 { font-size: 15px; border-bottom: 1px solid var(--couleur-bordure); padding-bottom: 4px; }
+    .bloc-texte { white-space: pre-line; font-size: 13px; line-height: 1.5; }
+    .carte-impression { height: 340px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<main class="contenu">
+    <div class="barre-outils sans-impression">
+        <a href="pages/travaux.html" class="bouton bouton-secondaire">← Retour</a>
+        <span class="espace"></span>
+        <button class="bouton bouton-principal" onclick="window.print()">Imprimer cette carte</button>
+    </div>
+
+    <div id="zone-chargement" class="message-chargement">Chargement…</div>
+    <div id="zone-fiche" style="display:none;">
+
+        <div class="entete-fiche">
+            <h1>🌲 Carte de chantier</h1>
+            <p id="texte-titre-type"></p>
+        </div>
+
+        <div class="grille-infos" id="grille-infos-pratiques"></div>
+
+        <div class="section-fiche" id="section-carte" style="display:none;">
+            <h2>Localisation et points à signaler</h2>
+            <div id="carte-impression" class="conteneur-carte carte-impression"></div>
+        </div>
+
+        <div class="section-fiche" id="section-description" style="display:none;">
+            <h2>Description des travaux</h2>
+            <div class="bloc-texte" id="texte-description"></div>
+        </div>
+    </div>
+</main>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/mode-demo.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/fonds-carte.js"></script>
+<script src="js/chantier-impression.js"></script>
+</body>
+</html>

@@ -147,7 +147,8 @@ function afficherProchaine() {
             <div style="font-size:13px; margin-bottom:10px;">
                 <strong>${participants.length} participant(s)</strong>${participants.length ? " : " + echapper(participants.map(nomAffichePersonne).join(", ")) : ""}
             </div>
-            <a class="bouton bouton-principal" href="plan-battue.html?id=${b.id}">Plan de battue</a>
+            <a class="bouton bouton-principal" href="saisie.html?id=${b.id}">Saisie rapide</a>
+            <a class="bouton bouton-secondaire" href="plan-battue.html?id=${b.id}">Plan de battue</a>
             <a class="bouton bouton-secondaire" href="impression.html?id=${b.id}&doc=carton" target="_blank">Cartons A5</a>
             <a class="bouton bouton-secondaire" href="impression.html?id=${b.id}&doc=fiche" target="_blank">Fiche de gestion</a>
             <button class="bouton bouton-secondaire" onclick="ouvrirModificationBattue('${b.id}')">Participants et infos</button>
@@ -187,6 +188,7 @@ function ligneBattue(b) {
             <td data-etiquette="Traques">${nbTraquesDe(b.id)}</td>
             <td data-etiquette="">
                 <a class="bouton bouton-principal" style="padding:4px 8px;" href="plan-battue.html?id=${b.id}">Plan</a>
+                <a class="bouton bouton-secondaire" style="padding:4px 8px;" href="saisie.html?id=${b.id}">Saisie</a>
                 <a class="bouton bouton-secondaire" style="padding:4px 8px;" href="impression.html?id=${b.id}&doc=carton" target="_blank">Cartons</a>
                 <a class="bouton bouton-secondaire" style="padding:4px 8px;" href="impression.html?id=${b.id}&doc=fiche" target="_blank">Gestion</a>
                 <button class="bouton bouton-secondaire" style="padding:4px 8px;" onclick="ouvrirModificationBattue('${b.id}')">Modifier</button>

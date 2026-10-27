@@ -249,7 +249,7 @@ async function chargerPrelevements() {
 
     const corps = document.getElementById("corps-tableau-prelevements");
     if (prelevements.length === 0) {
-        corps.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">Aucun prélèvement</td></tr>`;
+        corps.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">Aucun prélèvement</td></tr>`;
         return;
     }
 
@@ -258,7 +258,8 @@ async function chargerPrelevements() {
         return `
             <tr>
                 <td data-etiquette="Date">${new Date(p.date_prelevement).toLocaleDateString("fr-FR")}</td>
-                <td data-etiquette="Gibier">${echapper(nomGibierDe(p, categoriesCache, especesCache))}</td>
+                <td data-etiquette="Gibier">${echapper(nomGibierDe(p, categoriesCache, especesCache))}${p.commentaire ? ` <small style="color:#6b6b60;">(${echapper(p.commentaire)})</small>` : ""}</td>
+                <td data-etiquette="Poste">${echapper(p.poste)}</td>
                 <td data-etiquette="Chasseur">${chasseur ? echapper(nomAffichePersonne(chasseur)) : ""}</td>
                 <td data-etiquette="Sexe">${echapper(p.sexe)}</td>
                 <td data-etiquette="Poids">${p.poids_kg ? p.poids_kg.toFixed(1) + " kg" : ""}</td>

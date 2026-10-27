@@ -57,6 +57,18 @@ Un bloc **Carte** peut être ajouté autant de fois que nécessaire (par exemple
 - son **fond** : plan IGN, photo aérienne, ou aucun (tracés seuls) ;
 - son **cadrage** : « Cadrer » rend la carte déplaçable et zoomable dans l'aperçu (souris, molette ou doigt ; sur un carton, les deux exemplaires suivent), « Figer le cadrage » verrouille la vue et l'enregistre dans la mise en page, « Automatique » revient au cadrage sur les traques. Le cadrage fixe est mémorisé en centre et niveau de zoom : si tu changes la taille du bloc, la zone visible change un peu.
 
+## Saisie rapide des prélèvements (téléphone)
+
+Le bouton **Saisie rapide** (sur la prochaine battue, dans la liste des battues et dans le plan) ouvre une page pensée pour le téléphone, au poste ou au rendez-vous de midi :
+
+1. **Où ?** : on touche la traque, puis le poste (le chasseur affecté à ce poste est repris automatiquement) ou « Sans poste ». Le choix est retenu d'un animal à l'autre.
+2. **Quel animal ?** : de gros boutons, un par catégorie autorisée ce jour-là (cochée dans la fiche de la battue), avec la sonnerie et le compte (« 1 / 2 »). Un appui = un animal. Le bouton passe à l'orange quand le nombre autorisé est atteint et au rouge quand il est dépassé. Le reste du gibier est rangé sous « Autre gibier ». Si une ligne propose plusieurs précisions (chevreuil, chevrette), un choix est demandé.
+3. Un message confirme l'enregistrement avec **Annuler** (retire l'animal) et **Détails** (sexe, poids, chasseur, précision). Les derniers animaux enregistrés et le bilan de la journée (pris, autorisé, total) sont en dessous, avec modification et suppression.
+
+Chaque prélèvement garde la date et la saison de la battue, la traque, le nom du poste, le chasseur et l'heure de saisie ; ils apparaissent dans l'onglet Prélèvements de la page Chasse et alimentent le « réalisé » du plan de chasse.
+
+**Sans réseau** : la saisie continue. Les animaux sont gardés dans une file d'attente sur l'appareil (« en attente » dans la liste, « Hors ligne » en haut), puis envoyés automatiquement au retour du réseau, avec leur heure d'origine et sans doublon. Pour que la page s'ouvre sans réseau, il faut l'avoir ouverte une fois avec du réseau avant de partir (le site garde alors une copie de la battue). Sans réseau, on ne peut ni modifier ni supprimer un prélèvement déjà envoyé. La file d'attente est propre à l'appareil : si le navigateur efface ses données avant l'envoi, ce qui était en attente est perdu.
+
 ## Annuler et rétablir (Ctrl+Z)
 
 Dans le **plan de battue** et dans la **page d'impression**, Ctrl+Z annule la dernière action et Ctrl+Y (ou Ctrl+Maj+Z) la rétablit ; les boutons « ↶ Annuler » et « ↷ Rétablir » font la même chose. Dans le plan, cela couvre : tracés, suppressions, déplacement d'un point, d'un poste ou d'une poignée, changement de chasseur, ajout et suppression d'une traque, nom, parcelle, équipe et notes d'une traque, réouverture d'une version. Pendant un tracé, Ctrl+Z retire le dernier point posé. Les frappes successives dans un champ ne comptent que pour une action. Dans un champ de saisie, Ctrl+Z reste l'annulation de frappe du navigateur. Ctrl+Z ne fait rien tant qu'une fenêtre est ouverte.

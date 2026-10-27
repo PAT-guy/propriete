@@ -214,6 +214,9 @@ alter table prelevements add column if not exists categorie_id uuid references c
 alter table plans_chasse alter column espece_id drop not null;
 alter table prelevements alter column espece_id drop not null;
 
+-- Poste (nom) où l'animal a été prélevé, noté à la saisie rapide.
+alter table prelevements add column if not exists poste text;
+
 -- ----------------------------------------------------------------------------
 -- Travaux forestiers
 -- ----------------------------------------------------------------------------

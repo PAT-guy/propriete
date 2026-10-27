@@ -121,7 +121,8 @@ function prepareEntete(battue) {
     const barre = document.querySelector(".entete-page .barre-outils");
     const lien = (libelle, doc) =>
         `<a class="bouton bouton-secondaire lien-impression" target="_blank" href="impression.html?id=${battue.id}&doc=${doc}">${libelle}</a>`;
-    barre.insertAdjacentHTML("afterbegin", lien("Cartons de battue", "carton") + lien("Fiche de gestion", "fiche"));
+    barre.insertAdjacentHTML("afterbegin",
+        `<a class="bouton bouton-secondaire" href="saisie.html?id=${battue.id}">Saisie rapide</a>` + lien("Cartons de battue", "carton") + lien("Fiche de gestion", "fiche"));
     barre.querySelectorAll(".lien-impression").forEach((a) => {
         a.addEventListener("click", (e) => {
             if (modifie && !confirm("Le plan a des modifications non enregistrées. Imprimer quand même la dernière version enregistrée ?")) e.preventDefault();

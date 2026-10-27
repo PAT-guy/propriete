@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saisie rapide — Forêt &amp; Chasse</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="page-saisie">
+
+<div id="zone-navigation"></div>
+
+<main class="contenu">
+    <div id="zone-chargement" class="message-chargement">Chargement…</div>
+
+    <div id="zone-saisie" style="display:none;">
+        <div class="saisie-entete">
+            <div>
+                <h1 id="saisie-titre">Saisie rapide</h1>
+                <div id="saisie-sous-titre" class="saisie-sous-titre"></div>
+            </div>
+            <div id="saisie-etat" class="saisie-etat"></div>
+        </div>
+        <div id="saisie-message"></div>
+
+        <section class="saisie-bloc">
+            <h2><span>1</span> Où ?</h2>
+            <div id="saisie-traques" class="saisie-defilement"></div>
+            <div id="saisie-postes" class="saisie-postes"></div>
+        </section>
+
+        <section class="saisie-bloc">
+            <h2><span>2</span> Quel animal ? <small>un appui = un animal</small></h2>
+            <div id="saisie-categories" class="saisie-grille"></div>
+            <details id="saisie-autres" class="saisie-autres" style="display:none;">
+                <summary>Autre gibier</summary>
+                <div id="saisie-categories-autres" class="saisie-grille"></div>
+            </details>
+        </section>
+
+        <section class="saisie-bloc">
+            <h2><span>3</span> Derniers enregistrés</h2>
+            <div id="saisie-derniers"></div>
+        </section>
+
+        <section class="saisie-bloc">
+            <h2>Bilan de la journée</h2>
+            <div id="saisie-bilan"></div>
+        </section>
+    </div>
+</main>
+
+<div id="saisie-toast" class="saisie-toast" style="display:none;"></div>
+
+<!-- Choix d'une précision (ex : chevreuil, chevrette) -->
+<div class="fond-modale" id="modale-precision">
+    <div class="boite-modale">
+        <h2 id="titre-precision">Précision</h2>
+        <div id="choix-precision" class="saisie-grille"></div>
+        <div class="actions-modale">
+            <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-precision')">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- Détails d'un prélèvement -->
+<div class="fond-modale" id="modale-detail">
+    <div class="boite-modale">
+        <h2 id="titre-detail">Détails</h2>
+        <div id="message-detail"></div>
+        <form id="formulaire-detail">
+            <div class="ligne-champs">
+                <div><label class="etiquette">Sexe</label>
+                    <select id="champ-sexe-detail"><option>Indéterminé</option><option>Mâle</option><option>Femelle</option></select></div>
+                <div><label class="etiquette">Poids (kg)</label><input type="number" step="0.1" min="0" id="champ-poids-detail" inputmode="decimal"></div>
+            </div>
+            <label class="etiquette">Chasseur</label>
+            <select id="champ-chasseur-detail"></select>
+            <label class="etiquette">Précision, commentaire</label>
+            <input type="text" id="champ-commentaire-detail" placeholder="ex : chevrette, blessé retrouvé">
+            <div class="actions-modale">
+                <button type="button" class="bouton bouton-danger" id="bouton-supprimer-detail">Supprimer</button>
+                <span class="espace"></span>
+                <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-detail')">Annuler</button>
+                <button type="submit" class="bouton bouton-principal">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/mode-demo.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/modales.js"></script>
+<script src="../js/categories.js"></script>
+<script src="../js/saisie.js"></script>
+</body>
+</html>

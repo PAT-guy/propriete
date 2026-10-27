@@ -508,3 +508,60 @@ main.contenu.contenu-large { max-width: 1400px; }
     background: white; border: 3px solid #222; box-sizing: border-box; cursor: move;
 }
 .poignee-forme.milieu span { width: 10px; height: 10px; border-width: 2px; opacity: 0.7; }
+
+/* ---------------------------------------------------------------------------
+   Saisie rapide des prélèvements (téléphone) : grandes zones tactiles
+   --------------------------------------------------------------------------- */
+
+.page-saisie main.contenu { max-width: 720px; padding: 12px 12px 90px 12px; }
+.saisie-entete { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.saisie-entete h1 { margin: 0; font-size: 22px; }
+.saisie-sous-titre { font-size: 13px; color: #6b6b60; }
+.saisie-etat { text-align: right; font-size: 12px; }
+.saisie-pastille-etat { display: inline-block; padding: 3px 9px; border-radius: 12px; font-weight: 600; }
+.saisie-pastille-etat.ok { background: #e3eedd; color: #2f5a22; }
+.saisie-pastille-etat.hors { background: #fdecea; color: #8a1c14; }
+.saisie-pastille-etat.attente { background: #fff3cd; color: #7a5b00; }
+.saisie-bloc { background: white; border: 1px solid var(--couleur-bordure); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.saisie-bloc h2 { margin: 0 0 10px 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.saisie-bloc h2 span { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--couleur-accent); color: white; font-size: 13px; }
+.saisie-bloc h2 small { font-weight: 400; color: #888; font-size: 12px; }
+.saisie-defilement { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.saisie-traque, .saisie-poste {
+    flex: 0 0 auto; min-height: 52px; padding: 8px 14px; border: 2px solid var(--couleur-bordure); border-radius: 12px;
+    background: white; font: inherit; font-size: 15px; font-weight: 600; color: inherit; cursor: pointer; text-align: left;
+    display: flex; align-items: center; gap: 8px;
+}
+.saisie-traque i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; flex: none; }
+.saisie-traque.actif, .saisie-poste.actif { border-color: var(--couleur-accent); background: #e8f0e2; }
+.saisie-postes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.saisie-poste small { display: block; font-weight: 400; color: #6b6b60; font-size: 12px; }
+.saisie-grille { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 560px) { .saisie-grille { grid-template-columns: repeat(3, 1fr); } }
+.saisie-animal {
+    position: relative; min-height: 92px; padding: 10px; border: 0; border-radius: 14px; font: inherit; color: white;
+    background: var(--couleur-accent); cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.25); -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.saisie-animal:active { transform: translateY(2px); box-shadow: none; }
+.saisie-animal .nom { font-size: 20px; font-weight: 700; line-height: 1.15; text-align: center; }
+.saisie-animal .compte { font-size: 13px; opacity: 0.95; }
+.saisie-animal .sonnerie { position: absolute; top: 6px; right: 8px; background: rgba(255,255,255,0.9); color: #2f4a33; font-weight: 800; font-size: 15px; min-width: 26px; height: 26px; border-radius: 13px; display: flex; align-items: center; justify-content: center; padding: 0 6px; }
+.saisie-animal.quota { background: #c28a1f; }
+.saisie-animal.depasse { background: #a3442f; }
+.saisie-animal.autre { background: #6b6b60; }
+.saisie-autres summary { cursor: pointer; padding: 10px 0 4px; font-weight: 600; color: #555; }
+.saisie-ligne { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+.saisie-ligne .quoi { flex: 1; min-width: 0; }
+.saisie-ligne .quoi strong { display: block; font-size: 16px; }
+.saisie-ligne .quoi small { color: #6b6b60; }
+.saisie-ligne button { min-height: 40px; padding: 6px 12px; }
+.saisie-attente { color: #7a5b00; font-weight: 600; }
+.saisie-toast {
+    position: fixed; left: 10px; right: 10px; bottom: 12px; z-index: 3000; max-width: 700px; margin: 0 auto;
+    background: #2d3b2d; color: white; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+}
+.saisie-toast .texte { flex: 1; min-width: 150px; font-size: 15px; }
+.saisie-toast button { min-height: 44px; padding: 8px 14px; font-size: 15px; }
+.saisie-bilan td, .saisie-bilan th { padding: 6px 8px; }

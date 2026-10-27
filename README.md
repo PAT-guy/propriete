@@ -123,6 +123,8 @@ L'application utilise un seul identifiant/mot de passe pour toute l'association 
 3. Renseigne un email (peut être fictif, par exemple `chasse@tonassociation.fr`) et un mot de passe. Décoche l'envoi d'email de confirmation si l'option apparaît, ou coche directement "Auto Confirm User".
 4. C'est cet email et ce mot de passe que tu communiques à tout le monde.
 
+**Important : interdis ensuite les inscriptions.** Dans Authentication, réglages de connexion (Sign In / Providers), désactive **"Allow new users to sign up"**. Sans cela, n'importe qui peut créer un compte avec la clé publique du site, devenir "connecté" et donc tout lire et tout modifier : la protection de ce site repose sur le fait que seul le compte partagé existe.
+
 ## Étape 4 — Récupérer les clés et configurer le site
 
 1. Dans le menu de gauche, ouvre **Project Settings → API**.

@@ -73,6 +73,22 @@ Chaque prélèvement garde la date et la saison de la battue, la traque, le nom 
 
 **Sans réseau** : la saisie continue. Les animaux sont gardés dans une file d'attente sur l'appareil (« en attente » dans la liste, « Hors ligne » en haut), puis envoyés automatiquement au retour du réseau, avec leur heure d'origine et sans doublon. Pour que la page s'ouvre sans réseau, il faut l'avoir ouverte une fois avec du réseau avant de partir (le site garde alors une copie de la battue). Sans réseau, on ne peut ni modifier ni supprimer un prélèvement déjà envoyé. La file d'attente est propre à l'appareil : si le navigateur efface ses données avant l'envoi, ce qui était en attente est perdu.
 
+## Échange d'une battue entre deux appareils (lien, sans Supabase)
+
+Quand le téléphone et le PC ne partagent pas de base commune (mode démonstration), on peut faire passer ce qui a été noté au poste vers le PC :
+
+1. **Sur le téléphone**, dans la saisie rapide, « Créer le lien d'échange » : un lien contenant la battue et ses prélèvements (y compris ceux encore « en attente » de réseau). On peut y inclure aussi le plan (traques, tracés, postes) : le lien est alors beaucoup plus long. Boutons : Partager (si le téléphone le propose), Copier le lien, Enregistrer un fichier.
+2. **Envoie le lien** par message ou courriel (ou le fichier).
+3. **Sur le PC**, ouvre le lien (ou « Recevoir une battue » sur la page Battues, où l'on peut coller le lien, un code ou choisir un fichier). Un **aperçu** montre ce qui serait ajouté ; rien n'est écrit avant « Importer ». Si le lien est ouvert avant la connexion, il est repris juste après.
+
+La fusion ajoute seulement les prélèvements inconnus (chacun garde son identifiant : réimporter le même lien ne crée aucun doublon) et rattache chaque animal à la bonne traque, au bon poste et au bon chasseur. Le plan n'est remplacé que si la case est cochée. La partie `#` du lien ne part jamais vers un serveur : les données ne transitent que par votre message.
+
+À savoir :
+- Le lien ne **transmet pas les suppressions** : un prélèvement supprimé sur le téléphone reste sur le PC s'il y avait déjà été importé.
+- Le téléphone doit être **parti d'une copie des données du PC** (page Sauvegarde : télécharger sur le PC, rouvrir sur le téléphone), sinon les identifiants diffèrent. À défaut, le PC retrouve les catégories et les chasseurs par leur nom, et propose de fusionner une battue de même date et de même secteur, mais deux battues créées séparément resteront deux battues si leur date ou leur secteur diffère.
+- Un lien trop long (plus de 6000 caractères) peut être coupé par certaines messageries : utilise alors « Enregistrer un fichier ».
+- C'est un échange manuel, dans un sens à la fois, pas une synchronisation. Dès que le site est branché sur Supabase (voir plus haut), plus besoin de lien : les deux appareils lisent la même base.
+
 ## Annuler et rétablir (Ctrl+Z)
 
 Dans le **plan de battue** et dans la **page d'impression**, Ctrl+Z annule la dernière action et Ctrl+Y (ou Ctrl+Maj+Z) la rétablit ; les boutons « ↶ Annuler » et « ↷ Rétablir » font la même chose. Dans le plan, cela couvre : tracés, suppressions, déplacement d'un point, d'un poste ou d'une poignée, changement de chasseur, ajout et suppression d'une traque, nom, parcelle, équipe et notes d'une traque, réouverture d'une version. Pendant un tracé, Ctrl+Z retire le dernier point posé. Les frappes successives dans un champ ne comptent que pour une action. Dans un champ de saisie, Ctrl+Z reste l'annulation de frappe du navigateur. Ctrl+Z ne fait rien tant qu'une fenêtre est ouverte.

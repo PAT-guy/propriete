@@ -52,6 +52,12 @@
             <h2>Bilan de la journée</h2>
             <div id="saisie-bilan"></div>
         </section>
+
+        <section class="saisie-bloc">
+            <h2>Envoyer au PC</h2>
+            <p style="margin:0 0 10px 0; font-size:14px; color:#555;">Crée un lien à t'envoyer par message ou courriel : ouvert sur le PC, il ajoute à la battue ce qui a été noté ici.</p>
+            <button type="button" class="bouton bouton-principal" style="min-height:48px; width:100%;" onclick="ouvrirEchange()">Créer le lien d'échange</button>
+        </section>
     </div>
 </main>
 
@@ -64,6 +70,27 @@
         <div id="choix-precision" class="saisie-grille"></div>
         <div class="actions-modale">
             <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-precision')">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- Lien d'échange vers le PC -->
+<div class="fond-modale" id="modale-echange">
+    <div class="boite-modale">
+        <h2>Lien d'échange</h2>
+        <div id="resume-echange" style="font-size:14px; margin-bottom:8px;"></div>
+        <label class="etiquette" style="font-weight:400;"><input type="checkbox" id="case-plan-echange"> Inclure aussi le plan (traques, tracés, postes) <small style="color:#888;">: lien beaucoup plus long</small></label>
+        <label class="etiquette">Lien</label>
+        <textarea id="champ-lien-echange" rows="4" readonly style="font-size:12px;" onclick="this.select()"></textarea>
+        <div id="taille-echange" style="font-size:12px; color:#6b6b60; margin:4px 0 8px 0;"></div>
+        <div class="saisie-grille" style="grid-template-columns:1fr 1fr;">
+            <button type="button" class="bouton bouton-principal" id="bouton-partager" style="min-height:48px; display:none;">Partager…</button>
+            <button type="button" class="bouton bouton-principal" id="bouton-copier" style="min-height:48px;">Copier le lien</button>
+            <button type="button" class="bouton bouton-secondaire" id="bouton-fichier" style="min-height:48px;">Enregistrer un fichier</button>
+        </div>
+        <div id="message-echange" style="margin-top:8px; font-size:13px;"></div>
+        <div class="actions-modale">
+            <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-echange')">Fermer</button>
         </div>
     </div>
 </div>
@@ -100,6 +127,7 @@
 <script src="../js/auth.js"></script>
 <script src="../js/modales.js"></script>
 <script src="../js/categories.js"></script>
+<script src="../js/echange.js"></script>
 <script src="../js/saisie.js"></script>
 </body>
 </html>

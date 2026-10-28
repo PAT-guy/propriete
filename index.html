@@ -44,6 +44,12 @@
 <script src="js/mode-demo.js"></script>
 <script src="js/supabase-client.js"></script>
 <script>
+    /** Un lien d'échange ouvert avant la connexion est repris juste après. */
+    function destinationApresConnexion() {
+        let enAttente = null;
+        try { enAttente = localStorage.getItem("foret_echange_en_attente"); } catch (e) { /* aucun */ }
+        return enAttente ? "pages/echange.html" : "pages/battues.html";
+    }
     afficherBandeauDemoSiBesoin();
     if (modeDemonstrationActif()) {
         document.getElementById("champ-email").value = COMPTE_DEMO.email;
@@ -54,7 +60,7 @@
     (async () => {
         const { data } = await clientSupabase.auth.getSession();
         if (data.session) {
-            window.location.href = "pages/battues.html";
+            window.location.href = destinationApresConnexion();
         }
     })();
 
@@ -73,7 +79,7 @@
             return;
         }
 
-        window.location.href = "pages/battues.html";
+        window.location.href = destinationApresConnexion();
     });
 </script>
 

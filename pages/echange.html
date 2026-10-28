@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Échange de battue — Forêt &amp; Chasse</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="icon" type="image/svg+xml" href="../img/logo-bois.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="../img/favicon-48.png">
+<link rel="apple-touch-icon" href="../img/apple-touch-icon.png">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#2d3b2d">
+</head>
+<body>
+
+<div id="zone-navigation"></div>
+
+<main class="contenu">
+    <div class="entete-page">
+        <div>
+            <h1>Recevoir une battue</h1>
+            <p class="sous-titre">Fusionne ici ce qui a été noté sur un autre appareil (téléphone), à partir d'un lien, d'un code ou d'un fichier.</p>
+        </div>
+    </div>
+
+    <div class="carte" id="bloc-saisie-code">
+        <label class="etiquette">Lien ou code d'échange</label>
+        <textarea id="champ-code" rows="3" placeholder="Colle ici le lien reçu (ou le code)"></textarea>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px;">
+            <button type="button" class="bouton bouton-principal" id="bouton-analyser">Analyser</button>
+            <span style="color:#888;">ou</span>
+            <input type="file" id="champ-fichier" accept=".json,.txt,application/json,text/plain">
+        </div>
+    </div>
+
+    <div id="message-echange"></div>
+
+    <div class="carte" id="bloc-apercu" style="display:none; margin-top:14px;">
+        <h2 id="titre-apercu" style="font-size:17px; margin-top:0;"></h2>
+        <div id="detail-apercu" style="font-size:14px; line-height:1.5;"></div>
+        <div id="options-cible" style="margin-top:10px;"></div>
+        <div id="option-plan" style="margin-top:8px; display:none;"></div>
+        <div style="margin-top:14px;">
+            <button type="button" class="bouton bouton-principal" id="bouton-importer">Importer</button>
+            <button type="button" class="bouton bouton-secondaire" id="bouton-annuler-import">Annuler</button>
+        </div>
+    </div>
+
+    <div id="resultat-echange"></div>
+</main>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/mode-demo.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/echange.js"></script>
+<script src="../js/echange-page.js"></script>
+</body>
+</html>

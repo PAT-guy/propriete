@@ -469,3 +469,70 @@ async function supprimerDepuisDetail() {
     fermerModale("modale-detail");
     await supprimerLigne(detailEnEdition);
 }
+
+// ----------------------------------------------------------------------------
+// Envoi au PC par lien (voir echange.js)
+// ----------------------------------------------------------------------------
+
+async function ouvrirEchange() {
+    document.getElementById("message-echange").textContent = "";
+    document.getElementById("case-plan-echange").checked = false;
+    document.getElementById("case-plan-echange").onchange = genererEchange;
+    document.getElementById("bouton-copier").onclick = copierEchange;
+    document.getElementById("bouton-fichier").onclick = enregistrerFichierEchange;
+    const partager = document.getElementById("bouton-partager");
+    partager.style.display = navigator.share ? "" : "none";
+    partager.onclick = partagerEchange;
+    ouvrirModale("modale-echange");
+    await genererEchange();
+}
+
+function paquetPourEnvoi() {
+    const donnees = { ...d, prelevements: lignesDeLaBattue() };
+    return construirePaquet(donnees, categoriesCache, document.getElementById("case-plan-echange").checked);
+}
+
+async function genererEchange() {
+    const paquet = paquetPourEnvoi();
+    const code = await encoderPaquet(paquet);
+    const lien = adresseEchange(code);
+    document.getElementById("champ-lien-echange").value = lien;
+    const enAttente = fileDeCetteBattue().length;
+    document.getElementById("resume-echange").innerHTML = `<strong>${paquet.prelevements.length}</strong> prélèvement(s)${paquet.avecPlan ? ` et le plan (${paquet.traques.length} traque(s), ${paquet.postes.length} poste(s))` : ""}.` +
+        (enAttente ? ` <span class="saisie-attente">${enAttente} pas encore envoyé(s) à la base : ils sont inclus.</span>` : "");
+    const taille = document.getElementById("taille-echange");
+    taille.textContent = `Lien de ${lien.length} caractères.` + (lien.length > LIMITE_LIEN_CONFORTABLE ? " C'est long : certaines messageries peuvent le couper. Préfère « Enregistrer un fichier »." : "");
+    taille.style.color = lien.length > LIMITE_LIEN_CONFORTABLE ? "#a3442f" : "#6b6b60";
+    return { paquet, lien };
+}
+
+async function copierEchange() {
+    const lien = document.getElementById("champ-lien-echange").value;
+    try {
+        await navigator.clipboard.writeText(lien);
+        document.getElementById("message-echange").textContent = "Lien copié : colle-le dans un message.";
+    } catch (e) {
+        const champ = document.getElementById("champ-lien-echange");
+        champ.focus(); champ.select();
+        document.getElementById("message-echange").textContent = "Sélectionne le lien et copie-le (appui long, puis Copier).";
+    }
+}
+
+async function partagerEchange() {
+    try {
+        await navigator.share({ title: "Battue " + d.battue.date_battue, text: "Prélèvements de la battue", url: document.getElementById("champ-lien-echange").value });
+    } catch (e) { /* partage annulé */ }
+}
+
+async function enregistrerFichierEchange() {
+    const paquet = paquetPourEnvoi();
+    const blob = new Blob([JSON.stringify(paquet)], { type: "application/json" });
+    const lien = document.createElement("a");
+    lien.href = URL.createObjectURL(blob);
+    lien.download = `foret-echange-${d.battue.date_battue}.json`;
+    document.body.appendChild(lien);
+    lien.click();
+    lien.remove();
+    setTimeout(() => URL.revokeObjectURL(lien.href), 5000);
+    document.getElementById("message-echange").textContent = "Fichier enregistré : envoie-le par message ou courriel, puis ouvre-le dans « Recevoir une battue » sur le PC.";
+}

@@ -565,3 +565,8 @@ main.contenu.contenu-large { max-width: 1400px; }
 .saisie-toast .texte { flex: 1; min-width: 150px; font-size: 15px; }
 .saisie-toast button { min-height: 44px; padding: 8px 14px; font-size: 15px; }
 .saisie-bilan td, .saisie-bilan th { padding: 6px 8px; }
+
+/* Logo (Les bois) */
+.barre-haut .titre .logo-barre { width: 34px; height: 34px; vertical-align: middle; margin-right: 9px; border-radius: 50%; }
+.logo-connexion { display: block; width: 200px; max-width: 70%; height: auto; margin: 0 auto 6px auto; }
+.boite-connexion .sous-titre { text-align: center; }

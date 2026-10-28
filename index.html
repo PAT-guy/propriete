@@ -6,17 +6,23 @@
 <title>Connexion — Forêt &amp; Chasse</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
-    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
-    .boite-connexion { max-width: 380px; width: 100%; }
+    body { display: flex; flex-direction: column; min-height: 100vh; padding: 0 0 16px 0; }
+    body > .sans-impression { align-self: stretch; }
+    .boite-connexion { max-width: 380px; width: calc(100% - 32px); margin: auto; }
     .boite-connexion h1 { font-size: 20px; margin-bottom: 2px; }
     .boite-connexion p.sous-titre { color: #6b6b60; font-size: 13px; margin-top: 0; margin-bottom: 20px; }
 </style>
+<link rel="icon" type="image/svg+xml" href="img/logo-bois.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="img/favicon-48.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2d3b2d">
 </head>
 <body>
 
 <div class="boite-connexion carte">
-    <h1>🌲 Forêt &amp; Chasse</h1>
-    <p class="sous-titre">Gestion de propriété forestière — Connexion</p>
+    <img src="img/logo-bois-complet.svg" alt="Forêt &amp; Chasse, Sologne" class="logo-connexion">
+    <p class="sous-titre">Gestion de propriété forestière, connexion</p>
 
     <div id="zone-message"></div>
 

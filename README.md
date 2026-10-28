@@ -2,6 +2,10 @@
 
 Site accessible par lien, utilisable sur PC et téléphone, avec cartes IGN et satellite, tracé des parcelles numérotées, plans de battue détaillés (postes, mouvement de chaque traque, ligne des rabatteurs, parkings, accès, prélèvements par traque) et fiches imprimables pour les invités, ainsi que des cartes de chantier imprimables.
 
+## Logo
+
+Le logo retenu est « Les bois » (un arbre dont les branches deviennent des bois de cerf). Il est dans `img/` : `logo-bois-complet.svg` (avec le texte, page de connexion), `logo-bois.svg` (marque seule, en-tête et icône des onglets), `icone-app.svg` et ses versions PNG (icône du téléphone). Le fichier `manifest.webmanifest` permet d'**ajouter le site à l'écran d'accueil** du téléphone (il s'ouvre alors comme une application, sur la page des battues). Les autres pistes étudiées sont dans `logos/`. Dans les cartons et la fiche de gestion, le bloc « En-tête » propose le logo comme ornement (choisi par défaut).
+
 ## Battues (page d'accueil)
 
 La page Battues est le point central du site. Elle affiche en haut la prochaine battue (date, rendez-vous, responsable, participants, nombre de traques et de postes), avec les boutons "Plan de battue" et "Fiche à imprimer". En dessous : les modèles de battue, les battues à venir et les battues passées.

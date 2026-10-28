@@ -1,0 +1,16 @@
+{
+  "name": "Forêt & Chasse",
+  "short_name": "Chasse",
+  "description": "Gestion des battues, du plan de chasse et des prélèvements.",
+  "start_url": "pages/battues.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#2d3b2d",
+  "theme_color": "#2d3b2d",
+  "lang": "fr",
+  "icons": [
+    { "src": "img/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

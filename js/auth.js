@@ -49,7 +49,7 @@ function injecterNavigation(pageActiveFichier) {
 
     zone.innerHTML = `
         <header class="barre-haut">
-            <span class="titre"><span class="icone">🌲</span>Forêt &amp; Chasse</span>
+            <span class="titre"><img class="logo-barre" src="${racine}img/logo-bois.svg" alt="" width="34" height="34">Forêt &amp; Chasse</span>
             <button class="bouton-deconnexion" onclick="deconnexion()">Déconnexion</button>
         </header>
         <nav class="navigation">${liensNav}</nav>

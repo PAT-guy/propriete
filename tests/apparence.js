@@ -19,7 +19,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  const sel=(k)=>p.locator(`#panneau [data-style=${k}] option`).allInnerTexts();
  t('cadre : 5 choix, titres : 4, tableaux : 4, coins : 3, fond : 4', (await sel('cadreStyle')).length===5 && (await sel('titreStyle')).length===4 && (await sel('tableStyle')).length===4 && (await sel('coins')).length===3 && (await sel('fond')).length===4);
  await p.locator('#panneau .ib-bloc-edit').first().locator('.nom').click();
- t('en-tête : 5 styles et 5 ornements', (await p.locator('#panneau .ib-bloc-edit').first().locator('[data-opt=style] option').count())===5 && (await p.locator('#panneau .ib-bloc-edit').first().locator('[data-opt=ornement] option').count())===5);
+ t('en-tête : 5 styles et 6 ornements', (await p.locator('#panneau .ib-bloc-edit').first().locator('[data-opt=style] option').count())===5 && (await p.locator('#panneau .ib-bloc-edit').first().locator('[data-opt=ornement] option').count())===6);
  // effets réels
  await p.selectOption('#panneau [data-style=cadreStyle]','epais'); await p.waitForTimeout(400);
  t('cadre épais appliqué (≥ 3 px)', await p.evaluate(()=>parseFloat(getComputedStyle(document.querySelector('.ib-cadre')).borderTopWidth)>=3));

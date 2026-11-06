@@ -366,13 +366,13 @@ function rendreBilan() {
     const zone = document.getElementById("saisie-bilan");
     if (lignes.length === 0) { zone.innerHTML = '<em style="color:#888;">Aucune catégorie autorisée ni prélevée.</em>'; return; }
     const total = Object.values(par).reduce((s, n) => s + n, 0);
-    zone.innerHTML = `<table class="tableau-donnees saisie-bilan"><thead><tr><th>Gibier</th><th>Sonnerie</th><th>Pris</th><th>Autorisé</th></tr></thead><tbody>
+    zone.innerHTML = `<table class="tableau-donnees saisie-bilan"><thead><tr><th>Gibier</th><th>Sonnerie</th><th>Pris</th><th>À tirer</th></tr></thead><tbody>
         ${lignes.map((c) => {
             const l = plan.find((x) => x.id === c.id);
             const pris = par[c.id] || 0;
             const autorise = l && l.nombre !== null && l.nombre !== undefined ? l.nombre : "";
             const depasse = autorise !== "" && pris > Number(autorise);
-            return `<tr><td>${echapper(c.nom)}</td><td>${echapper(c.sonnerie)}</td><td style="${depasse ? "color:#a3442f; font-weight:700;" : ""}">${pris}</td><td>${echapper(autorise)}</td></tr>`;
+            return `<tr><td>${echapper(c.nom)}</td><td>${c.sonnerie ? echapper(c.sonnerie) : "–"}</td><td style="${depasse ? "color:#a3442f; font-weight:700;" : ""}">${pris}</td><td>${echapper(autorise)}</td></tr>`;
         }).join("")}
         <tr><td colspan="2"><strong>Total</strong></td><td colspan="2"><strong>${total}</strong></td></tr></tbody></table>`;
 }

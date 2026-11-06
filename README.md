@@ -50,9 +50,9 @@ Le plan de chasse de la saison et les prélèvements se notent **par catégorie*
 
 ## Plan de chasse du jour et sonneries
 
-Dans la fiche d'une battue (ou d'un modèle), la rubrique **Plan de chasse du jour** liste les catégories de gibier : on coche celles qui peuvent être tirées ce jour-là, avec un nombre autorisé facultatif. La ligne **Chevreuil** propose de préciser chevreuil, chevrette ou chevrillard (aucune case cochée : la ligne affiche « Chevreuil »).
+Dans la fiche d'une battue (ou d'un modèle), la rubrique **Plan de chasse du jour** liste les catégories de gibier : on coche celles qui peuvent être tirées ce jour-là, avec le **nombre d'animaux à tirer** (facultatif). La ligne **Chevreuil** propose de préciser chevreuil, chevrette ou chevrillard (aucune case cochée : la ligne affiche « Chevreuil »).
 
-La liste des catégories et leur **sonnerie** sont communes à toutes les battues et se modifient avec « Gérer le gibier et les sonneries » : nom, sonnerie (texte libre), choix possibles (séparés par des virgules), ordre, ajout et suppression. La liste de départ est : Chevreuil (2), Cerf -8 (6), Cerf +8 (6), Biche (4), Jeune (3). Le bloc « Plan de chasse du jour (sonneries) » des cartons et de la fiche affiche les catégories cochées avec leur sonnerie en gros ; il peut ajouter une colonne « nombre autorisé » et une colonne « prélevé » à remplir. Le plan du jour se recopie avec les modèles de battue.
+La liste des catégories et leur **sonnerie** sont communes à toutes les battues et se modifient avec « Gérer le gibier et les sonneries » : nom, sonnerie (texte libre), choix possibles (séparés par des virgules), ordre, ajout et suppression. La liste de départ est : Chevreuil (2), Cerf -8 (6), Cerf +8 (6), Biche (4), Jeune (3). Le bloc « Plan de chasse du jour » des cartons et de la fiche affiche les catégories cochées avec la colonne **« À tirer »** (le nombre d'animaux) et la sonnerie en gros ; il peut ajouter une colonne « prélevé » à remplir. **La sonnerie est facultative** : un animal sans sonnerie affiche un tiret, et si aucune ligne n'a de sonnerie la colonne disparaît (réglable : automatique, toujours, jamais). Le plan du jour se recopie avec les modèles de battue.
 
 ## Plusieurs cartes et cadrage
 
@@ -66,7 +66,7 @@ Un bloc **Carte** peut être ajouté autant de fois que nécessaire (par exemple
 Le bouton **Saisie rapide** (sur la prochaine battue, dans la liste des battues et dans le plan) ouvre une page pensée pour le téléphone, au poste ou au rendez-vous de midi :
 
 1. **Où ?** : on touche la traque, puis le poste (le chasseur affecté à ce poste est repris automatiquement) ou « Sans poste ». Le choix est retenu d'un animal à l'autre.
-2. **Quel animal ?** : de gros boutons, un par catégorie autorisée ce jour-là (cochée dans la fiche de la battue), avec la sonnerie et le compte (« 1 / 2 »). Un appui = un animal. Le bouton passe à l'orange quand le nombre autorisé est atteint et au rouge quand il est dépassé. Le reste du gibier est rangé sous « Autre gibier ». Si une ligne propose plusieurs précisions (chevreuil, chevrette), un choix est demandé.
+2. **Quel animal ?** : de gros boutons, un par catégorie autorisée ce jour-là (cochée dans la fiche de la battue), avec la sonnerie et le compte (« 1 / 2 »). Un appui = un animal. Le bouton passe à l'orange quand le nombre à tirer est atteint et au rouge quand il est dépassé. Le reste du gibier est rangé sous « Autre gibier ». Si une ligne propose plusieurs précisions (chevreuil, chevrette), un choix est demandé.
 3. Un message confirme l'enregistrement avec **Annuler** (retire l'animal) et **Détails** (sexe, poids, chasseur, précision). Les derniers animaux enregistrés et le bilan de la journée (pris, autorisé, total) sont en dessous, avec modification et suppression.
 
 Chaque prélèvement garde la date et la saison de la battue, la traque, le nom du poste, le chasseur et l'heure de saisie ; ils apparaissent dans l'onglet Prélèvements de la page Chasse et alimentent le « réalisé » du plan de chasse.

@@ -274,14 +274,16 @@ const BLOCS = {
     },
 
     plan_chasse_jour: {
-        libelle: "Plan de chasse du jour (sonneries)",
-        description: "Les catégories autorisées ce jour-là avec leur sonnerie (cochées dans la fiche de la battue).",
+        libelle: "Plan de chasse du jour (à tirer, sonneries)",
+        description: "Les catégories autorisées ce jour-là avec le nombre d'animaux à tirer et leur sonnerie (cochés dans la fiche de la battue). La sonnerie est facultative.",
         options: [
             { cle: "titre", type: "texte", libelle: "Titre", defaut: "Plan de chasse du jour" },
+            { cle: "nombre", type: "bool", libelle: "Colonne « à tirer » (nombre d'animaux)", defaut: true },
+            { cle: "colonneNombre", type: "texte", libelle: "En-tête de la colonne « à tirer »", defaut: "À tirer" },
+            { cle: "sonnerie", type: "choix", libelle: "Colonne sonnerie", defaut: "auto", choix: [["auto", "Seulement si une ligne a une sonnerie"], ["oui", "Toujours"], ["non", "Jamais"]] },
             { cle: "colonneSonnerie", type: "texte", libelle: "En-tête de la colonne sonnerie", defaut: "Sonnerie" },
-            { cle: "nombre", type: "bool", libelle: "Colonne « nombre autorisé »", defaut: false },
             { cle: "prelevement", type: "bool", libelle: "Colonne « prélevé » à remplir", defaut: false },
-            { cle: "tailleSonnerie", type: "nombre", libelle: "Taille de la sonnerie (pt)", defaut: 14, min: 8, max: 30 },
+            { cle: "tailleSonnerie", type: "nombre", libelle: "Taille de la sonnerie et du nombre (pt)", defaut: 14, min: 8, max: 30 },
             { cle: "hauteurLigne", type: "nombre", libelle: "Hauteur d'une ligne (mm)", defaut: 6, min: 4, max: 15 },
         ],
         rendre(ctx, o) {
@@ -291,9 +293,18 @@ const BLOCS = {
                 return titreDuBloc(o, "Plan de chasse du jour") + '<div class="ib-texte" style="color:#888;">Plan de chasse du jour non renseigné : coche les catégories dans la fiche de la battue.</div>';
             }
             const libelle = ({ c, l }) => (l.choix && l.choix.length ? l.choix.join(", ") : c.nom);
+            // La sonnerie est facultative : pas de colonne si aucune ligne n'en a (mode automatique).
+            const avecSonnerie = o.sonnerie === "oui" || (o.sonnerie !== "non" && lignes.some((x) => x.c.sonnerie));
+            const taille = Number(o.tailleSonnerie) || 14;
+            const cellSonnerie = (x) => (x.c.sonnerie
+                ? `<td class="num libre ib-sonnerie" style="font-size:${taille}pt">${esc(x.c.sonnerie)}</td>`
+                : '<td class="num libre ib-pas-sonnerie">–</td>');
+            const cellNombre = (x) => (x.l.nombre === null || x.l.nombre === undefined || x.l.nombre === ""
+                ? '<td class="num libre ib-pas-sonnerie">–</td>'
+                : `<td class="num libre ib-a-tirer" style="font-size:${taille}pt">${esc(x.l.nombre)}</td>`);
             return `${titreDuBloc(o, "Plan de chasse du jour")}
-            <table class="ib-table" ${styleLigne(o)}><thead><tr><th>Gibier</th><th class="num" style="width:${o.colonneSonnerie ? "20mm" : "12mm"}">${esc(o.colonneSonnerie)}</th>${o.nombre ? '<th class="num" style="width:16mm">Nombre</th>' : ""}${o.prelevement ? '<th style="width:22mm">Prélevé</th>' : ""}</tr></thead><tbody>
-            ${lignes.map((x) => `<tr><td class="libre">${esc(libelle(x))}</td><td class="num libre ib-sonnerie" style="font-size:${Number(o.tailleSonnerie) || 14}pt">${esc(x.c.sonnerie)}</td>${o.nombre ? `<td class="num libre">${x.l.nombre === null || x.l.nombre === undefined ? "" : esc(x.l.nombre)}</td>` : ""}${o.prelevement ? '<td class="libre"></td>' : ""}</tr>`).join("")}
+            <table class="ib-table" ${styleLigne(o)}><thead><tr><th>Gibier</th>${o.nombre ? `<th class="num" style="width:18mm">${esc(o.colonneNombre || "À tirer")}</th>` : ""}${avecSonnerie ? `<th class="num" style="width:${o.colonneSonnerie ? "20mm" : "12mm"}">${esc(o.colonneSonnerie)}</th>` : ""}${o.prelevement ? '<th style="width:22mm">Prélevé</th>' : ""}</tr></thead><tbody>
+            ${lignes.map((x) => `<tr><td class="libre">${esc(libelle(x))}</td>${o.nombre ? cellNombre(x) : ""}${avecSonnerie ? cellSonnerie(x) : ""}${o.prelevement ? '<td class="libre"></td>' : ""}</tr>`).join("")}
             </tbody></table>`;
         },
     },
@@ -578,7 +589,7 @@ function configParDefaut(type) {
                     b("entete", { titre: "Battue" }),
                     b("infos", {}),
                     b("encart_postes", { lignes: 1, colonnes: "1", hauteurLigne: 8 }, { largeur: "moitie" }),
-                    b("plan_chasse_jour", { tailleSonnerie: 12, hauteurLigne: 5.5 }, { largeur: "moitie" }),
+                    b("plan_chasse_jour", { tailleSonnerie: 12, hauteurLigne: 5.5, nombre: true }, { largeur: "moitie" }),
                     b("consignes", { taillePolice: 8, colonnes: "2" }),
                 ],
                 verso: [b("carte", { etiquettes: "numeros" }, { taille: "remplir" })],

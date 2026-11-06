@@ -86,7 +86,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  // ---------- fiche : plan du jour avec colonnes nombre et prélevé
  await p.goto(B+'pages/impression.html?id='+idBattue+'&doc=fiche'); await p.waitForTimeout(1500);
  const fiche=await p.locator('.ib-feuille[data-face=recto]').innerText();
- t('fiche : plan du jour avec nombre autorisé et colonne prélevé', fiche.includes('PLAN DE CHASSE DU JOUR') && fiche.includes('NOMBRE') && fiche.includes('PRÉLEVÉ'));
+ t('fiche : plan du jour avec colonne « à tirer » et colonne prélevé', fiche.includes('PLAN DE CHASSE DU JOUR') && fiche.includes('À TIRER') && fiche.includes('PRÉLEVÉ'));
  const titresFiche=await p.evaluate(()=>[...document.querySelectorAll('.ib-bloc-titre')].map(e=>({h:e.offsetHeight,fs:getComputedStyle(e).fontSize,mono:e.scrollHeight<=e.clientHeight+1})));
  t('fiche : tous les titres de section identiques sur une ligne', titresFiche.length>=4 && titresFiche.every(x=>x.h===titresFiche[0].h && x.fs===titresFiche[0].fs && x.mono));
  t('fiche : aucun débordement', !(await p.locator('#alerte-debordement').isVisible()));

@@ -454,8 +454,8 @@ function remplirPlanJour(planJour) {
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; margin:0;">
                 <input type="checkbox" class="plan-autorise" ${ligne.autorise ? "checked" : ""}>
                 <span style="flex:1;">${echapper(c.nom)}</span>
-                <span style="font-weight:400; color:#666;">sonnerie ${echapper(c.sonnerie) || "?"}</span>
-                <input type="number" class="plan-nombre" min="0" placeholder="Nombre" value="${echapper(ligne.nombre)}" style="width:80px; padding:3px 6px;" title="Nombre autorisé (facultatif)">
+                <span style="font-weight:400; color:#666;">${c.sonnerie ? "sonnerie " + echapper(c.sonnerie) : "sans sonnerie"}</span>
+                <input type="number" class="plan-nombre" min="0" placeholder="À tirer" value="${echapper(ligne.nombre)}" style="width:80px; padding:3px 6px;" title="Nombre d'animaux à tirer (facultatif)">
             </label>
             ${precisions.length ? `<div style="margin:3px 0 0 26px; font-size:12px;">${precisions.map((p) =>
                 `<label style="margin-right:12px; font-weight:400;"><input type="checkbox" class="plan-precision" value="${echapper(p)}" ${choix.includes(p) ? "checked" : ""}> ${echapper(p)}</label>`).join("")}</div>` : ""}

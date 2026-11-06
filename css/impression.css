@@ -142,7 +142,8 @@
 .coins-ronds.titres-bandeau .ib-bloc-titre { border-radius: 2.5mm; }
 .ib-sous-tableaux { display: grid; gap: 2.5mm 4mm; align-items: start; }
 .ib-expiree { color: #b00020; font-weight: 700; }
-.ib-sonnerie { font-weight: 700; color: var(--ib-primaire); }
+.ib-sonnerie, .ib-a-tirer { font-weight: 700; color: var(--ib-primaire); }
+.ib-pas-sonnerie { color: #999; }
 .ib-table td, .ib-table th { white-space: normal; }
 .ib-table td.libre { white-space: nowrap; }
 

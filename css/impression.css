@@ -209,3 +209,5 @@
 
 .ib-mouvant { color: #c2410c; font-weight: 700; }
 .ib-table td.libre-multi { height: auto; min-height: var(--ib-h-ligne, 7mm); white-space: normal; line-height: 1.25; padding-top: 1.2mm; padding-bottom: 1.2mm; }
+
+.ib-precisions { font-size: 0.82em; color: #6b6b60; }

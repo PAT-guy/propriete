@@ -308,7 +308,14 @@ const BLOCS = {
             if (lignes.length === 0) {
                 return titreDuBloc(o, "Plan de chasse du jour") + '<div class="ib-texte" style="color:#888;">Plan de chasse du jour non renseigné : coche les catégories dans la fiche de la battue.</div>';
             }
-            const libelle = ({ c, l }) => (l.choix && l.choix.length ? l.choix.join(", ") : c.nom);
+            // nom court de la catégorie, précisions (chevrette, chevrillard…) en petit dessous
+            const libelle = ({ c, l }) => (l.choix && l.choix.length === 1
+                ? `<strong>${esc(l.choix[0])}</strong>`
+                : l.choix && l.choix.length > 1
+                ? `<strong>${esc(c.nom)}</strong><br><span class="ib-precisions">${l.choix.map(esc).join(" · ")}</span>`
+                : `<strong>${esc(c.nom)}</strong>`);
+            // pas de colonne « à tirer » si aucun nombre n'est saisi : elle ne montrerait que des tirets
+            const avecNombre = o.nombre && lignes.some((x) => !(x.l.nombre === null || x.l.nombre === undefined || x.l.nombre === ""));
             // La sonnerie est facultative : pas de colonne si aucune ligne n'en a (mode automatique).
             const avecSonnerie = o.sonnerie === "oui" || (o.sonnerie !== "non" && lignes.some((x) => x.c.sonnerie));
             const taille = Number(o.tailleSonnerie) || 14;
@@ -319,8 +326,8 @@ const BLOCS = {
                 ? '<td class="num libre ib-pas-sonnerie">–</td>'
                 : `<td class="num libre ib-a-tirer" style="font-size:${taille}pt">${esc(x.l.nombre)}</td>`);
             return `${titreDuBloc(o, "Plan de chasse du jour")}
-            <table class="ib-table" ${styleLigne(o)}><thead><tr><th>Gibier</th>${o.nombre ? `<th class="num" style="width:18mm">${esc(o.colonneNombre || "À tirer")}</th>` : ""}${avecSonnerie ? `<th class="num" style="width:${o.colonneSonnerie ? "20mm" : "12mm"}">${esc(o.colonneSonnerie)}</th>` : ""}${o.prelevement ? '<th style="width:22mm">Prélevé</th>' : ""}</tr></thead><tbody>
-            ${lignes.map((x) => `<tr><td class="libre">${esc(libelle(x))}</td>${o.nombre ? cellNombre(x) : ""}${avecSonnerie ? cellSonnerie(x) : ""}${o.prelevement ? '<td class="libre"></td>' : ""}</tr>`).join("")}
+            <table class="ib-table" ${styleLigne(o)}><thead><tr><th>Gibier</th>${avecNombre ? `<th class="num" style="width:18mm">${esc(o.colonneNombre || "À tirer")}</th>` : ""}${avecSonnerie ? `<th class="num" style="width:${o.colonneSonnerie ? "20mm" : "12mm"}">${esc(o.colonneSonnerie)}</th>` : ""}${o.prelevement ? '<th style="width:22mm">Prélevé</th>' : ""}</tr></thead><tbody>
+            ${lignes.map((x) => `<tr><td class="libre">${libelle(x)}</td>${avecNombre ? cellNombre(x) : ""}${avecSonnerie ? cellSonnerie(x) : ""}${o.prelevement ? '<td class="libre"></td>' : ""}</tr>`).join("")}
             </tbody></table>`;
         },
     },
@@ -810,7 +817,7 @@ function dessinerCarteImpression(zone, spec, ctx) {
             groupe.addLayer(m);
         });
         postesDeTraque(ctx, t).forEach((poste, index) => {
-            const m = L.marker([poste.lat, poste.lng], { icon: iconePosteCouleur(index + 1, couleurTraque(t.numero)) });
+            const m = L.marker([poste.lat, poste.lng], { icon: iconePosteCouleur(index + 1, couleurTraque(t.numero), postesDeTraque(ctx, t).length > 12 ? 20 : 26) });
             groupe.addLayer(m);
         });
     });

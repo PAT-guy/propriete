@@ -7,7 +7,7 @@
 function iconePointCarte(emoji, couleurFond) {
     // chaque entité a sa forme : parking = carré bleu « P », accès = losange brun « ➜ », poste = rond numéroté
     const forme = emoji === "🅿️" ? "forme-parking" : "forme-acces";
-    const symbole = emoji === "🅿️" ? "P" : '<b style="display:block; transform:rotate(-45deg);">➜</b>';
+    const symbole = emoji === "🅿️" ? "P" : '<b style="display:block; transform:rotate(-45deg); font-size:10px;">●</b>';
     return L.divIcon({
         className: "icone-point-carte " + forme,
         html: `<span style="background:${couleurFond};">${symbole}</span>`,
@@ -26,12 +26,13 @@ function iconePosteAssigne(numero, assigne) {
 }
 
 /** Poste numéroté, à la couleur de sa traque (cartes imprimées : le n° 1 de deux traques ne se confond pas). */
-function iconePosteCouleur(numero, couleur) {
+function iconePosteCouleur(numero, couleur, taille) {
+    const d = taille || 26;
     return L.divIcon({
         className: "icone-point-carte",
-        html: `<span style="background:${couleur};">${numero}</span>`,
-        iconSize: [26, 26],
-        iconAnchor: [13, 13],
+        html: `<span style="background:${couleur}; width:${d}px; height:${d}px; font-size:${d < 24 ? 11 : 13}px;">${numero}</span>`,
+        iconSize: [d, d],
+        iconAnchor: [d / 2, d / 2],
     });
 }
 

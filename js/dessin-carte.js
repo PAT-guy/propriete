@@ -200,7 +200,7 @@ function dessinerElement(couche, element, numeroTraque, options) {
             : { color: couleur, weight: epaisseur, dashArray: type.pointille ? "8 6" : null }));
         if (type.mouvant) {
             const n = options && options.numeroMouvant;
-            groupe.addLayer(L.marker(trace[0], { icon: iconeMouvant(n || ""), interactive: false }));
+            groupe.addLayer(L.marker(trace[0], { icon: iconeEchelle(iconeMouvant(n || ""), options && options.echelle), interactive: false }));
         }
         if (element.fleche) {
             const depart = trace[Math.max(trace.length - 4, 0)];
@@ -230,4 +230,15 @@ function symbolesLegendeHtml() {
     return `<span><span style="${base} border-radius:50%; background:#5a7d4a;"></span>Poste</span>` +
         `<span><span style="${base} border-radius:2px; background:#3a6b8a;"></span>Parking</span>` +
         `<span><span style="${base} width:10px; height:10px; transform:rotate(45deg); background:#8a6d3a; margin:0 5px 0 2px;"></span>Accès</span>`;
+}
+
+
+/** Agrandit ou réduit un figuré (icône Leaflet) d'un facteur k, sans changer son point d'ancrage. */
+function iconeEchelle(icone, k) {
+    if (!k || k === 1) return icone;
+    const o = icone.options;
+    return L.divIcon({
+        className: o.className, iconSize: o.iconSize, iconAnchor: o.iconAnchor,
+        html: `<div style="transform:scale(${k}); transform-origin:${o.iconAnchor[0]}px ${o.iconAnchor[1]}px; width:100%; height:100%;">${o.html}</div>`,
+    });
 }

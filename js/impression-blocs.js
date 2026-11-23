@@ -273,6 +273,7 @@ const BLOCS = {
             { cle: "traques", type: "traques", libelle: "Traques affichées", defaut: [] },
             { cle: "fond", type: "choix", libelle: "Fond de carte", defaut: "plan", choix: [["plan", "Plan IGN"], ["satellite", "Photo aérienne"], ["aucun", "Aucun (tracés seuls)"]] },
             { cle: "etiquettes", type: "choix", libelle: "Étiquettes", defaut: "numeros", choix: [["noms", "Nom de la parcelle"], ["numeros", "Aucun texte (figurés seulement)"], ["aucune", "Aucun texte (figurés seulement)"]] },
+            { cle: "taillePictos", type: "choix", libelle: "Taille des figurés (postes, parkings, accès)", defaut: "1", choix: [["0.6", "Très petits"], ["0.8", "Petits"], ["1", "Normaux"], ["1.3", "Grands"], ["1.6", "Très grands"]] },
             { cle: "legende", type: "bool", libelle: "Légende", defaut: true },
             { cle: "cadrage", type: "cadrage", libelle: "Cadrage", defaut: null },
         ],
@@ -281,7 +282,7 @@ const BLOCS = {
             const traques = traquesDuBloc(ctx, o);
             if (traques.length === 0 && ctx.traques.length > 0) return titreDuBloc(o, "") + '<div class="ib-texte" style="color:#888;">Aucune traque cochée pour cette carte.</div>';
             const specification = esc(JSON.stringify({
-                uid: bloc.uid, fond: o.fond, etiquettes: o.etiquettes, traques: traques.map((t) => t.numero), cadrage: o.cadrage || null,
+                uid: bloc.uid, fond: o.fond, etiquettes: o.etiquettes, echelle: Number(o.taillePictos) || 1, traques: traques.map((t) => t.numero), cadrage: o.cadrage || null,
             }));
             return `${titreDuBloc(o, "")}<div class="ib-bloc-carte" style="display:flex; flex-direction:column; flex:1 1 0; min-height:0;">
                 <div class="ib-carte-zone"><div class="ib-carte-leaflet" data-carte="${specification}"></div></div>
@@ -795,36 +796,41 @@ function dessinerCarteImpression(zone, spec, ctx) {
     const fond = spec.fond === "satellite" ? fonds.satelliteIGN : spec.fond === "aucun" ? null : fonds.planIGN;
     if (fond) fond.addTo(carte);
     else zone.style.background = "#fbfaf5";
-    const groupe = L.featureGroup().addTo(carte);
+    const groupe = L.featureGroup().addTo(carte);          // contenu des traques : sert au cadrage
+    const parcelles = L.featureGroup().addTo(carte);       // contours de parcelles : fond, hors cadrage
+    const k = spec.echelle || 1;
     const traques = ctx.traques.filter((t) => spec.traques.includes(t.numero));
 
-    const idsParcelles = new Set([ctx.battue.parcelle_id, ...traques.map((t) => t.parcelle_id)].filter(Boolean));
+    // La parcelle de la battue n'est dessinée que si aucune des traques affichées n'a la sienne :
+    // sinon elle apparaîtrait sur toutes les cartes (et fausserait le cadrage).
+    const idsTraques = traques.map((t) => t.parcelle_id).filter(Boolean);
+    const idsParcelles = new Set(idsTraques.length > 0 ? idsTraques : [ctx.battue.parcelle_id].filter(Boolean));
     idsParcelles.forEach((id) => {
         const parcelle = ctx.parcelles.find((p) => p.id === id);
         if (!parcelle || !parcelle.contour) return;
         const polygone = L.polygon(parcelle.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.08 });
         if (spec.etiquettes === "noms") polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
-        groupe.addLayer(polygone);
+        parcelles.addLayer(polygone);
     });
     traques.forEach((t) => {
-        { const ind = indicesMouvants(elementsDeTraque(t)); elementsDeTraque(t).forEach((e) => dessinerElement(groupe, e, t.numero, { sansInfobulle: true, numeroMouvant: ind[e.id || e.cle] })); }
+        { const ind = indicesMouvants(elementsDeTraque(t)); elementsDeTraque(t).forEach((e) => dessinerElement(groupe, e, t.numero, { sansInfobulle: true, numeroMouvant: ind[e.id || e.cle], echelle: k })); }
         (t.parkings || []).forEach((p) => {
-            const m = L.marker([p.lat, p.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") });
-            groupe.addLayer(m);
+            groupe.addLayer(L.marker([p.lat, p.lng], { icon: iconeEchelle(iconePointCarte("🅿️", "#3a6b8a"), k) }));
         });
         (t.acces || []).forEach((a) => {
-            const m = L.marker([a.lat, a.lng], { icon: iconePointCarte("🚪", "#8a6d3a") });
-            groupe.addLayer(m);
+            groupe.addLayer(L.marker([a.lat, a.lng], { icon: iconeEchelle(iconePointCarte("🚪", "#8a6d3a"), k) }));
         });
+        const nbPostes = postesDeTraque(ctx, t).length;
         postesDeTraque(ctx, t).forEach((poste, index) => {
-            const m = L.marker([poste.lat, poste.lng], { icon: iconePosteCouleur(index + 1, couleurTraque(t.numero), postesDeTraque(ctx, t).length > 12 ? 20 : 26) });
-            groupe.addLayer(m);
+            groupe.addLayer(L.marker([poste.lat, poste.lng], { icon: iconeEchelle(iconePosteCouleur(index + 1, couleurTraque(t.numero), nbPostes > 12 ? 20 : 26), k) }));
         });
     });
 
+    parcelles.eachLayer((l) => l.bringToBack());
     carte.invalidateSize();
     if (spec.cadrage && Array.isArray(spec.cadrage.centre)) carte.setView(spec.cadrage.centre, spec.cadrage.zoom, { animate: false });
     else if (groupe.getLayers().length > 0) carte.fitBounds(groupe.getBounds(), { padding: [22, 22], maxZoom: 17 });
+    else if (parcelles.getLayers().length > 0) carte.fitBounds(parcelles.getBounds(), { padding: [22, 22], maxZoom: 17 });
     else carte.setView([46.6, 2.5], 6);
 
     if (!fond) return Promise.resolve();

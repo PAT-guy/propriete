@@ -7,7 +7,7 @@
 function iconePointCarte(emoji, couleurFond) {
     // chaque entité a sa forme : parking = carré bleu « P », accès = losange brun « ➜ », poste = rond numéroté
     const forme = emoji === "🅿️" ? "forme-parking" : "forme-acces";
-    const symbole = emoji === "🅿️" ? "P" : "➜";
+    const symbole = emoji === "🅿️" ? "P" : '<b style="display:block; transform:rotate(-45deg);">➜</b>';
     return L.divIcon({
         className: "icone-point-carte " + forme,
         html: `<span style="background:${couleurFond};">${symbole}</span>`,
@@ -186,11 +186,10 @@ function dessinerElement(couche, element, numeroTraque, options) {
             fillOpacity: element.type === "interdite" ? 0.25 : element.type === "rapproche" ? 0.2 : 0.12,
             dashArray: element.type === "interdite" ? "6 4" : element.type === "rapproche" ? "10 6" : null,
         });
-        // La zone de rapproché porte toujours son nom sur la carte (imprimée comprise).
-        if (type.etiquette && !(options && options.sansEtiquette)) {
-            polygone.bindTooltip(echapper(element.nom || type.etiquette), { permanent: true, direction: "center", className: "etiquette-parcelle" });
-        }
         groupe.addLayer(polygone);
+        if (element.type === "interdite") {
+            groupe.addLayer(L.marker(polygone.getBounds().getCenter(), { icon: iconeInterdit(), interactive: false }));
+        }
     } else {
         const trace = pointsAffiches(element);
         if (!trace || trace.length < 2) return null;
@@ -211,4 +210,23 @@ function dessinerElement(couche, element, numeroTraque, options) {
     if (!(options && options.sansInfobulle)) groupe.eachLayer((c) => { if (c.bindTooltip && c.options.interactive !== false && !(c.getTooltip && c.getTooltip())) c.bindTooltip(echapper(libelle), { sticky: true }); });
     if (couche) couche.addLayer(groupe);
     return groupe;
+}
+
+
+/** Figuré de zone interdite de tir : disque rouge barré, lisible en noir et blanc. */
+function iconeInterdit() {
+    return L.divIcon({
+        className: "icone-interdit",
+        html: '<span></span>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+    });
+}
+
+/** Symboles de légende (mêmes formes que sur la carte), en HTML en ligne pour l'écran comme pour l'impression. */
+function symbolesLegendeHtml() {
+    const base = "display:inline-block; width:12px; height:12px; box-sizing:border-box; vertical-align:middle; margin-right:3px;";
+    return `<span><span style="${base} border-radius:50%; background:#5a7d4a;"></span>Poste</span>` +
+        `<span><span style="${base} border-radius:2px; background:#3a6b8a;"></span>Parking</span>` +
+        `<span><span style="${base} width:10px; height:10px; transform:rotate(45deg); background:#8a6d3a; margin:0 5px 0 2px;"></span>Accès</span>`;
 }

@@ -272,7 +272,7 @@ const BLOCS = {
             { cle: "titre", type: "texte", libelle: "Titre (facultatif)", defaut: "" },
             { cle: "traques", type: "traques", libelle: "Traques affichées", defaut: [] },
             { cle: "fond", type: "choix", libelle: "Fond de carte", defaut: "plan", choix: [["plan", "Plan IGN"], ["satellite", "Photo aérienne"], ["aucun", "Aucun (tracés seuls)"]] },
-            { cle: "etiquettes", type: "choix", libelle: "Étiquettes", defaut: "noms", choix: [["noms", "Noms des postes, parkings, accès"], ["numeros", "Numéros seulement"], ["aucune", "Aucune"]] },
+            { cle: "etiquettes", type: "choix", libelle: "Étiquettes", defaut: "numeros", choix: [["noms", "Nom de la parcelle"], ["numeros", "Aucun texte (figurés seulement)"], ["aucune", "Aucun texte (figurés seulement)"]] },
             { cle: "legende", type: "bool", libelle: "Légende", defaut: true },
             { cle: "cadrage", type: "cadrage", libelle: "Cadrage", defaut: null },
         ],
@@ -579,7 +579,8 @@ function legendeCarte(ctx, traques) {
         ${utilises.has("rabatteurs") ? '<span><i style="border-color:#444; border-top-style:dashed"></i>Rabatteurs</span>' : ""}
         ${utilises.has("poste_mouvant") ? '<span><i style="border-color:#c2410c; border-top-width:1.4mm; border-top-style:dotted"></i>Poste mouvant (M1, M2…)</span>' : ""}
         ${utilises.has("rapproche") ? '<span><i style="border-color:#d97706; border-top-style:dashed"></i>Zone de rapproché</span>' : ""}
-        <span>🎯 poste · 🅿️ parking · 🚪 accès</span></div>`;
+        ${utilises.has("interdite") ? '<span><span style="display:inline-block;width:3mm;height:3mm;border-radius:50%;background:#b00020;vertical-align:middle;margin-right:1mm;"></span>Zone interdite de tir</span>' : ""}
+        ${symbolesLegendeHtml()}</div>`;
 }
 
 // ----------------------------------------------------------------------------
@@ -788,7 +789,6 @@ function dessinerCarteImpression(zone, spec, ctx) {
     if (fond) fond.addTo(carte);
     else zone.style.background = "#fbfaf5";
     const groupe = L.featureGroup().addTo(carte);
-    const avecNoms = spec.etiquettes === "noms";
     const traques = ctx.traques.filter((t) => spec.traques.includes(t.numero));
 
     const idsParcelles = new Set([ctx.battue.parcelle_id, ...traques.map((t) => t.parcelle_id)].filter(Boolean));
@@ -796,19 +796,17 @@ function dessinerCarteImpression(zone, spec, ctx) {
         const parcelle = ctx.parcelles.find((p) => p.id === id);
         if (!parcelle || !parcelle.contour) return;
         const polygone = L.polygon(parcelle.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.08 });
-        if (spec.etiquettes !== "aucune") polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
+        if (spec.etiquettes === "noms") polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
         groupe.addLayer(polygone);
     });
     traques.forEach((t) => {
         { const ind = indicesMouvants(elementsDeTraque(t)); elementsDeTraque(t).forEach((e) => dessinerElement(groupe, e, t.numero, { sansInfobulle: true, numeroMouvant: ind[e.id || e.cle] })); }
         (t.parkings || []).forEach((p) => {
             const m = L.marker([p.lat, p.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") });
-            if (avecNoms) m.bindTooltip(echapper(p.nom), { permanent: true, direction: "top", offset: [0, -12] });
             groupe.addLayer(m);
         });
         (t.acces || []).forEach((a) => {
             const m = L.marker([a.lat, a.lng], { icon: iconePointCarte("🚪", "#8a6d3a") });
-            if (avecNoms) m.bindTooltip(echapper(a.nom), { permanent: true, direction: "top", offset: [0, -12] });
             groupe.addLayer(m);
         });
         postesDeTraque(ctx, t).forEach((poste, index) => {

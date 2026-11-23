@@ -664,7 +664,7 @@ function redessinerElements() {
         const parcelle = parcellesCache.find((p) => p.id === id);
         if (!parcelle || !parcelle.contour) return;
         const polygone = L.polygon(parcelle.contour, { color: "#5a7d4a", weight: 2, fillOpacity: 0.06, interactive: false });
-        polygone.bindTooltip(echapper(parcelle.nom), { permanent: true, direction: "center", className: "etiquette-parcelle" });
+        polygone.bindTooltip(echapper(parcelle.nom), { sticky: true });
         coucheParcelles.addLayer(polygone);
     });
 
@@ -704,7 +704,8 @@ function redessinerLegende() {
         '<span><i style="border-color:#444; border-top-style:dashed"></i>Rabatteurs</span>' +
         (types.has("poste_mouvant") ? '<span><i style="border-color:#c2410c; border-top-width:5px; border-top-style:dotted"></i>Poste mouvant (M1, M2…)</span>' : "") +
         (types.has("rapproche") ? '<span><i style="border-color:#d97706; border-top-style:dashed"></i>Zone de rapproché</span>' : "") +
-        '<span>🎯 poste · 🅿️ parking · 🚪 accès</span>';
+        (types.has("interdite") ? '<span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#b00020;vertical-align:middle;margin-right:3px;"></span>Zone interdite de tir</span>' : "") +
+        symbolesLegendeHtml();
 }
 
 function libelleItem(categorie, item) {

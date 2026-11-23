@@ -585,3 +585,6 @@ main.contenu.contenu-large { max-width: 1400px; }
 .icone-point-carte.forme-parking span { border-radius: 4px; width: 24px; height: 24px; font-size: 15px; border: 2px solid #fff; box-sizing: border-box; color: #fff; }
 .icone-point-carte.forme-acces span { transform: rotate(45deg); border-radius: 3px; width: 20px; height: 20px; margin: 3px; font-size: 13px; border: 2px solid #fff; box-sizing: border-box; color: #fff; }
 .icone-point-carte.forme-acces span::first-line { transform: none; }
+
+.icone-interdit span { display:block; width:22px; height:22px; box-sizing:border-box; border-radius:50%; background:#b00020; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.45); position:relative; }
+.icone-interdit span::after { content:""; position:absolute; left:3px; right:3px; top:50%; height:3px; margin-top:-1.5px; background:#fff; }

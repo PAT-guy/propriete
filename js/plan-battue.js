@@ -188,7 +188,7 @@ async function ajouterTraqueDepuisDB(ligne) {
     etat.parkings = (ligne.parkings || []).map((p) => ({ ...p, cle: nouvelleCle() }));
     etat.acces = (ligne.acces || []).map((a) => ({ ...a, cle: nouvelleCle() }));
     const { data: postes } = await clientSupabase.from("postes_traque").select().eq("traque_id", ligne.id);
-    etat.postes = (postes || []).map((p) => ({
+    etat.postes = trierPostesParNom(postes).map((p) => ({
         cle: nouvelleCle(), id: p.id, poste_id: p.poste_id, nom: p.nom, lat: p.lat, lng: p.lng, chasseur_id: p.chasseur_id,
     }));
     traquesEtat.push(etat);
@@ -238,6 +238,9 @@ function brancherEvenements() {
     document.getElementById("bouton-creer-version").addEventListener("click", creerVersion);
     document.getElementById("bouton-annuler-action").addEventListener("click", annulerAction);
     document.getElementById("bouton-refaire-action").addEventListener("click", refaireAction);
+    document.getElementById("bouton-traque-existante").addEventListener("click", ouvrirTraquesExistantes);
+    document.getElementById("bouton-reprendre-traques").addEventListener("click", reprendreTraquesChoisies);
+    document.getElementById("recherche-traques").addEventListener("input", afficherTraquesExistantes);
     document.getElementById("bouton-ajouter-traque").addEventListener("click", () => {
         memoriser();
         const t = nouvelleTraque();
@@ -668,7 +671,7 @@ function redessinerElements() {
         t.acces.forEach((a) => coucheElements.addLayer(marqueurPoint(a, iconePointCarte("🚪", "#8a6d3a"), a.nom, "acces")));
         t.postes.forEach((poste, index) => {
             const chasseur = chasseursCache.find((c) => c.id === poste.chasseur_id);
-            const texte = chasseur ? `${poste.nom} · ${nomAffichePersonne(chasseur)}` : `${poste.nom} · non affecté`;
+            const texte = chasseur ? `${poste.nom} · ${nomAffichePersonne(chasseur)}` : poste.nom;
             coucheElements.addLayer(marqueurPoint(poste, iconePosteAssigne(index + 1, !!poste.chasseur_id), texte, "poste"));
         });
     });
@@ -1169,4 +1172,108 @@ function refaireAction() {
     pileAnnuler.push(instantanePlanEditeur());
     dernierGroupeAnnuler = null;
     restaurerInstantane(pileRefaire.pop());
+}
+
+// ----------------------------------------------------------------------------
+// Reprendre des traques déjà dessinées dans d'autres battues ou modèles
+// ----------------------------------------------------------------------------
+
+let traquesProposees = [];   // [{ traque, postes, battue }]
+
+async function ouvrirTraquesExistantes() {
+    document.getElementById("recherche-traques").value = "";
+    document.getElementById("bouton-reprendre-traques").disabled = true;
+    document.getElementById("liste-traques-existantes").innerHTML = '<em style="color:#888;">Chargement…</em>';
+    ouvrirModale("modale-traques-existantes");
+    const [battues, traques, postes] = await Promise.all([
+        clientSupabase.from("battues").select(),
+        clientSupabase.from("traques").select().order("numero"),
+        clientSupabase.from("postes_traque").select(),
+    ]);
+    const parId = new Map((battues.data || []).map((b) => [b.id, b]));
+    traquesProposees = (traques.data || [])
+        .filter((t) => t.battue_id !== battueCourante.id && parId.has(t.battue_id))
+        .map((t) => ({ traque: t, battue: parId.get(t.battue_id), postes: (postes.data || []).filter((p) => p.traque_id === t.id) }));
+    afficherTraquesExistantes();
+}
+
+function libelleSource(battue) {
+    if (battue.est_modele) return `Modèle « ${battue.nom_modele || "sans nom"} »`;
+    const date = battue.date_battue ? new Date(battue.date_battue + "T00:00:00").toLocaleDateString("fr-FR") : "sans date";
+    return `Battue du ${date}${battue.secteur ? " · " + battue.secteur : ""}`;
+}
+
+function afficherTraquesExistantes() {
+    const terme = document.getElementById("recherche-traques").value.trim().toLowerCase();
+    const zone = document.getElementById("liste-traques-existantes");
+    const visibles = traquesProposees.filter((x) => !terme ||
+        `${x.traque.nom || ""} ${libelleSource(x.battue)} ${x.traque.numero}`.toLowerCase().includes(terme));
+    if (traquesProposees.length === 0) {
+        zone.innerHTML = '<em style="color:#888;">Aucune autre traque pour l\'instant : dessine d\'abord une traque dans un autre modèle ou une autre battue.</em>';
+        return;
+    }
+    if (visibles.length === 0) { zone.innerHTML = '<em style="color:#888;">Aucun résultat.</em>'; return; }
+    // modèles d'abord, puis battues les plus récentes
+    const groupes = new Map();
+    visibles.forEach((x) => { if (!groupes.has(x.battue.id)) groupes.set(x.battue.id, []); groupes.get(x.battue.id).push(x); });
+    const ordre = [...groupes.values()].sort((a, b) => {
+        const A = a[0].battue, B = b[0].battue;
+        if (!!A.est_modele !== !!B.est_modele) return A.est_modele ? -1 : 1;
+        return (B.date_battue || "").localeCompare(A.date_battue || "") || (A.nom_modele || "").localeCompare(B.nom_modele || "", "fr");
+    });
+    zone.innerHTML = ordre.map((liste) => `
+        <div style="margin-bottom:10px;">
+            <div class="titre-bloc" style="margin-bottom:4px;">${echapper(libelleSource(liste[0].battue))}</div>
+            ${liste.map((x) => {
+                const parcelle = parcellesCache.find((p) => p.id === x.traque.parcelle_id);
+                const elements = elementsDeTraque(x.traque).length;
+                return `<label style="display:flex; gap:8px; align-items:flex-start; padding:5px 4px; font-weight:400; border-bottom:1px solid #eee; margin:0;">
+                    <input type="checkbox" class="case-traque-existante" value="${x.traque.id}" style="margin-top:4px;">
+                    <span><strong>${echapper(x.traque.nom || "Traque " + x.traque.numero)}</strong>${parcelle ? " · " + echapper(parcelle.nom) : ""}<br>
+                    <small style="color:#6b6b60;">${x.postes.length} poste(s), ${elements} tracé(s), ${(x.traque.parkings || []).length} parking(s), ${(x.traque.acces || []).length} accès</small></span></label>`;
+            }).join("")}
+        </div>`).join("");
+    zone.querySelectorAll(".case-traque-existante").forEach((c) => c.addEventListener("change", () => {
+        document.getElementById("bouton-reprendre-traques").disabled = zone.querySelectorAll(".case-traque-existante:checked").length === 0;
+    }));
+}
+
+function traqueVide(t) {
+    return !t.nom && !t.notes && !t.conducteur && !t.chef_de_ligne && !t.vehicules &&
+        t.elements.length === 0 && t.postes.length === 0 && t.parkings.length === 0 && t.acces.length === 0;
+}
+
+/** Recopie une traque existante dans l'éditeur : mêmes tracés, postes, parkings et accès, aucun chasseur. */
+function copierTraqueExistante(source, postesSource) {
+    const t = nouvelEtatTraque();
+    t.nom = source.nom || null;
+    t.parcelle_id = source.parcelle_id || null;
+    t.notes = source.notes || null;
+    t.conducteur = source.conducteur || null;
+    t.chef_de_ligne = source.chef_de_ligne || null;
+    t.vehicules = source.vehicules || null;
+    t.elements = elementsDeTraque(source).map((e) => ({ ...e, id: `e${Date.now()}${compteurCle}`, cle: nouvelleCle(), points: e.points.map((p) => [...p]) }));
+    t.parkings = (source.parkings || []).map((p) => ({ ...p, cle: nouvelleCle() }));
+    t.acces = (source.acces || []).map((a) => ({ ...a, cle: nouvelleCle() }));
+    t.postes = trierPostesParNom(postesSource).map((p) => ({ cle: nouvelleCle(), id: null, poste_id: p.poste_id || null, nom: p.nom, lat: p.lat, lng: p.lng, chasseur_id: null }));
+    return t;
+}
+
+function reprendreTraquesChoisies() {
+    const ids = Array.from(document.querySelectorAll(".case-traque-existante:checked")).map((c) => c.value);
+    const choisies = traquesProposees.filter((x) => ids.includes(x.traque.id));
+    if (choisies.length === 0) return;
+    memoriser();
+    // Une traque vide créée par défaut est remplacée plutôt que laissée à côté.
+    if (traquesEtat.length === 1 && !traquesEtat[0].id && traqueVide(traquesEtat[0])) traquesEtat = [];
+    let derniere = null;
+    choisies.forEach((x) => {
+        derniere = copierTraqueExistante(x.traque, x.postes);
+        traquesEtat.push(derniere);
+    });
+    traqueActiveCle = derniere.cle;
+    marquerModifie();
+    fermerModale("modale-traques-existantes");
+    redessinerTout();
+    if (carte) ajusterVue();
 }

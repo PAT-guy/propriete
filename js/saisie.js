@@ -68,6 +68,7 @@ async function chargerDonnees(idBattue) {
             const { data } = await clientSupabase.from("postes_traque").select().in("traque_id", listeTraques.map((t) => t.id));
             postes = data || [];
         }
+        postes = trierPostesParNom(postes);
         const donnees = { battue, chasseurs: chasseurs.data || [], traques: listeTraques, postes, prelevements: prelevements.data || [], categories: categoriesCache };
         ecrireStockage(`foret_saisie_donnees_${idBattue}`, JSON.stringify(donnees));
         return donnees;

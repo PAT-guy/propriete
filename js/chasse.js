@@ -191,10 +191,11 @@ async function chargerPlan() {
         return `
             <tr>
                 <td data-etiquette="Saison">${echapper(plan.saison)}</td>
-                <td data-etiquette="Gibier">${echapper(nomGibierDe(plan, categoriesCache, especesCache))}</td>
+                <td data-etiquette="Gibier">${echapper(nomGibierDe(plan, categoriesCache, especesCache))}${ancienneLigne(plan)}</td>
                 <td data-etiquette="Attribution">${plan.attribution}</td>
                 <td data-etiquette="Réalisé" style="${depasse ? "color:#a3442f; font-weight:600;" : ""}">${realise} / ${plan.attribution}</td>
                 <td data-etiquette="">
+                    ${boutonConvertir(plan)}
                     <button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerPlan('${plan.id}')">Supprimer</button>
                 </td>
             </tr>
@@ -226,6 +227,24 @@ async function enregistrerPlan(evenement) {
     await chargerPlan();
 }
 
+async function supprimerPrelevement(id) {
+    if (!confirm("Supprimer ce prélèvement ?")) return;
+    await clientSupabase.from("prelevements").delete().eq("id", id);
+    await chargerPrelevements();
+    await chargerPlan();
+}
+
+/** Ancienne attribution saisie par espèce : la rattache à la catégorie de même nom, si elle existe. */
+async function convertirPlan(id) {
+    const { data: plan } = await clientSupabase.from("plans_chasse").select().eq("id", id).single();
+    if (!plan) return;
+    const espece = especesCache.find((e) => e.id === plan.espece_id);
+    const categorie = espece && categoriesCache.find((c) => c.nom.toLowerCase() === espece.nom.toLowerCase());
+    if (!categorie) return;
+    await clientSupabase.from("plans_chasse").update({ categorie_id: categorie.id, espece_id: null }).eq("id", id);
+    await chargerPlan();
+}
+
 async function supprimerPlan(id) {
     if (!confirm("Supprimer cette attribution ?")) return;
     await clientSupabase.from("plans_chasse").delete().eq("id", id);
@@ -249,7 +268,7 @@ async function chargerPrelevements() {
 
     const corps = document.getElementById("corps-tableau-prelevements");
     if (prelevements.length === 0) {
-        corps.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">Aucun prélèvement</td></tr>`;
+        corps.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888;">Aucun prélèvement</td></tr>`;
         return;
     }
 
@@ -263,6 +282,9 @@ async function chargerPrelevements() {
                 <td data-etiquette="Chasseur">${chasseur ? echapper(nomAffichePersonne(chasseur)) : ""}</td>
                 <td data-etiquette="Sexe">${echapper(p.sexe)}</td>
                 <td data-etiquette="Poids">${p.poids_kg ? p.poids_kg.toFixed(1) + " kg" : ""}</td>
+                <td data-etiquette="">
+                    <button class="bouton bouton-danger" style="padding:4px 8px;" onclick="supprimerPrelevement('${p.id}')">Supprimer</button>
+                </td>
             </tr>
         `;
     }).join("");
@@ -304,4 +326,18 @@ async function enregistrerPrelevement(evenement) {
     fermerModale("modale-prelevement");
     await chargerPrelevements();
     await chargerPlan();
+}
+
+/** Mention des attributions anciennes (saisies par espèce, avant les catégories) : leur réalisé ne compte que les anciens prélèvements. */
+function ancienneLigne(plan) {
+    return plan.categorie_id ? "" : ' <small style="color:#a3442f;">(ancienne saisie par espèce)</small>';
+}
+
+function boutonConvertir(plan) {
+    if (plan.categorie_id) return "";
+    const espece = especesCache.find((e) => e.id === plan.espece_id);
+    const categorie = espece && categoriesCache.find((c) => c.nom.toLowerCase() === espece.nom.toLowerCase());
+    return categorie
+        ? `<button class="bouton bouton-secondaire" style="padding:4px 8px;" onclick="convertirPlan('${plan.id}')" title="Compter les prélèvements de la catégorie ${echapper(categorie.nom)}">Passer à « ${echapper(categorie.nom)} »</button>`
+        : "";
 }

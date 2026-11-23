@@ -10,6 +10,7 @@ const PAGES_NAVIGATION = [
     { fichier: "pages/chasse.html", libelle: "Chasse" },
     { fichier: "pages/travaux.html", libelle: "Travaux" },
     { fichier: "pages/sauvegarde.html", libelle: "Sauvegarde" },
+    { fichier: "pages/aide.html", libelle: "Aide" },
 ];
 
 async function protegerPage() {
@@ -54,6 +55,15 @@ function injecterNavigation(pageActiveFichier) {
         </header>
         <nav class="navigation">${liensNav}</nav>
     `;
+}
+
+/**
+ * Trie des postes par leur nom en tenant compte des nombres (Poste 2 avant Poste 10).
+ * La base ne garantit aucun ordre : sans ce tri, les numéros des marqueurs de la carte ne
+ * correspondent plus aux noms des postes.
+ */
+function trierPostesParNom(postes) {
+    return (postes || []).slice().sort((a, b) => String(a.nom || "").localeCompare(String(b.nom || ""), "fr", { numeric: true, sensitivity: "base" }));
 }
 
 /**

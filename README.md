@@ -6,6 +6,17 @@ Site accessible par lien, utilisable sur PC et téléphone, avec cartes IGN et s
 
 Le logo retenu est « Les bois » (un arbre dont les branches deviennent des bois de cerf). Il est dans `img/` : `logo-bois-complet.svg` (avec le texte, page de connexion), `logo-bois.svg` (marque seule, en-tête et icône des onglets), `icone-app.svg` et ses versions PNG (icône du téléphone). Le fichier `manifest.webmanifest` permet d'**ajouter le site à l'écran d'accueil** du téléphone (il s'ouvre alors comme une application, sur la page des battues). Les autres pistes étudiées sont dans `logos/`. Dans les cartons et la fiche de gestion, le bloc « En-tête » propose le logo comme ornement (choisi par défaut).
 
+## Réutiliser des traques d'une journée à l'autre
+
+Trois niveaux, du plus petit au plus grand :
+- une **traque** : un passage, avec ses tracés, ses postes, ses parkings et ses accès ;
+- un **modèle de battue** : un plan sans date regroupant une ou plusieurs traques, à garder ;
+- une **battue** : une vraie journée, créée à partir d'un modèle, avec sa date, ses participants et ses prélèvements.
+
+Pour combiner à volonté des traques faites à des moments différents, ouvre le plan d'une battue ou d'un modèle et clique sur **« Reprendre une traque déjà faite »** : la liste montre toutes les traques des autres modèles et battues (avec le nombre de postes), on en coche une ou plusieurs, et elles sont recopiées avec leurs tracés, postes, parkings, accès et équipe, sans les chasseurs. La copie est indépendante de l'original. Ctrl+Z annule la reprise. Page **Aide** du site : le mode d'emploi pas à pas.
+
+Les postes sont toujours classés par leur numéro (Poste 1, 2, 3… 10, 11), pour que les numéros des marqueurs de la carte et des cartons correspondent à leurs noms.
+
 ## Battues (page d'accueil)
 
 La page Battues est le point central du site. Elle affiche en haut la prochaine battue (date, rendez-vous, responsable, participants, nombre de traques et de postes), avec les boutons "Plan de battue" et "Fiche à imprimer". En dessous : les modèles de battue, les battues à venir et les battues passées.

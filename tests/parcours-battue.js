@@ -9,6 +9,8 @@ const map = {
  '@supabase/supabase-js@2': L+'/@supabase/supabase-js/dist/umd/supabase.js',
 };
 const B='http://localhost:8123/';
+const jour=(n)=>{const d=new Date(Date.now()+n*86400000); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const DATE_BATTUE=jour(40);
 let ok=0, ko=0; const errs=[];
 const t=(n,c)=>{ (c?ok++:ko++); console.log((c?'OK  ':'FAIL ')+n); };
 (async()=>{
@@ -22,12 +24,12 @@ const t=(n,c)=>{ (c?ok++:ko++); console.log((c?'OK  ':'FAIL ')+n); };
  t('page parcelles chargée', await p.locator('#zone-navigation').count()>0);
  await p.goto(B+'pages/chasse.html'); await p.waitForTimeout(800);
  // seed via client démo
- const ids = await p.evaluate(async()=>{
+ const ids = await p.evaluate(async(DATE_BATTUE)=>{
    const c=(await clientSupabase.from('chasseurs').insert({nom:'<img src=x onerror=window.__xss=1>',prenom:'O\'Brien "Q"',actif:true}).select().single()).data;
    const e=(await clientSupabase.from('especes_gibier').select()).data;
-   const bt=(await clientSupabase.from('battues').insert({date_battue:'2026-11-15',secteur:'Nord'}).select().single()).data;
+   const bt=(await clientSupabase.from('battues').insert({date_battue:DATE_BATTUE,secteur:'Nord'}).select().single()).data;
    return {c:c.id,b:bt.id,nEsp:e.length};
- });
+ },DATE_BATTUE);
  t('seed chasseur/battue (espèces='+ids.nEsp+')', !!ids.b);
  await p.goto(B+'pages/battues.html'); await p.waitForTimeout(700);
  t('battue listée', (await p.locator('#corps-tableau-a-venir tr').count())>0 && !(await p.locator('#corps-tableau-a-venir').innerText()).includes('Aucune'));

@@ -82,6 +82,7 @@
                     <div class="titre-bloc">Traques</div>
                     <div id="liste-traques" class="liste-traques"></div>
                     <button type="button" class="bouton bouton-secondaire" id="bouton-ajouter-traque" style="width:100%; margin-top:8px;">+ Ajouter une traque</button>
+                    <button type="button" class="bouton bouton-secondaire" id="bouton-traque-existante" style="width:100%; margin-top:6px;">↻ Reprendre une traque déjà faite</button>
                 </div>
                 <div class="bloc-panneau" id="fiche-traque"></div>
             </aside>
@@ -126,6 +127,20 @@
                 <button type="submit" class="bouton bouton-principal">Valider</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modale : reprendre des traques déjà dessinées (autres battues ou modèles) -->
+<div class="fond-modale" id="modale-traques-existantes">
+    <div class="boite-modale" style="max-width:640px;">
+        <h2>Reprendre une traque déjà faite</h2>
+        <p style="font-size:13px; color:#6b6b60; margin-top:0;">Coche une ou plusieurs traques d'un autre modèle ou d'une autre battue : elles sont recopiées ici avec leurs tracés, postes, parkings et accès (sans les chasseurs). Tu peux ensuite les modifier sans toucher à l'original.</p>
+        <input type="text" id="recherche-traques" placeholder="Rechercher (nom de traque, modèle, secteur)…" style="margin-bottom:8px;">
+        <div id="liste-traques-existantes" style="max-height:50vh; overflow-y:auto;"></div>
+        <div class="actions-modale">
+            <button type="button" class="bouton bouton-secondaire" onclick="fermerModale('modale-traques-existantes')">Annuler</button>
+            <button type="button" class="bouton bouton-principal" id="bouton-reprendre-traques" disabled>Ajouter à ce plan</button>
+        </div>
     </div>
 </div>
 

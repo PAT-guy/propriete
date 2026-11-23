@@ -1,7 +1,8 @@
 const { chromium } = require('playwright');
 const L = process.argv[2] + '/node_modules';
 const map = {'leaflet@1.9.4/dist/leaflet.js':L+'/leaflet/dist/leaflet.js','leaflet@1.9.4/dist/leaflet.css':L+'/leaflet/dist/leaflet.css','@supabase/supabase-js@2':L+'/@supabase/supabase-js/dist/umd/supabase.js'};
-const B='http://localhost:8123/'; let ok=0,ko=0; const errs=[];
+const B='http://localhost:8123/'; const jour=(n)=>{const d=new Date(Date.now()+n*86400000); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+let ok=0,ko=0; const errs=[];
 const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
 (async()=>{
  const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:1500,height:950}}); const p=await ctx.newPage();
@@ -10,7 +11,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await ctx.route(/geopf\.fr/, r=>r.abort());
  await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/pages/battues.html'); await p.waitForTimeout(600);
  // ---------- catégories et plan du jour dans la fiche de la battue
- await p.click('text=Nouvelle battue'); await p.fill('#champ-date-nouvelle','2026-11-14'); await p.selectOption('#champ-modele-nouvelle',''); await p.click('#bouton-creer-nouvelle'); await p.waitForTimeout(400);
+ await p.click('text=Nouvelle battue'); await p.fill('#champ-date-nouvelle',jour(40)); await p.selectOption('#champ-modele-nouvelle',''); await p.click('#bouton-creer-nouvelle'); await p.waitForTimeout(400);
  const lignes=await p.locator('#liste-plan-jour .ligne-plan-jour').allInnerTexts();
  t('catégories de départ installées (5) avec leurs sonneries', lignes.length===5 && /Chevreuil[\s\S]*sonnerie 2/.test(lignes[0]) && /Cerf -8[\s\S]*sonnerie 6/.test(lignes[1]) && /Cerf \+8[\s\S]*sonnerie 6/.test(lignes[2]) && /Biche[\s\S]*sonnerie 4/.test(lignes[3]) && /Jeune[\s\S]*sonnerie 3/.test(lignes[4]));
  t('ligne Chevreuil : précisions chevreuil, chevrette, chevrillard', (await p.locator('#liste-plan-jour .ligne-plan-jour').first().locator('.plan-precision').count())===3);

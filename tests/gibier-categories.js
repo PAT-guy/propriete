@@ -44,7 +44,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  // anciennes données (espèce sans catégorie) toujours lisibles
  await p.evaluate(async()=>{ const e=(await clientSupabase.from('especes_gibier').select()).data.find(x=>x.nom==='Daim'); await clientSupabase.from('plans_chasse').insert({saison:'2025-2026',espece_id:e.id,attribution:4}); await clientSupabase.from('prelevements').insert({date_prelevement:'2025-12-01',saison:'2025-2026',espece_id:e.id}); });
  await p.reload(); await p.waitForTimeout(800); await p.click('[data-onglet=onglet-plan]');
- t('anciennes lignes (espèce) : nom conservé, réalisé 1/4', (await p.locator('#corps-tableau-plan tr').allInnerTexts()).some(l=>/Daim\s+4\s+1 \/ 4/.test(l)));
+ t('anciennes lignes (espèce) : nom conservé, réalisé 1/4', (await p.locator('#corps-tableau-plan tr').allInnerTexts()).some(l=>/Daim[\s\S]*4\s+1 \/ 4/.test(l)));
  // battue : plan du jour avec les nouvelles espèces + prélèvement par traque
  await p.goto(B+'pages/battues.html'); await p.waitForTimeout(500);
  const bt=await p.evaluate(async()=>{ const b=(await clientSupabase.from('battues').insert({date_battue:'2026-11-20',secteur:'Nord'}).select().single()).data.id; const t1=(await clientSupabase.from('traques').insert({battue_id:b,numero:1,nom:'T1',elements:[],parkings:[],acces:[]}).select().single()).data.id; return {b,t1}; });

@@ -10,7 +10,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await ctx.route(/unpkg\.com/, r=>{const u=r.request().url();const k=Object.keys(map).find(k=>u.includes(k));k?r.fulfill({path:map[k]}):r.abort();});
  await ctx.route(/geopf\.fr/, r=>r.abort());
  await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/pages/battues.html'); await p.waitForTimeout(500);
- t('rappel de sauvegarde affiché (aucune sauvegarde faite)', (await p.locator('#zone-prochaine').locator('xpath=preceding-sibling::div[1]').innerText()).includes('Télécharger une sauvegarde'));
+ t('rappel de sauvegarde affiché (aucune sauvegarde faite)', (await p.locator('main').innerText()).includes('Aucune sauvegarde téléchargée depuis cet appareil'));
  const s=await p.evaluate(async()=>{
   const ins=async(n,o)=>(await clientSupabase.from(n).insert(o).select().single()).data.id;
   const c=await ins('chasseurs',{nom:'Martin',actif:true,assurance_assureur:'AXA'});

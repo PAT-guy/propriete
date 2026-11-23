@@ -1,7 +1,10 @@
 const { chromium } = require('playwright');
 const L = process.argv[2] + '/node_modules';
 const map = {'leaflet@1.9.4/dist/leaflet.js':L+'/leaflet/dist/leaflet.js','leaflet@1.9.4/dist/leaflet.css':L+'/leaflet/dist/leaflet.css','@supabase/supabase-js@2':L+'/@supabase/supabase-js/dist/umd/supabase.js'};
-const B='http://localhost:8123/'; let ok=0,ko=0; const errs=[];
+const B='http://localhost:8123/'; const jour=(n)=>{const d=new Date(Date.now()+n*86400000); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const saisonDe=(iso)=>{const [a,m]=iso.split('-').map(Number); return m>=7?`${a}-${a+1}`:`${a-1}-${a}`;};
+const DATE_BATTUE=jour(40), SAISON_BATTUE=saisonDe(DATE_BATTUE);
+let ok=0,ko=0; const errs=[];
 const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
 (async()=>{
  const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true}); const p=await ctx.newPage();
@@ -9,18 +12,18 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await ctx.route(/unpkg\.com/, r=>{const u=r.request().url();const k=Object.keys(map).find(k=>u.includes(k));k?r.fulfill({path:map[k]}):r.abort();});
  await ctx.route(/geopf\.fr/, r=>r.abort());
  await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/pages/battues.html'); await p.waitForTimeout(600);
- const s=await p.evaluate(async()=>{
+ const s=await p.evaluate(async(DATE_BATTUE)=>{
   const ins=async(n,o)=>(await clientSupabase.from(n).insert(o).select().single()).data.id;
   const c1=await ins('chasseurs',{nom:'Martin',prenom:'Paul',actif:true}); const c2=await ins('chasseurs',{nom:'Durand',actif:true});
   const cats=(await clientSupabase.from('categories_chasse').select()).data.sort((a,b)=>a.ordre-b.ordre);
-  const bt=await ins('battues',{date_battue:'2026-11-14',secteur:'Marais',plan_jour:[
+  const bt=await ins('battues',{date_battue:DATE_BATTUE,secteur:'Marais',plan_jour:[
     {id:cats[0].id,autorise:true,nombre:null,choix:['Chevreuil','Chevrette']},   // chevreuil : 2 précisions
     {id:cats[1].id,autorise:true,nombre:2,choix:[]},                              // cerf -8 : quota 2
     {id:cats[3].id,autorise:true,nombre:null,choix:[]},                           // biche
   ]});
   const t1=await ins('traques',{battue_id:bt,numero:1,nom:'Marais',elements:[],parkings:[],acces:[]}); const t2=await ins('traques',{battue_id:bt,numero:2,nom:'Fourneau',elements:[],parkings:[],acces:[]});
   await ins('postes_traque',{traque_id:t1,nom:'Poste 1',lat:46.6,lng:2.5,chasseur_id:c1}); await ins('postes_traque',{traque_id:t1,nom:'Poste 2',lat:46.6,lng:2.5,chasseur_id:c2}); await ins('postes_traque',{traque_id:t2,nom:'Poste 3',lat:46.6,lng:2.5,chasseur_id:null});
-  return {bt,t1,t2,c1,c2}; });
+  return {bt,t1,t2,c1,c2}; },DATE_BATTUE);
  // accès depuis la page des battues
  await p.reload(); await p.waitForTimeout(600);
  t('page Battues : bouton « Saisie rapide » sur la prochaine battue', (await p.locator('#zone-prochaine').innerText()).includes('Saisie rapide'));
@@ -41,7 +44,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await p.click('.saisie-poste:has-text("Poste 1")');
  await p.click('#saisie-categories .saisie-animal:has-text("Cerf -8")'); await p.waitForTimeout(400);
  let pr=await prelevements();
- t('un appui : prélèvement créé (catégorie, battue, date, saison)', pr.length===1 && pr[0].battue_id===s.bt && pr[0].date_prelevement==='2026-11-14' && pr[0].saison==='2026-2027');
+ t('un appui : prélèvement créé (catégorie, battue, date, saison)', pr.length===1 && pr[0].battue_id===s.bt && pr[0].date_prelevement===DATE_BATTUE && pr[0].saison===SAISON_BATTUE);
  t('rattaché à la traque, au poste et au chasseur du poste', pr[0].traque_id===s.t1 && pr[0].poste==='Poste 1' && pr[0].chasseur_id===s.c1);
  t('message d\'enregistrement avec Annuler et Détails', await p.locator('#saisie-toast').isVisible() && (await p.locator('#saisie-toast').innerText()).includes('Cerf -8 enregistré · Poste 1'));
  t('compteur du bouton : 1 / 2', (await p.locator('.saisie-animal:has-text("Cerf -8") .compte').innerText())==='1 / 2');

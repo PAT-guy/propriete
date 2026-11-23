@@ -92,7 +92,7 @@ function chasseurDeCtx(ctx, id) {
 }
 
 function postesDeTraque(ctx, traque) {
-    return ctx.postes.filter((p) => p.traque_id === traque.id);
+    return trierPostesParNom(ctx.postes.filter((p) => p.traque_id === traque.id));
 }
 
 function parseDate(dateISO) {

@@ -1,7 +1,8 @@
 const { chromium } = require('playwright');
 const L = process.argv[2] + '/node_modules';
 const map = {'leaflet@1.9.4/dist/leaflet.js':L+'/leaflet/dist/leaflet.js','leaflet@1.9.4/dist/leaflet.css':L+'/leaflet/dist/leaflet.css','@supabase/supabase-js@2':L+'/@supabase/supabase-js/dist/umd/supabase.js'};
-const B='http://localhost:8123/'; let ok=0,ko=0; const errs=[];
+const B='http://localhost:8123/'; const jour=(n)=>{const d=new Date(Date.now()+n*86400000); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+let ok=0,ko=0; const errs=[];
 const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
 (async()=>{
  const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:1500,height:950}}); const p=await ctx.newPage();
@@ -10,13 +11,13 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await ctx.route(/geopf\.fr/, r=>r.abort());
  await p.goto(B+'index.html'); await p.click('button[type=submit]'); await p.waitForURL('**/pages/battues.html'); await p.waitForTimeout(600);
  // catégories : Sanglier et Renard sans sonnerie
- const s=await p.evaluate(async()=>{
+ const s=await p.evaluate(async([D1,D2])=>{
   const ins=async(n,o)=>(await clientSupabase.from(n).insert(o).select().single()).data.id;
   const cats=(await clientSupabase.from('categories_chasse').select()).data.sort((a,b)=>a.ordre-b.ordre);
   const sang=await ins('categories_chasse',{nom:'Sanglier',sonnerie:null,precisions:[],ordre:10}); const ren=await ins('categories_chasse',{nom:'Renard',sonnerie:null,precisions:[],ordre:11});
-  const b1=await ins('battues',{date_battue:'2026-11-14',secteur:'Mixte',plan_jour:[{id:cats[1].id,autorise:true,nombre:3,choix:[]},{id:cats[3].id,autorise:true,nombre:null,choix:[]},{id:sang,autorise:true,nombre:5,choix:[]},{id:ren,autorise:true,nombre:null,choix:[]}]});
-  const b2=await ins('battues',{date_battue:'2026-11-21',secteur:'Sans sonnerie',plan_jour:[{id:sang,autorise:true,nombre:4,choix:[]},{id:ren,autorise:true,nombre:2,choix:[]}]});
-  return {b1,b2,cats:cats.map(c=>c.id),sang,ren}; });
+  const b1=await ins('battues',{date_battue:D1,secteur:'Mixte',plan_jour:[{id:cats[1].id,autorise:true,nombre:3,choix:[]},{id:cats[3].id,autorise:true,nombre:null,choix:[]},{id:sang,autorise:true,nombre:5,choix:[]},{id:ren,autorise:true,nombre:null,choix:[]}]});
+  const b2=await ins('battues',{date_battue:D2,secteur:'Sans sonnerie',plan_jour:[{id:sang,autorise:true,nombre:4,choix:[]},{id:ren,autorise:true,nombre:2,choix:[]}]});
+  return {b1,b2,cats:cats.map(c=>c.id),sang,ren}; },[jour(40),jour(47)]);
  // ---------- formulaire de la battue
  await p.reload(); await p.waitForTimeout(500);
  await p.locator('#corps-tableau-a-venir tr', {hasText:'Mixte'}).locator('text=Modifier').click(); await p.waitForTimeout(300);

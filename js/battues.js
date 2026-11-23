@@ -100,6 +100,22 @@ async function chargerTout() {
     afficherProchaine();
     afficherModeles();
     afficherListes();
+    afficherGuideDebut();
+}
+
+/** Tant qu'aucune battue datée n'existe, rappelle le principe : un modèle, puis une battue à chaque journée. */
+function afficherGuideDebut() {
+    const ancien = document.getElementById("guide-debut");
+    if (ancien) ancien.remove();
+    if (battuesCache.length > 0) return;
+    const etapes = modelesCache.length === 0
+        ? "<strong>1.</strong> Crée un modèle avec « Nouveau modèle » (par exemple le nom de ta battue), puis dessine ses traques et ses postes avec le bouton « Plan ». <strong>2.</strong> Quand le modèle est prêt, « Nouvelle battue » en fait une journée datée."
+        : `<strong>Ton modèle est prêt.</strong> Pour organiser une vraie journée (impression des cartons, saisie des animaux), clique sur « Nouvelle battue » ou sur « Créer une battue » à côté d'un modèle, et choisis la date.`;
+    document.getElementById("zone-prochaine").insertAdjacentHTML("beforebegin", `
+        <div class="carte sans-impression" id="guide-debut" style="background:#eef4e8; border-color:#c9dcbc; font-size:14px; line-height:1.55; margin-bottom:12px;">
+            <strong>Pour commencer.</strong> ${etapes}
+            <a href="aide.html"><strong>Lire le guide complet</strong></a>
+        </div>`);
 }
 
 function nbTraquesDe(idBattue) {

@@ -462,7 +462,7 @@ function majChampsSelonType(initial) {
     const type = typeChoisi();
     const estPoint = edition.forme === "point";
     const estLigne = edition.forme === "ligne" || edition.forme === "courbe";
-    document.getElementById("bloc-chasseur-element").style.display = type === "poste" ? "" : "none";
+    document.getElementById("bloc-chasseur-element").style.display = type === "poste" || type === "poste_mouvant" ? "" : "none";
     document.getElementById("bloc-bibliotheque-element").style.display = type === "poste" && edition.nouveau ? "" : "none";
     document.getElementById("bloc-fleche-element").style.display = estLigne ? "" : "none";
     document.getElementById("champ-notes-element").previousElementSibling.style.display = estPoint && type !== "poste" ? "none" : "";
@@ -524,6 +524,7 @@ function validerElement(evenement) {
             cle: ancien.cle || nouvelleCle(), id: ancien.id || `e${Date.now()}${compteurCle}`,
             type, forme, points: edition.points, nom: nomSaisi || null, notes,
             fleche: forme !== "polygone" && document.getElementById("champ-fleche-element").checked,
+            chasseur_id: type === "poste_mouvant" ? (document.getElementById("champ-chasseur-element").value || null) : null,
         });
     }
 
@@ -627,7 +628,7 @@ function redessinerTout() {
 
 function marqueurPoint(item, icone, texte, categorie) {
     const marqueur = L.marker([item.lat, item.lng], { icon: icone, draggable: true, bubblingMouseEvents: false })
-        .bindTooltip(echapper(texte), { permanent: true, direction: categorie === "poste" ? "right" : "top", offset: categorie === "poste" ? [14, 0] : [0, -12] });
+        .bindTooltip(echapper(texte), { direction: "top", offset: [0, -12] });
     marqueur.on("click", () => {
         if (outil) { clicCarte(marqueur.getLatLng()); return; }
         ouvrirDescriptionItem(item.cle);
@@ -662,8 +663,9 @@ function redessinerElements() {
     // Éléments de la traque active en dernier (donc au-dessus).
     const ordre = [...traquesEtat.filter((t) => t.cle !== traqueActiveCle), ...traquesEtat.filter((t) => t.cle === traqueActiveCle)];
     ordre.forEach((t) => {
+        const indices = indicesMouvants(t.elements);
         t.elements.forEach((element) => {
-            const groupe = dessinerElement(coucheElements, element, t.numero);
+            const groupe = dessinerElement(coucheElements, element, t.numero, { numeroMouvant: indices[element.id || element.cle] });
             if (!groupe) return;
             groupe.on("click", () => { if (!outil && !editionForme) ouvrirDescriptionItem(element.cle); });
         });
@@ -687,9 +689,13 @@ function ajusterVue() {
 function redessinerLegende() {
     const zone = document.getElementById("legende-plan");
     const traces = traquesEtat.map((t) => `<span><i style="border-color:${couleurTraque(t.numero)}"></i>${echapper(libelleTraque(t))}</span>`).join("");
+    const types = new Set();
+    traquesEtat.forEach((t) => t.elements.forEach((e) => types.add(e.type)));
     zone.innerHTML = traces +
         '<span><i style="border-color:#222; border-top-width:5px"></i>Sens de la battue</span>' +
         '<span><i style="border-color:#444; border-top-style:dashed"></i>Rabatteurs</span>' +
+        (types.has("poste_mouvant") ? '<span><i style="border-color:#c2410c; border-top-width:5px; border-top-style:dotted"></i>Poste mouvant (M1, M2…)</span>' : "") +
+        (types.has("rapproche") ? '<span><i style="border-color:#d97706; border-top-style:dashed"></i>Zone de rapproché</span>' : "") +
         '<span>🎯 poste · 🅿️ parking · 🚪 accès</span>';
 }
 
@@ -697,6 +703,7 @@ function libelleItem(categorie, item) {
     if (categorie === "poste") return `🎯 ${item.nom}`;
     if (categorie === "parking") return `🅿️ ${item.nom}`;
     if (categorie === "acces") return `🚪 ${item.nom}`;
+    if (item.type === "poste_mouvant") return `🚶 Poste mouvant${item.nom ? " : " + item.nom : ""}`;
     return `${(TYPES_ELEMENT[item.type] || {}).libelle || "Tracé"}${item.nom ? " : " + item.nom : ""}`;
 }
 
@@ -726,12 +733,12 @@ function redessinerPanneau() {
         <select onchange="majChampTraque('parcelle_id', this.value)">${optionsParcelles}</select>
 
         <div class="titre-bloc" style="margin-top:14px;">Équipe de la traque</div>
-        <label class="etiquette" style="margin-top:0;">Conducteur</label>
-        <input type="text" list="liste-noms-chasseurs" value="${echapper(t.conducteur)}" oninput="majChampTraque('conducteur', this.value)">
+        <label class="etiquette" style="margin-top:0;">Conducteurs</label>
+        ${champMulti("conducteur", t.conducteur, "Nom du conducteur", true, "+ Ajouter un conducteur")}
         <label class="etiquette">Chef ou cheffe de ligne</label>
         <input type="text" list="liste-noms-chasseurs" value="${echapper(t.chef_de_ligne)}" oninput="majChampTraque('chef_de_ligne', this.value)">
         <label class="etiquette">Véhicules</label>
-        <input type="text" value="${echapper(t.vehicules)}" placeholder="ex : Hilux blanche, remorque à chiens" oninput="majChampTraque('vehicules', this.value)">
+        ${champMulti("vehicules", t.vehicules, "ex : Hilux blanche, remorque à chiens", false, "+ Ajouter un véhicule")}
         <datalist id="liste-noms-chasseurs">${chasseursCache.map((c) => `<option value="${echapper(nomAffichePersonne(c))}"></option>`).join("")}</datalist>
 
         <div class="titre-bloc" style="margin-top:14px;">Contenu de cette traque</div>
@@ -739,7 +746,7 @@ function redessinerPanneau() {
             ${lignes.length === 0 ? '<em style="color:#888;">Rien de dessiné pour l\'instant.</em>' : lignes.map(([categorie, item]) => `
                 <div class="ligne-element" onclick="ouvrirDescriptionItem('${item.cle}')">
                     <span class="libelle">${echapper(libelleItem(categorie, item))}</span>
-                    ${categorie === "poste" ? `<select onclick="event.stopPropagation()" onchange="affecterChasseur('${item.cle}', this.value)">
+                    ${categorie === "poste" || item.type === "poste_mouvant" ? `<select onclick="event.stopPropagation()" onchange="affecterChasseur('${item.cle}', this.value)">
                         <option value="">— chasseur —</option>
                         ${chasseursCache.filter((c) => c.actif).map((c) => `<option value="${c.id}" ${item.chasseur_id === c.id ? "selected" : ""}>${echapper(nomAffichePersonne(c))}</option>`).join("")}
                     </select>` : ""}
@@ -898,9 +905,9 @@ async function enregistrerTraque(etat) {
         numero: etat.numero,
         nom: etat.nom,
         parcelle_id: etat.parcelle_id,
-        conducteur: etat.conducteur,
+        conducteur: listeDepuisTexte(etat.conducteur).join("\n") || null,
         chef_de_ligne: etat.chef_de_ligne,
-        vehicules: etat.vehicules,
+        vehicules: listeDepuisTexte(etat.vehicules).join("\n") || null,
         // Les anciens champs sont remplacés par les tracés libres (elements).
         mouvement: null,
         ligne_rabatteurs: null,
@@ -1252,7 +1259,7 @@ function copierTraqueExistante(source, postesSource) {
     t.conducteur = source.conducteur || null;
     t.chef_de_ligne = source.chef_de_ligne || null;
     t.vehicules = source.vehicules || null;
-    t.elements = elementsDeTraque(source).map((e) => ({ ...e, id: `e${Date.now()}${compteurCle}`, cle: nouvelleCle(), points: e.points.map((p) => [...p]) }));
+    t.elements = elementsDeTraque(source).map((e) => ({ ...e, id: `e${Date.now()}${compteurCle}`, cle: nouvelleCle(), points: e.points.map((p) => [...p]), chasseur_id: null }));
     t.parkings = (source.parkings || []).map((p) => ({ ...p, cle: nouvelleCle() }));
     t.acces = (source.acces || []).map((a) => ({ ...a, cle: nouvelleCle() }));
     t.postes = trierPostesParNom(postesSource).map((p) => ({ cle: nouvelleCle(), id: null, poste_id: p.poste_id || null, nom: p.nom, lat: p.lat, lng: p.lng, chasseur_id: null }));
@@ -1276,4 +1283,57 @@ function reprendreTraquesChoisies() {
     fermerModale("modale-traques-existantes");
     redessinerTout();
     if (carte) ajusterVue();
+}
+
+// ----------------------------------------------------------------------------
+// Champs à plusieurs entrées (conducteurs, véhicules) : une valeur par ligne, enregistrées séparées par des retours à la ligne
+// ----------------------------------------------------------------------------
+
+function champMulti(champ, valeur, indication, avecNoms, libelleAjout) {
+    const valeurs = String(valeur || "").split(/\r?\n/);
+    if (valeurs.length === 0) valeurs.push("");
+    return `<div class="liste-multi">
+        ${valeurs.map((v, i) => `<div class="ligne-multi">
+            <input type="text" ${avecNoms ? 'list="liste-noms-chasseurs"' : ""} value="${echapper(v)}" placeholder="${echapper(indication)}" oninput="majListeMulti('${champ}', ${i}, this.value)">
+            ${valeurs.length > 1 ? `<button type="button" class="bouton bouton-danger" title="Retirer" onclick="retirerListeMulti('${champ}', ${i})">×</button>` : ""}
+        </div>`).join("")}
+        <button type="button" class="bouton bouton-secondaire" style="padding:3px 8px; font-size:12px;" onclick="ajouterListeMulti('${champ}')">${echapper(libelleAjout)}</button>
+    </div>`;
+}
+
+function entreesMulti(champ) {
+    return String(traqueActive()[champ] || "").split(/\r?\n/);
+}
+
+function majListeMulti(champ, index, valeur) {
+    const t = traqueActive();
+    memoriser(`champ:${t.cle}:${champ}:${index}`);
+    const v = entreesMulti(champ);
+    v[index] = valeur;
+    t[champ] = v.join("\n");
+    marquerModifie();
+}
+
+function ajouterListeMulti(champ) {
+    const t = traqueActive();
+    memoriser();
+    const v = entreesMulti(champ);
+    v.push("");
+    t[champ] = v.join("\n");
+    marquerModifie();
+    redessinerPanneau();
+    const champs = document.querySelectorAll(`#fiche-traque .liste-multi input`);
+    // met le curseur dans la nouvelle ligne
+    const dernieres = [...document.querySelectorAll("#fiche-traque .liste-multi")].find((bloc) => bloc.querySelector(`[oninput*="'${champ}'"]`));
+    if (dernieres) { const inputs = dernieres.querySelectorAll("input"); inputs[inputs.length - 1].focus(); }
+}
+
+function retirerListeMulti(champ, index) {
+    const t = traqueActive();
+    memoriser();
+    const v = entreesMulti(champ);
+    v.splice(index, 1);
+    t[champ] = v.join("\n");
+    marquerModifie();
+    redessinerPanneau();
 }

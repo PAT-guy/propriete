@@ -570,3 +570,18 @@ main.contenu.contenu-large { max-width: 1400px; }
 .barre-haut .titre .logo-barre { width: 34px; height: 34px; vertical-align: middle; margin-right: 9px; border-radius: 50%; }
 .logo-connexion { display: block; width: 200px; max-width: 70%; height: auto; margin: 0 auto 6px auto; }
 .boite-connexion .sous-titre { text-align: center; }
+
+/* Poste mouvant : pastille carrée (les postes fixes sont des ronds) */
+.icone-mouvant span {
+    display: flex; align-items: center; justify-content: center; width: 30px; height: 22px; box-sizing: border-box;
+    background: #c2410c; color: #fff; font-weight: 700; font-size: 12px; border: 2px solid #fff; border-radius: 5px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.45);
+}
+
+.liste-multi .ligne-multi { display: flex; gap: 6px; margin-bottom: 4px; }
+.liste-multi .ligne-multi input { flex: 1; }
+.liste-multi .ligne-multi button { padding: 2px 9px; }
+
+.icone-point-carte.forme-parking span { border-radius: 4px; width: 24px; height: 24px; font-size: 15px; border: 2px solid #fff; box-sizing: border-box; color: #fff; }
+.icone-point-carte.forme-acces span { transform: rotate(45deg); border-radius: 3px; width: 20px; height: 20px; margin: 3px; font-size: 13px; border: 2px solid #fff; box-sizing: border-box; color: #fff; }
+.icone-point-carte.forme-acces span::first-line { transform: none; }

@@ -277,6 +277,8 @@ async function copierBattue(idSource, surcharges) {
     const { data: traques } = await clientSupabase.from("traques").select().eq("battue_id", idSource).order("numero");
     for (const traque of traques || []) {
         const { id: idTraque, created_at: _ct, ...champsTraque } = traque;
+        // Un chasseur affecté à un poste mouvant ne se recopie pas (comme pour les postes fixes).
+        if (Array.isArray(champsTraque.elements)) champsTraque.elements = champsTraque.elements.map((e) => (e.chasseur_id ? { ...e, chasseur_id: null } : e));
         const { data: nouvelleTraque } = await clientSupabase.from("traques").insert({ ...champsTraque, battue_id: nouvelle.id }).select().single();
         const { data: postes } = await clientSupabase.from("postes_traque").select().eq("traque_id", idTraque);
         if (postes && postes.length > 0) {

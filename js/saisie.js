@@ -68,7 +68,17 @@ async function chargerDonnees(idBattue) {
             const { data } = await clientSupabase.from("postes_traque").select().in("traque_id", listeTraques.map((t) => t.id));
             postes = data || [];
         }
-        postes = trierPostesParNom(postes);
+        // Les postes mouvants (tracés du plan) se choisissent comme les postes fixes : ils ne sont pas en base, on en fait des postes virtuels.
+        const mouvants = [];
+        listeTraques.forEach((t) => {
+            let n = 0;
+            (Array.isArray(t.elements) ? t.elements : []).forEach((e) => {
+                if (e.type !== "poste_mouvant") return;
+                n += 1;
+                mouvants.push({ id: `m:${t.id}:${e.id}`, traque_id: t.id, nom: e.nom || `Poste mouvant ${n}`, chasseur_id: e.chasseur_id || null, mouvant: true, num: n });
+            });
+        });
+        postes = [...trierPostesParNom(postes), ...mouvants];
         const donnees = { battue, chasseurs: chasseurs.data || [], traques: listeTraques, postes, prelevements: prelevements.data || [], categories: categoriesCache };
         ecrireStockage(`foret_saisie_donnees_${idBattue}`, JSON.stringify(donnees));
         return donnees;
@@ -291,9 +301,11 @@ function rendreOu() {
         rendreOu();
     }));
     const postes = d.postes.filter((p) => p.traque_id === selection.traqueId);
-    zonePostes.innerHTML = `<button type="button" class="saisie-poste ${selection.posteId ? "" : "actif"}" data-poste="">Sans poste</button>` + postes.map((p, i) => {
+    let fixes = 0;
+    zonePostes.innerHTML = `<button type="button" class="saisie-poste ${selection.posteId ? "" : "actif"}" data-poste="">Sans poste</button>` + postes.map((p) => {
         const c = chasseurDePoste(p);
-        return `<button type="button" class="saisie-poste ${p.id === selection.posteId ? "actif" : ""}" data-poste="${p.id}"><span>${i + 1}. ${echapper(p.nom)}${c ? `<small>${echapper(nomChasseur(c))}</small>` : ""}</span></button>`;
+        const etiquette = p.mouvant ? `M${p.num}` : String(++fixes);
+        return `<button type="button" class="saisie-poste ${p.id === selection.posteId ? "actif" : ""}" data-poste="${p.id}"><span>${etiquette}. ${echapper(p.nom)}${c ? `<small>${echapper(nomChasseur(c))}</small>` : ""}</span></button>`;
     }).join("");
     zonePostes.querySelectorAll("[data-poste]").forEach((b) => b.addEventListener("click", () => {
         selection.posteId = b.dataset.poste || null;
@@ -489,7 +501,7 @@ async function ouvrirEchange() {
 }
 
 function paquetPourEnvoi() {
-    const donnees = { ...d, prelevements: lignesDeLaBattue() };
+    const donnees = { ...d, postes: d.postes.filter((p) => !p.mouvant), prelevements: lignesDeLaBattue() };
     return construirePaquet(donnees, categoriesCache, document.getElementById("case-plan-echange").checked);
 }
 

@@ -76,7 +76,10 @@ function extraireCode(texte) {
 function construirePaquet(donnees, categories, avecPlan) {
     const idsCategories = new Set(donnees.prelevements.map((p) => p.categorie_id).filter(Boolean));
     const idsChasseurs = new Set(donnees.prelevements.map((p) => p.chasseur_id).filter(Boolean));
-    if (avecPlan) donnees.postes.forEach((p) => { if (p.chasseur_id) idsChasseurs.add(p.chasseur_id); });
+    if (avecPlan) {
+        donnees.postes.forEach((p) => { if (p.chasseur_id) idsChasseurs.add(p.chasseur_id); });
+        donnees.traques.forEach((t) => (Array.isArray(t.elements) ? t.elements : []).forEach((e) => { if (e.chasseur_id) idsChasseurs.add(e.chasseur_id); }));
+    }
     (donnees.battue.plan_jour || []).forEach((l) => idsCategories.add(l.id));
     if (donnees.battue.responsable_id) idsChasseurs.add(donnees.battue.responsable_id);
 
@@ -187,6 +190,8 @@ async function importerPaquet(paquet, options) {
             const { id: idPaquet, created_at: _c, ...champs } = t;
             champs.battue_id = battueId;
             champs.parcelle_id = await parcelleExistante(champs.parcelle_id);
+            // Les postes mouvants gardent leur chasseur : il faut le traduire vers l'identifiant local.
+            if (Array.isArray(champs.elements)) champs.elements = champs.elements.map((e) => (e.chasseur_id ? { ...e, chasseur_id: parChasseur[e.chasseur_id] || null } : e));
             const existante = (traquesCible || []).find((x) => x.id === idPaquet) || (traquesCible || []).find((x) => x.numero === t.numero);
             let idLocal;
             if (existante) {

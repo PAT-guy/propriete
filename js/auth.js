@@ -57,6 +57,11 @@ function injecterNavigation(pageActiveFichier) {
     `;
 }
 
+/** Valeurs d'un champ à plusieurs entrées (une par ligne) : sans lignes vides. */
+function listeDepuisTexte(texte) {
+    return String(texte || "").split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
+}
+
 /**
  * Trie des postes par leur nom en tenant compte des nombres (Poste 2 avant Poste 10).
  * La base ne garantit aucun ordre : sans ce tri, les numéros des marqueurs de la carte ne

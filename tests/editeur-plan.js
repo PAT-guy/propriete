@@ -22,7 +22,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await clic(200,300); await clic(350,250); await clic(500,320);
  await p.click('#bouton-terminer-dessin'); await p.waitForTimeout(200);
  t('fenêtre de description ouverte (étape 3)', await p.locator('#modale-element.ouverte').count()===1 && await p.locator('#etape-3.actif').count()===1);
- t('types proposés pour une ligne', (await p.locator('#choix-type label').allInnerTexts()).join('|')==='Mouvement de la traque|Ligne des rabatteurs|Sens de la battue|Autre tracé');
+ t('types proposés pour une ligne', (await p.locator('#choix-type label').allInnerTexts()).join('|')==='Mouvement de la traque|Ligne des rabatteurs|Poste mouvant|Sens de la battue|Autre tracé');
  t('flèche cochée par défaut pour un mouvement', await p.isChecked('#champ-fleche-element'));
  await p.fill('#champ-nom-element','Matin'); await p.click('#formulaire-element button[type=submit]'); await p.waitForTimeout(200);
  // 2. courbe terminée par double-clic
@@ -34,7 +34,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  // 3. polygone fermé en cliquant le premier point
  await p.click('[data-outil=polygone]'); await clic(700,200); await clic(850,220); await clic(840,350); await clic(720,330); await clic(701,201);
  t('clic sur le premier point ferme le polygone', await p.locator('#modale-element.ouverte').count()===1);
- t('types proposés pour un polygone', (await p.locator('#choix-type label').allInnerTexts()).join('|')==='Zone de battue|Zone interdite de tir');
+ t('types proposés pour un polygone', (await p.locator('#choix-type label').allInnerTexts()).join('|')==='Zone de battue|Zone interdite de tir|Zone de rapproché');
  await p.click('#formulaire-element button[type=submit]'); await p.waitForTimeout(200);
  // 4. points : poste, puis parking, outil reste actif
  await p.click('[data-outil=point]'); await clic(600,150);

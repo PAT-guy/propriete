@@ -206,3 +206,6 @@
     .ib-apercu-boite .ib-feuille { box-shadow: none; margin: 0; }
     main.contenu { max-width: none !important; padding: 0 !important; margin: 0 !important; }
 }
+
+.ib-mouvant { color: #c2410c; font-weight: 700; }
+.ib-table td.libre-multi { height: auto; min-height: var(--ib-h-ligne, 7mm); white-space: normal; line-height: 1.25; padding-top: 1.2mm; padding-bottom: 1.2mm; }

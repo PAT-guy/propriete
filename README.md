@@ -193,3 +193,7 @@ Si une mise à jour ajoute de nouvelles tables (c'est le cas pour les plans de b
 - Hors ligne : voir la section dédiée ci-dessus. Les modifications saisies sans réseau ne sont pas enregistrées, elles sont refusées avec un message.
 - Un seul niveau d'accès (compte partagé unique) : pas de distinction entre ce qu'un gestionnaire et un simple chasseur peuvent faire.
 - Pas d'export PDF autre que l'impression navigateur (Fichier → Imprimer → Enregistrer en PDF fonctionne très bien en pratique).
+
+## Poste mouvant, rapproché, plusieurs conducteurs
+
+Chaque objet de la carte a son propre figuré : poste fixe en rond numéroté, poste mouvant en trait orange pointillé avec badge carré M1, M2…, parking en carré bleu P, accès en losange, zone de rapproché en polygone orange pointillé. Les noms des postes ne sont plus affichés en permanence (survol seulement). Une traque accepte plusieurs conducteurs et plusieurs véhicules. Pour une journée à plusieurs traques, la fiche de gestion passe automatiquement en 3 colonnes compactes.

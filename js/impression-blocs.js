@@ -91,6 +91,22 @@ function chasseurDeCtx(ctx, id) {
     return ctx.chasseurs.find((c) => c.id === id);
 }
 
+/**
+ * Tous les postes d'une traque pour les tableaux : les postes fixes (1, 2, 3...) puis les postes mouvants (M1, M2...).
+ * Retourne [{ num, nom, chasseur_id, mouvant }].
+ */
+function postesEtMouvants(ctx, traque) {
+    const fixes = postesDeTraque(ctx, traque).map((p, i) => ({ num: String(i + 1), nom: p.nom, chasseur_id: p.chasseur_id, mouvant: false }));
+    const mouvants = elementsDeTraque(traque).filter((e) => e.type === "poste_mouvant")
+        .map((e, i) => ({ num: "M" + (i + 1), nom: e.nom || `Poste mouvant ${i + 1}`, chasseur_id: e.chasseur_id || null, mouvant: true }));
+    return [...fixes, ...mouvants];
+}
+
+/** Texte à plusieurs lignes (conducteurs, véhicules) en HTML : une valeur par ligne. */
+function htmlListe(texte) {
+    return listeDepuisTexte(texte).map(esc).join("<br>");
+}
+
 function postesDeTraque(ctx, traque) {
     return trierPostesParNom(ctx.postes.filter((p) => p.traque_id === traque.id));
 }
@@ -350,10 +366,10 @@ const BLOCS = {
 
     postes_chasseurs: {
         libelle: "Postes et chasseurs, par traque",
-        description: "Pour chaque traque : numéro, nom du poste, chasseur affecté.",
+        description: "Pour chaque traque : numéro, nom du poste, chasseur affecté. Les postes mouvants suivent les postes fixes (M1, M2…).",
         options: [
             { cle: "titre", type: "texte", libelle: "Titre", defaut: "Postes et chasseurs" },
-            { cle: "colonnes", type: "choix", libelle: "Traques côte à côte", defaut: "2", choix: [["1", "1 colonne"], ["2", "2 colonnes"]] },
+            { cle: "colonnes", type: "choix", libelle: "Traques côte à côte", defaut: "auto", choix: [["auto", "Automatique (selon le nombre de traques)"], ["1", "1 colonne"], ["2", "2 colonnes"], ["3", "3 colonnes"]] },
             { cle: "permis", type: "bool", libelle: "N° de permis", defaut: false },
             { cle: "telephone", type: "bool", libelle: "Téléphone", defaut: false },
             { cle: "lignesVides", type: "nombre", libelle: "Lignes vides en plus", defaut: 1, min: 0, max: 10 },
@@ -362,17 +378,19 @@ const BLOCS = {
         rendre(ctx, o) {
             if (ctx.traques.length === 0) return titreDuBloc(o, "Postes et chasseurs") + aucuneTraque();
             const colonnesTable = 3 + (o.permis ? 1 : 0) + (o.telephone ? 1 : 0);
+            const nb = o.colonnes === "auto" || !o.colonnes ? Math.min(3, ctx.traques.length) : Number(o.colonnes);
+            const compact = nb >= 3 ? "font-size:0.85em;" : "";
+            const hLigne = nb >= 3 ? Math.min(Number(o.hauteurLigne) || 6, 4.2) : (Number(o.hauteurLigne) || 6);
             return `${titreDuBloc(o, "Postes et chasseurs")}
-            <div class="ib-sous-tableaux" style="grid-template-columns:repeat(${Number(o.colonnes) || 2},1fr)" ${styleLigne(o)}>
+            <div class="ib-sous-tableaux" style="grid-template-columns:repeat(${nb},minmax(0,1fr)); ${compact} --ib-h-ligne:${hLigne}mm">
             ${ctx.traques.map((t) => {
                 const parcelle = ctx.parcelles.find((p) => p.id === t.parcelle_id);
-                const postes = postesDeTraque(ctx, t);
                 return `<table class="ib-table"><thead>
                     <tr class="nom-traque"><td colspan="${colonnesTable}"><i class="ib-pastille" style="background:${couleurTraque(t.numero)}; margin-right:1.5mm; vertical-align:middle"></i>${esc(libelleTraqueImpression(t))}${parcelle ? " · " + esc(parcelle.nom) : ""}</td></tr>
                     <tr><th class="num">N°</th><th>Poste</th><th>Chasseur</th>${o.permis ? "<th>Permis</th>" : ""}${o.telephone ? "<th>Téléphone</th>" : ""}</tr></thead><tbody>
-                    ${postes.map((p, i) => {
+                    ${postesEtMouvants(ctx, t).map((p) => {
                         const c = chasseurDeCtx(ctx, p.chasseur_id);
-                        return `<tr><td class="num libre">${i + 1}</td><td class="libre">${esc(p.nom)}</td><td class="libre">${c ? esc(nomChasseurImpression(c)) : ""}</td>${o.permis ? `<td class="libre">${c ? esc(c.numero_permis) : ""}</td>` : ""}${o.telephone ? `<td class="libre">${c ? esc(c.telephone) : ""}</td>` : ""}</tr>`;
+                        return `<tr><td class="num libre ${p.mouvant ? "ib-mouvant" : ""}">${esc(p.num)}</td><td class="libre">${esc(p.nom)}</td><td class="libre">${c ? esc(nomChasseurImpression(c)) : ""}</td>${o.permis ? `<td class="libre">${c ? esc(c.numero_permis) : ""}</td>` : ""}${o.telephone ? `<td class="libre">${c ? esc(c.telephone) : ""}</td>` : ""}</tr>`;
                     }).join("")}
                     ${lignesVidesTable(Number(o.lignesVides) || 0, colonnesTable)}
                 </tbody></table>`;
@@ -382,37 +400,46 @@ const BLOCS = {
 
     equipe_traques: {
         libelle: "Conducteurs, chefs de ligne, véhicules",
-        description: "Par traque : conducteur, chef ou cheffe de ligne et véhicules (saisis dans le plan).",
+        description: "Par traque : conducteurs, chef ou cheffe de ligne et véhicules (plusieurs possibles, saisis dans le plan).",
         options: [
             { cle: "titre", type: "texte", libelle: "Titre", defaut: "Équipes des traques" },
-            { cle: "hauteurLigne", type: "nombre", libelle: "Hauteur d'une ligne (mm)", defaut: 8, min: 5, max: 20 },
+            { cle: "hauteurLigne", type: "nombre", libelle: "Hauteur minimale d'une ligne (mm)", defaut: 8, min: 5, max: 20 },
         ],
         rendre(ctx, o) {
             if (ctx.traques.length === 0) return titreDuBloc(o, "Équipes des traques") + aucuneTraque();
             return `${titreDuBloc(o, "Équipes des traques")}
-            <table class="ib-table" ${styleLigne(o)}><thead><tr><th style="width:22%">Traque</th><th style="width:25%">Conducteur</th><th style="width:25%">Chef de ligne</th><th>Véhicules</th></tr></thead><tbody>
+            <table class="ib-table" ${styleLigne(o)}><thead><tr><th style="width:22%">Traque</th><th style="width:25%">Conducteurs</th><th style="width:22%">Chef de ligne</th><th>Véhicules</th></tr></thead><tbody>
             ${ctx.traques.map((t) => `<tr>
                 <td class="libre"><i class="ib-pastille" style="background:${couleurTraque(t.numero)}; margin-right:1.5mm; vertical-align:middle"></i><strong>${esc(libelleTraqueImpression(t))}</strong></td>
-                <td class="libre">${esc(t.conducteur)}</td><td class="libre">${esc(t.chef_de_ligne)}</td><td class="libre">${esc(t.vehicules)}</td></tr>`).join("")}
+                <td class="libre libre-multi">${htmlListe(t.conducteur)}</td><td class="libre libre-multi">${esc(t.chef_de_ligne)}</td><td class="libre libre-multi">${htmlListe(t.vehicules)}</td></tr>`).join("")}
             </tbody></table>`;
         },
     },
 
     saisie_prelevements: {
         libelle: "Tableau des prélèvements (à remplir)",
-        description: "Une ligne par poste, avec cases pour noter les tirs et les animaux.",
+        description: "Cases pour noter les tirs et les animaux : une ligne par poste, une ligne par traque (quand il y a beaucoup de postes), ou des lignes vides.",
         options: [
             { cle: "titre", type: "texte", libelle: "Titre", defaut: "Prélèvements" },
-            { cle: "mode", type: "choix", libelle: "Lignes", defaut: "postes", choix: [["postes", "Une ligne par poste"], ["vide", "Lignes vides"]] },
-            { cle: "lignesVides", type: "nombre", libelle: "Lignes vides (mode lignes vides, ou en plus)", defaut: 2, min: 0, max: 30 },
+            { cle: "mode", type: "choix", libelle: "Lignes", defaut: "auto", choix: [["auto", "Automatique (par poste jusqu'à 24 postes, sinon par traque)"], ["postes", "Une ligne par poste"], ["traques", "Une ligne par traque"], ["vide", "Lignes vides"]] },
+            { cle: "lignesVides", type: "nombre", libelle: "Lignes vides en plus", defaut: 2, min: 0, max: 30 },
             { cle: "hauteurLigne", type: "nombre", libelle: "Hauteur d'une ligne (mm)", defaut: 8, min: 5, max: 20 },
         ],
         rendre(ctx, o) {
+            const total = ctx.traques.reduce((n, t) => n + postesEtMouvants(ctx, t).length, 0);
+            const mode = o.mode === "auto" || !o.mode ? (total <= 24 ? "postes" : "traques") : o.mode;
+            const pastille = (t) => `<i class="ib-pastille" style="background:${couleurTraque(t.numero)}; vertical-align:middle"></i> ${esc(libelleTraqueImpression(t))}`;
+            if (mode === "traques") {
+                const lignes = ctx.traques.map((t) => `<tr style="height:calc(var(--ib-h-ligne, 8mm) * 2.4)"><td class="libre">${pastille(t)}</td><td class="libre"></td><td class="libre"></td><td class="libre"></td></tr>`);
+                return `${titreDuBloc(o, "Prélèvements")}
+                <table class="ib-table" ${styleLigne(o)}><thead><tr><th style="width:22%">Traque</th><th style="width:8%">Tirs</th><th>Animaux prélevés (gibier, poste, sexe, poids)</th><th style="width:22%">Observations</th></tr></thead><tbody>
+                ${lignes.join("")}${lignesVidesTable(Number(o.lignesVides) || 0, 4)}</tbody></table>`;
+            }
             const lignes = [];
-            if (o.mode !== "vide") {
-                ctx.traques.forEach((t) => postesDeTraque(ctx, t).forEach((p, i) => {
+            if (mode !== "vide") {
+                ctx.traques.forEach((t) => postesEtMouvants(ctx, t).forEach((p) => {
                     const c = chasseurDeCtx(ctx, p.chasseur_id);
-                    lignes.push(`<tr><td class="libre"><i class="ib-pastille" style="background:${couleurTraque(t.numero)}; vertical-align:middle"></i> ${esc(libelleTraqueImpression(t))}</td><td class="num libre">${i + 1}</td><td class="libre">${c ? esc(nomChasseurImpression(c)) : ""}</td><td class="libre"></td><td class="libre"></td><td class="libre"></td></tr>`);
+                    lignes.push(`<tr><td class="libre">${pastille(t)}</td><td class="num libre ${p.mouvant ? "ib-mouvant" : ""}">${esc(p.num)}</td><td class="libre">${c ? esc(nomChasseurImpression(c)) : ""}</td><td class="libre"></td><td class="libre"></td><td class="libre"></td></tr>`);
                 }));
             }
             return `${titreDuBloc(o, "Prélèvements")}
@@ -550,6 +577,8 @@ function legendeCarte(ctx, traques) {
     return `<div class="ib-legende">${traques.map((t) => `<span><i style="border-color:${couleurTraque(t.numero)}"></i>${esc(libelleTraqueImpression(t))}</span>`).join("")}
         ${utilises.has("sens") ? '<span><i style="border-color:#222; border-top-width:1.4mm"></i>Sens de la battue</span>' : ""}
         ${utilises.has("rabatteurs") ? '<span><i style="border-color:#444; border-top-style:dashed"></i>Rabatteurs</span>' : ""}
+        ${utilises.has("poste_mouvant") ? '<span><i style="border-color:#c2410c; border-top-width:1.4mm; border-top-style:dotted"></i>Poste mouvant (M1, M2…)</span>' : ""}
+        ${utilises.has("rapproche") ? '<span><i style="border-color:#d97706; border-top-style:dashed"></i>Zone de rapproché</span>' : ""}
         <span>🎯 poste · 🅿️ parking · 🚪 accès</span></div>`;
 }
 
@@ -605,12 +634,12 @@ function configParDefaut(type) {
                 b("infos", { parcelle: true, nbParticipants: true }),
                 b("plan_chasse_jour", { nombre: true, prelevement: true }),
                 b("equipe_traques", { hauteurLigne: 9 }),
-                b("postes_chasseurs", { colonnes: "2", permis: false, lignesVides: 1, hauteurLigne: 7 }),
+                b("postes_chasseurs", { colonnes: "auto", permis: false, lignesVides: 1, hauteurLigne: 6 }),
                 b("notes", {}),
             ],
             verso: [
                 b("carte", {}, { taille: "remplir" }),
-                b("saisie_prelevements", { mode: "postes", lignesVides: 2, hauteurLigne: 7 }),
+                b("saisie_prelevements", { mode: "auto", lignesVides: 2, hauteurLigne: 7 }),
                 b("saisie_heures", {}),
                 b("incidents", { lignes: 2 }),
                 b("signature", {}),
@@ -771,7 +800,7 @@ function dessinerCarteImpression(zone, spec, ctx) {
         groupe.addLayer(polygone);
     });
     traques.forEach((t) => {
-        elementsDeTraque(t).forEach((e) => dessinerElement(groupe, e, t.numero, { sansInfobulle: true }));
+        { const ind = indicesMouvants(elementsDeTraque(t)); elementsDeTraque(t).forEach((e) => dessinerElement(groupe, e, t.numero, { sansInfobulle: true, numeroMouvant: ind[e.id || e.cle] })); }
         (t.parkings || []).forEach((p) => {
             const m = L.marker([p.lat, p.lng], { icon: iconePointCarte("🅿️", "#3a6b8a") });
             if (avecNoms) m.bindTooltip(echapper(p.nom), { permanent: true, direction: "top", offset: [0, -12] });
@@ -784,7 +813,6 @@ function dessinerCarteImpression(zone, spec, ctx) {
         });
         postesDeTraque(ctx, t).forEach((poste, index) => {
             const m = L.marker([poste.lat, poste.lng], { icon: iconePosteCouleur(index + 1, couleurTraque(t.numero)) });
-            if (avecNoms) m.bindTooltip(echapper(poste.nom), { permanent: true, direction: "right", offset: [14, 0] });
             groupe.addLayer(m);
         });
     });

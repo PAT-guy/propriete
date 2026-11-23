@@ -5,9 +5,12 @@
  */
 
 function iconePointCarte(emoji, couleurFond) {
+    // chaque entité a sa forme : parking = carré bleu « P », accès = losange brun « ➜ », poste = rond numéroté
+    const forme = emoji === "🅿️" ? "forme-parking" : "forme-acces";
+    const symbole = emoji === "🅿️" ? "P" : "➜";
     return L.divIcon({
-        className: "icone-point-carte",
-        html: `<span style="background:${couleurFond};">${emoji}</span>`,
+        className: "icone-point-carte " + forme,
+        html: `<span style="background:${couleurFond};">${symbole}</span>`,
         iconSize: [26, 26],
         iconAnchor: [13, 13],
     });
@@ -84,11 +87,31 @@ function couleurTraque(numero) {
 const TYPES_ELEMENT = {
     mouvement:  { libelle: "Mouvement de la traque", formes: ["ligne", "courbe"], fleche: true,  pointille: false, couleurTraque: true },
     rabatteurs: { libelle: "Ligne des rabatteurs",   formes: ["ligne", "courbe"], fleche: true,  pointille: true,  couleurTraque: true },
+    poste_mouvant: { libelle: "Poste mouvant",       formes: ["ligne", "courbe"], fleche: true,  mouvant: true, couleur: "#c2410c", epais: true },
     sens:       { libelle: "Sens de la battue",      formes: ["ligne", "courbe"], fleche: true,  pointille: false, couleur: "#222222", epais: true },
     trace:      { libelle: "Autre tracé",            formes: ["ligne", "courbe"], fleche: false, pointille: false, couleur: "#6b6b60" },
     zone:       { libelle: "Zone de battue",         formes: ["polygone"],        couleurTraque: true },
     interdite:  { libelle: "Zone interdite de tir",  formes: ["polygone"],        couleur: "#b00020" },
+    rapproche:  { libelle: "Zone de rapproché",      formes: ["polygone"],        couleur: "#d97706", etiquette: "Rapproché" },
 };
+
+/** Numéro (1, 2, 3...) de chaque poste mouvant d'une traque, dans l'ordre des éléments : { idElement: n }. */
+function indicesMouvants(elements) {
+    const indices = {};
+    let n = 0;
+    (elements || []).forEach((e) => { if (e.type === "poste_mouvant") { n += 1; indices[e.id || e.cle] = n; } });
+    return indices;
+}
+
+/** Pastille carrée « M1 » au départ d'un poste mouvant (différente des ronds numérotés des postes fixes). */
+function iconeMouvant(numero) {
+    return L.divIcon({
+        className: "icone-mouvant",
+        html: `<span>M${numero}</span>`,
+        iconSize: [30, 22],
+        iconAnchor: [15, 11],
+    });
+}
 
 function typesPourForme(forme) {
     return Object.entries(TYPES_ELEMENT).filter(([, t]) => t.formes.includes(forme)).map(([cle]) => cle);
@@ -160,22 +183,32 @@ function dessinerElement(couche, element, numeroTraque, options) {
         if (pts.length < 3) return null;
         const polygone = L.polygon(pts, {
             color: couleur, weight: 3, fillColor: couleur,
-            fillOpacity: element.type === "interdite" ? 0.25 : 0.12,
-            dashArray: element.type === "interdite" ? "6 4" : null,
+            fillOpacity: element.type === "interdite" ? 0.25 : element.type === "rapproche" ? 0.2 : 0.12,
+            dashArray: element.type === "interdite" ? "6 4" : element.type === "rapproche" ? "10 6" : null,
         });
+        // La zone de rapproché porte toujours son nom sur la carte (imprimée comprise).
+        if (type.etiquette && !(options && options.sansEtiquette)) {
+            polygone.bindTooltip(echapper(element.nom || type.etiquette), { permanent: true, direction: "center", className: "etiquette-parcelle" });
+        }
         groupe.addLayer(polygone);
     } else {
         const trace = pointsAffiches(element);
         if (!trace || trace.length < 2) return null;
         const epaisseur = type.epais ? 6 : 3;
-        groupe.addLayer(L.polyline(trace, { color: couleur, weight: epaisseur, dashArray: type.pointille ? "8 6" : null }));
+        groupe.addLayer(L.polyline(trace, type.mouvant
+            ? { color: couleur, weight: 6, dashArray: "1 10", lineCap: "round" }
+            : { color: couleur, weight: epaisseur, dashArray: type.pointille ? "8 6" : null }));
+        if (type.mouvant) {
+            const n = options && options.numeroMouvant;
+            groupe.addLayer(L.marker(trace[0], { icon: iconeMouvant(n || ""), interactive: false }));
+        }
         if (element.fleche) {
             const depart = trace[Math.max(trace.length - 4, 0)];
             const arrivee = trace[trace.length - 1];
             groupe.addLayer(L.marker(arrivee, { icon: iconeFleche(angleEntreDeuxPoints(depart, arrivee), couleur), interactive: false }));
         }
     }
-    if (!(options && options.sansInfobulle)) groupe.eachLayer((c) => { if (c.bindTooltip && c.options.interactive !== false) c.bindTooltip(echapper(libelle), { sticky: true }); });
+    if (!(options && options.sansInfobulle)) groupe.eachLayer((c) => { if (c.bindTooltip && c.options.interactive !== false && !(c.getTooltip && c.getTooltip())) c.bindTooltip(echapper(libelle), { sticky: true }); });
     if (couche) couche.addLayer(groupe);
     return groupe;
 }

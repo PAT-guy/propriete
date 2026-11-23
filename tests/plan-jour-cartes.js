@@ -50,6 +50,8 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  const titres=await p.evaluate(()=>[...document.querySelectorAll('.ib-feuille[data-face=recto] .ib-carton:first-child .ib-bloc-titre')].map(e=>({h:e.offsetHeight,fs:getComputedStyle(e).fontSize,mono:e.scrollHeight<=e.clientHeight+1})));
  t('titres de section : même hauteur, même taille, une seule ligne', titres.length>=3 && titres.every(x=>x.h===titres[0].h && x.fs===titres[0].fs && x.mono));
  // ---------- plusieurs cartes
+ // le carton par défaut a déjà une carte par traque : on repart d'une seule carte, puis on en ajoute une
+ { const n=await p.locator('#panneau .ib-bloc-edit',{hasText:'Carte'}).count(); for(let i=1;i<n;i++){ await p.locator('#panneau .ib-bloc-edit',{hasText:'Carte'}).last().locator('[data-supprimer]').click(); await p.waitForTimeout(200);} }
  await p.selectOption('#panneau [data-ajout-liste=verso]','carte'); await p.click('#panneau [data-ajouter=verso]'); await p.waitForTimeout(500);
  t('2 cartes sur le verso = 4 cartes (2 par carton)', await p.locator('.ib-feuille[data-face=verso] .ib-carte-leaflet').count()===4);
  const blocsCarte=p.locator('#panneau .ib-bloc-edit',{hasText:'Carte'});

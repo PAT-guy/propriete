@@ -107,8 +107,27 @@ async function chargerModeles() {
     modeles = (data || []).sort((a, b) => (a.nom || "").localeCompare(b.nom || "", "fr"));
 }
 
+/** Remplace les cartes d'une face par une carte par traque (côte à côte, deux par ligne). */
+function uneCartePourChaqueTraque(cfg, face) {
+    const traques = (ctx && ctx.traques) || [];
+    if (traques.length < 2) return;
+    const autres = cfg.faces[face].filter((b) => b.bloc !== "carte");
+    const modele = cfg.faces[face].find((b) => b.bloc === "carte");
+    const cartes = traques.map((t, i) => {
+        const b = nouveauBloc("carte", { options: { ...(modele ? modele.options : {}), traques: [t.numero], cadrage: null }, generaux: { taille: "remplir", largeur: "moitie" } });
+        // un nombre impair de traques : la dernière occupe toute la largeur
+        if (i === traques.length - 1 && traques.length % 2 === 1) b.largeur = "pleine";
+        return b;
+    });
+    cfg.faces[face] = [...autres, ...cartes];
+}
+
 function configDuModele(id) {
-    if (id === "defaut") return normaliserConfig(configParDefaut(typeDoc), typeDoc);
+    if (id === "defaut") {
+        const c = normaliserConfig(configParDefaut(typeDoc), typeDoc);
+        if (typeDoc === "carton") uneCartePourChaqueTraque(c, "verso");
+        return c;
+    }
     const m = modeles.find((x) => x.id === id);
     return m ? normaliserConfig(m.config, typeDoc) : null;
 }
@@ -281,6 +300,7 @@ function construirePanneau() {
             <h3>${FACES[face]} ${typeDoc === "carton" ? "du carton" : "de la fiche"}</h3>
             ${config.faces[face].length === 0 ? '<em style="color:#888; font-size:13px;">Aucun bloc sur cette face.</em>' : ""}
             ${config.faces[face].map((b, i) => htmlBloc(b, face, i, config.faces[face].length)).join("")}
+            ${ctx.traques.length >= 2 ? `<button type="button" class="bouton bouton-secondaire" style="margin-top:8px;" data-une-carte-par-traque="${face}">Une carte par traque (${ctx.traques.length})</button>` : ""}
             <div style="display:flex; gap:6px; margin-top:8px;">
                 <select data-ajout-liste="${face}" style="flex:1;">${Object.entries(BLOCS).map(([k, d]) => `<option value="${k}">${echapper(d.libelle)}</option>`).join("")}</select>
                 <button type="button" class="bouton bouton-secondaire" data-ajouter="${face}">Ajouter</button>
@@ -413,6 +433,10 @@ function brancherPanneau() {
         const t = trouverBloc(b.dataset.supprimer);
         if (!t) return;
         config.faces[t.face].splice(t.index, 1);
+        changementConfig(true);
+    }));
+    panneau.querySelectorAll("[data-une-carte-par-traque]").forEach((b) => b.addEventListener("click", () => {
+        uneCartePourChaqueTraque(config, b.dataset.uneCarteParTraque);
         changementConfig(true);
     }));
     panneau.querySelectorAll("[data-ajouter]").forEach((b) => b.addEventListener("click", () => {

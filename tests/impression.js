@@ -28,7 +28,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  t('recto : titre, date, rendez-vous, responsable', recto.includes('Battue') && /novembre 2026/.test(recto) && recto.includes('Étang du Chêne') && recto.includes('08:30') && recto.includes('Paul Martin'));
  t('recto : encart des numéros de poste, une ligne par traque', (await p.locator('.ib-feuille[data-face=recto] .ib-carton').first().locator('.ib-encart-traque').count())===2 && recto.includes('Postes n°'));
  t('recto : règles de sécurité', recto.includes('Gilet obligatoire'));
- t('verso : une carte par carton, avec légende', await p.locator('.ib-feuille[data-face=verso] .ib-carte-leaflet').count()===2 && (await p.locator('.ib-feuille[data-face=verso] .ib-legende').first().innerText()).includes('Sens de la battue'));
+ t('verso : une carte par traque (2 traques × 2 cartons), avec légende', await p.locator('.ib-feuille[data-face=verso] .ib-carte-leaflet').count()===4 && (await p.locator('.ib-feuille[data-face=verso] .ib-legende').allInnerTexts()).join(' ').includes('Sens de la battue'));
  t('verso : postes colorés par traque (marqueurs numérotés)', await p.locator('.ib-feuille[data-face=verso] .ib-carte-leaflet .icone-point-carte span').count()>=6);
  t('aucun débordement avec la mise en page standard', (await p.locator('#alerte-debordement').isVisible())===false);
  // ---------- personnalisation

@@ -81,7 +81,7 @@ const TYPES_POINT = {
     await chargerCategories();
     try {
         const toutes = await clientSupabase.from("traques").select("vehicules");
-        (toutes.data || []).forEach((r) => listeDepuisTexte(r.vehicules).forEach((v) => vehiculesConnus.add(v)));
+        (toutes.data || []).forEach((r) => vehiculesDepuisTexte(r.vehicules).forEach((v) => v.nom && vehiculesConnus.add(v.nom)));
     } catch (e) { /* facultatif */ }
     chasseursCache = chasseurs.data || [];
     parcellesCache = parcelles.data || [];
@@ -207,7 +207,9 @@ function traqueActive() {
 }
 
 function libelleTraque(t) {
-    return t.nom || `Traque ${t.numero}`;
+    if (t.nom) return t.nom;
+    const rang = traquesEtat.indexOf(t);
+    return `Traque ${rang >= 0 ? rang + 1 : t.numero}`;
 }
 
 // ----------------------------------------------------------------------------
@@ -747,7 +749,7 @@ function redessinerPanneau() {
         <label class="etiquette">Chef ou cheffe de ligne</label>
         <input type="text" list="liste-noms-chasseurs" value="${echapper(t.chef_de_ligne)}" oninput="majChampTraque('chef_de_ligne', this.value)">
         <label class="etiquette">Véhicules</label>
-        ${champMulti("vehicules", t.vehicules, "ex : Hilux blanche, remorque à chiens", false, "+ Ajouter un véhicule")}
+        ${champVehicules(t)}
         ${pastillesVehicules(t)}
         <datalist id="liste-noms-chasseurs">${chasseursCache.map((c) => `<option value="${echapper(nomAffichePersonne(c))}"></option>`).join("")}</datalist>
 
@@ -1261,10 +1263,10 @@ function traqueVide(t) {
 }
 
 /** Recopie une traque existante dans l'éditeur : mêmes tracés, postes, parkings et accès, aucun chasseur. */
-function copierTraqueExistante(source, postesSource) {
+function copierTraqueExistante(source, postesSource, parcelleBattueSource) {
     const t = nouvelEtatTraque();
     t.nom = source.nom || null;
-    t.parcelle_id = source.parcelle_id || null;
+    t.parcelle_id = source.parcelle_id || parcelleBattueSource || null;
     t.notes = source.notes || null;
     t.conducteur = source.conducteur || null;
     t.chef_de_ligne = source.chef_de_ligne || null;
@@ -1285,7 +1287,7 @@ function reprendreTraquesChoisies() {
     if (traquesEtat.length === 1 && !traquesEtat[0].id && traqueVide(traquesEtat[0])) traquesEtat = [];
     let derniere = null;
     choisies.forEach((x) => {
-        derniere = copierTraqueExistante(x.traque, x.postes);
+        derniere = copierTraqueExistante(x.traque, x.postes, x.battue && x.battue.parcelle_id);
         traquesEtat.push(derniere);
     });
     traqueActiveCle = derniere.cle;
@@ -1311,9 +1313,39 @@ function champMulti(champ, valeur, indication, avecNoms, libelleAjout) {
     </div>`;
 }
 
+/** Véhicules : un nom et les postes qu'il dépose (ex : « 1 à 8 »), une ligne par véhicule. */
+function champVehicules(t) {
+    // lignes brutes (une ligne vide = véhicule en cours de saisie)
+    const liste = String(t.vehicules || "").split(/\r?\n/).map((ligne) => {
+        const i = ligne.indexOf("|");
+        return i < 0 ? { nom: ligne.trim(), postes: "" } : { nom: ligne.slice(0, i).trim(), postes: ligne.slice(i + 1).trim() };
+    });
+    return `<div class="liste-multi">
+        ${liste.map((v, i) => `<div class="ligne-multi">
+            <input type="text" value="${echapper(v.nom)}" placeholder="Véhicule (ex : Hilux blanche)" oninput="majVehicule(${i}, 'designation', this.value)">
+            <input type="text" value="${echapper(v.postes)}" placeholder="Postes déposés (ex : 1 à 8)" style="max-width:42%;" oninput="majVehicule(${i}, 'postes', this.value)">
+            ${liste.length > 1 ? `<button type="button" class="bouton bouton-danger" title="Retirer" onclick="retirerListeMulti('vehicules', ${i})">×</button>` : ""}
+        </div>`).join("")}
+        <button type="button" class="bouton bouton-secondaire" style="padding:3px 8px; font-size:12px;" onclick="ajouterListeMulti('vehicules')">+ Ajouter un véhicule</button>
+    </div>`;
+}
+
+function majVehicule(index, champ, valeur) {
+    const t = traqueActive();
+    memoriser(`champ:${t.cle}:vehicule:${index}:${champ}`);
+    const v = String(t.vehicules || "").split(/\r?\n/).map((ligne) => {
+        const i = ligne.indexOf("|");
+        return i < 0 ? { nom: ligne, postes: "" } : { nom: ligne.slice(0, i), postes: ligne.slice(i + 1) };
+    });
+    while (v.length <= index) v.push({ nom: "", postes: "" });
+    v[index][champ === 'designation' ? 'nom' : champ] = valeur.replace(/\|/g, "");
+    t.vehicules = v.map((x) => (x.postes.trim() ? `${x.nom}|${x.postes}` : x.nom)).join("\n");
+    marquerModifie();
+}
+
 function pastillesVehicules(t) {
-    const actuels = new Set(listeDepuisTexte(t.vehicules));
-    [...(vehiculesDeLaBattue())].forEach((v) => vehiculesConnus.add(v));
+    const actuels = new Set(vehiculesDepuisTexte(t.vehicules).map((v) => v.nom));
+    [...(vehiculesDeLaBattue())].forEach((v) => v && vehiculesConnus.add(v));
     const proposes = [...vehiculesConnus].filter((v) => !actuels.has(v)).sort((a, b) => a.localeCompare(b, "fr"));
     if (proposes.length === 0) return "";
     return `<div style="margin:6px 0 10px; display:flex; flex-wrap:wrap; gap:5px; align-items:center;"><small style="color:#6b6b60;">Habituels :</small>
@@ -1321,15 +1353,15 @@ function pastillesVehicules(t) {
 }
 
 function vehiculesDeLaBattue() {
-    return traquesEtat.flatMap((t) => listeDepuisTexte(t.vehicules));
+    return traquesEtat.flatMap((t) => vehiculesDepuisTexte(t.vehicules).map((v) => v.nom));
 }
 
 function ajouterVehiculeHabituel(nom) {
     const t = traqueActive();
     memoriser();
-    const v = listeDepuisTexte(t.vehicules);
-    if (!v.includes(nom)) v.push(nom);
-    t.vehicules = v.join("\n");
+    const v = vehiculesDepuisTexte(t.vehicules);
+    if (!v.some((x) => x.nom === nom)) v.push({ nom, postes: "" });
+    t.vehicules = vehiculesVersTexte(v);
     marquerModifie();
     redessinerPanneau();
 }

@@ -58,6 +58,18 @@ function injecterNavigation(pageActiveFichier) {
 }
 
 /** Valeurs d'un champ à plusieurs entrées (une par ligne) : sans lignes vides. */
+/** Véhicules enregistrés une ligne par véhicule, au format « nom|postes déposés » (postes facultatif). */
+function vehiculesDepuisTexte(texte) {
+    return listeDepuisTexte(texte).map((ligne) => {
+        const i = ligne.indexOf("|");
+        return i < 0 ? { nom: ligne, postes: "" } : { nom: ligne.slice(0, i).trim(), postes: ligne.slice(i + 1).trim() };
+    });
+}
+
+function vehiculesVersTexte(liste) {
+    return liste.map((v) => (v.postes ? `${v.nom}|${v.postes}` : v.nom)).join("\n");
+}
+
 function listeDepuisTexte(texte) {
     return String(texte || "").split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
 }

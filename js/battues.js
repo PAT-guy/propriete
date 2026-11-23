@@ -7,18 +7,21 @@
  */
 
 const MODELE_REGLES_SECURITE =
-    "- Chaque participant porte un gilet ou une tenue fluorescente visible en permanence.\n"
-    + "- Angle de tir à 30° de part et d'autre de la ligne de battue interdit.\n"
-    + "- Pas de tir en direction des routes, chemins ouverts au public ou habitations.\n"
-    + "- Arme déchargée pendant les déplacements et aux postes avant le lancement.\n"
-    + "- Un seul signal de début et de fin de battue, donné par le responsable.\n"
-    + "- En cas d'accident, prévenir immédiatement le responsable et les secours (18 ou 112).";
+    "- Gilet fluo et couvre-chef orange pour tous, rabatteurs et conducteurs compris.\n"
+    + "- Arme ouverte et déchargée pendant les trajets et dès le signal de fin. Chargée au poste seulement, après le signal de départ.\n"
+    + "- Tir fichant uniquement : en Sologne, brandes et taillis masquent tout, jamais de tir à hauteur d'homme.\n"
+    + "- Angle de 30° de part et d'autre de la ligne de battue interdit. Jamais de tir vers un poste voisin, un rabatteur ou un chien.\n"
+    + "- Identifier l'animal avec certitude et vérifier le plan de chasse (catégorie, bracelet).\n"
+    + "- Pas de tir vers routes, chemins publics, habitations, ni sur l'eau (ricochet).\n"
+    + "- Rester au poste jusqu'au signal de fin. À l'arrêt temporaire : arme ouverte.\n"
+    + "- Animal blessé : ne pas le suivre, prévenir le responsable. Pas d'alcool.\n"
+    + "- Accident : 18 ou 112, prévenir le responsable, donner le n° du poste.";
 
 const MODELE_INSTRUCTIONS =
     "- Rendez-vous à l'heure indiquée au lieu de rendez-vous.\n"
     + "- Chacun rejoint son poste indiqué par le responsable avant le lancer des chiens.\n"
-    + "- Respecter les consignes de sécurité ci-dessus en toutes circonstances.\n"
-    + "- Ne pas quitter son poste avant le signal de fin de battue.";
+    + "- Respecter les consignes de sécurité en toutes circonstances.\n"
+    + "- Signaux au cor : 1 coup long = départ, 2 coups longs = arrêt temporaire (facultatif), 3 coups longs = fin de battue.";
 
 let chasseursCache = [];
 let parcellesCache = [];

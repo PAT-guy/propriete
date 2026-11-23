@@ -84,7 +84,10 @@ function nomChasseurImpression(c) {
 }
 
 function libelleTraqueImpression(t) {
-    return t.nom || `Traque ${t.numero}`;
+    if (t.nom) return t.nom;
+    // numéro d'affichage = rang dans la battue (les numéros stockés peuvent avoir des trous après suppression)
+    const rang = (typeof ctx !== "undefined" && ctx && ctx.traques) ? ctx.traques.findIndex((x) => x === t || x.id === t.id) : -1;
+    return `Traque ${rang >= 0 ? rang + 1 : t.numero}`;
 }
 
 function chasseurDeCtx(ctx, id) {
@@ -103,6 +106,10 @@ function postesEtMouvants(ctx, traque) {
 }
 
 /** Texte à plusieurs lignes (conducteurs, véhicules) en HTML : une valeur par ligne. */
+function htmlVehicules(texte) {
+    return vehiculesDepuisTexte(texte).map((v) => `<div><strong>${esc(v.nom)}</strong>${v.postes ? ` <span class="ib-precisions">(postes ${esc(v.postes)})</span>` : ""}</div>`).join("");
+}
+
 function htmlListe(texte) {
     return listeDepuisTexte(texte).map(esc).join("<br>");
 }
@@ -333,6 +340,23 @@ const BLOCS = {
         },
     },
 
+    signaux: {
+        libelle: "Signaux de la battue (cor ou trompe)",
+        description: "Départ, arrêt temporaire (facultatif) et fin de battue, avec le nombre de coups longs.",
+        options: [
+            { cle: "titre", type: "texte", libelle: "Titre", defaut: "Signaux" },
+            { cle: "arret", type: "bool", libelle: "Afficher l'arrêt temporaire (facultatif)", defaut: true },
+        ],
+        rendre(ctx, o) {
+            const coups = (n) => `<span class="ib-coups">${Array.from({ length: n }, () => "<i></i>").join("")}</span>`;
+            const ligne = (nom, n, note) => `<div class="ib-signal"><span class="ib-signal-nom">${nom}${note ? ` <small>${note}</small>` : ""}</span>${coups(n)}<span class="ib-signal-n">${n} coup${n > 1 ? "s" : ""} long${n > 1 ? "s" : ""}</span></div>`;
+            return `${titreDuBloc(o, "Signaux")}<div class="ib-signaux">
+                ${ligne("Départ de battue", 1)}
+                ${o.arret ? ligne("Arrêt temporaire", 2, "(facultatif)") : ""}
+                ${ligne("Fin de battue", 3)}</div>`;
+        },
+    },
+
     consignes: {
         libelle: "Règles de sécurité",
         description: "Texte de la battue ou texte personnalisé.",
@@ -394,7 +418,7 @@ const BLOCS = {
             ${ctx.traques.map((t) => {
                 const parcelle = ctx.parcelles.find((p) => p.id === t.parcelle_id);
                 return `<table class="ib-table"><thead>
-                    <tr class="nom-traque"><td colspan="${colonnesTable}"><i class="ib-pastille" style="background:${couleurTraque(t.numero)}; margin-right:1.5mm; vertical-align:middle"></i>${esc(libelleTraqueImpression(t))}${parcelle ? " · " + esc(parcelle.nom) : ""}</td></tr>
+                    <tr class="nom-traque"><td colspan="${colonnesTable}"><i class="ib-pastille" style="background:${couleurTraque(t.numero)}; margin-right:1.5mm; vertical-align:middle"></i>${esc(libelleTraqueImpression(t))}${parcelle && parcelle.nom !== libelleTraqueImpression(t) ? " · " + esc(parcelle.nom) : ""}</td></tr>
                     <tr><th class="num">N°</th><th>Poste</th><th>Chasseur</th>${o.permis ? "<th>Permis</th>" : ""}${o.telephone ? "<th>Téléphone</th>" : ""}</tr></thead><tbody>
                     ${postesEtMouvants(ctx, t).map((p) => {
                         const c = chasseurDeCtx(ctx, p.chasseur_id);
@@ -419,7 +443,7 @@ const BLOCS = {
             <table class="ib-table" ${styleLigne(o)}><thead><tr><th style="width:22%">Traque</th><th style="width:25%">Conducteurs</th><th style="width:22%">Chef de ligne</th><th>Véhicules</th></tr></thead><tbody>
             ${ctx.traques.map((t) => `<tr>
                 <td class="libre"><i class="ib-pastille" style="background:${couleurTraque(t.numero)}; margin-right:1.5mm; vertical-align:middle"></i><strong>${esc(libelleTraqueImpression(t))}</strong></td>
-                <td class="libre libre-multi">${htmlListe(t.conducteur)}</td><td class="libre libre-multi">${esc(t.chef_de_ligne)}</td><td class="libre libre-multi">${htmlListe(t.vehicules)}</td></tr>`).join("")}
+                <td class="libre libre-multi">${htmlListe(t.conducteur)}</td><td class="libre libre-multi">${esc(t.chef_de_ligne)}</td><td class="libre libre-multi">${htmlVehicules(t.vehicules)}</td></tr>`).join("")}
             </tbody></table>`;
         },
     },
@@ -626,9 +650,10 @@ function configParDefaut(type) {
                 recto: [
                     b("entete", { titre: "Battue" }),
                     b("infos", {}),
-                    b("encart_postes", { lignes: 1, colonnes: "1", hauteurLigne: 8 }, { largeur: "moitie" }),
+                    b("encart_postes", { lignes: 1, colonnes: "1", hauteurLigne: 6 }, { largeur: "moitie" }),
                     b("plan_chasse_jour", { tailleSonnerie: 12, hauteurLigne: 5.5, nombre: true }, { largeur: "moitie" }),
-                    b("consignes", { taillePolice: 8, colonnes: "2" }),
+                    b("signaux", {}),
+                    b("consignes", { taillePolice: 7.5, colonnes: "2" }),
                 ],
                 verso: [b("carte", { etiquettes: "numeros" }, { taille: "remplir" })],
             },
@@ -804,7 +829,8 @@ function dessinerCarteImpression(zone, spec, ctx) {
     // La parcelle de la battue n'est dessinée que si aucune des traques affichées n'a la sienne :
     // sinon elle apparaîtrait sur toutes les cartes (et fausserait le cadrage).
     const idsTraques = traques.map((t) => t.parcelle_id).filter(Boolean);
-    const idsParcelles = new Set(idsTraques.length > 0 ? idsTraques : [ctx.battue.parcelle_id].filter(Boolean));
+    // parcelle de la battue en repli seulement s'il n'y a qu'une traque (sinon elle s'afficherait sur la carte d'une autre)
+    const idsParcelles = new Set(idsTraques.length > 0 ? idsTraques : (ctx.traques.length <= 1 ? [ctx.battue.parcelle_id].filter(Boolean) : []));
     idsParcelles.forEach((id) => {
         const parcelle = ctx.parcelles.find((p) => p.id === id);
         if (!parcelle || !parcelle.contour) return;

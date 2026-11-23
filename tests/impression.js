@@ -98,7 +98,7 @@ const t=(n,c)=>{(c?ok++:ko++);console.log((c?'OK  ':'FAIL ')+n);};
  await p.emulateMedia({media:'screen'});
  // ---------- équipe de traque saisie dans le plan
  await p.goto(B+'pages/plan-battue.html?id='+s.bt); await p.waitForTimeout(1000);
- await p.locator('#fiche-traque input[oninput*="conducteur"]').fill('Hugues Moreau'); await p.locator('#fiche-traque input[oninput*="chef_de_ligne"]').fill('Anne Petit'); await p.locator('#fiche-traque input[oninput*="vehicules"]').fill('Berlingo verte');
+ await p.locator('#fiche-traque input[oninput*="conducteur"]').fill('Hugues Moreau'); await p.locator('#fiche-traque input[oninput*="chef_de_ligne"]').fill('Anne Petit'); await p.locator('#fiche-traque input[oninput*="designation"]').fill('Berlingo verte');
  await p.click('#bouton-enregistrer-plan'); await p.waitForTimeout(800);
  const eq=await p.evaluate(async()=>(await clientSupabase.from('traques').select()).data.find(x=>x.numero===1));
  t('équipe de la traque enregistrée depuis le plan', eq.conducteur==='Hugues Moreau' && eq.chef_de_ligne==='Anne Petit' && eq.vehicules==='Berlingo verte');

@@ -211,3 +211,11 @@
 .ib-table td.libre-multi { height: auto; min-height: var(--ib-h-ligne, 7mm); white-space: normal; line-height: 1.25; padding-top: 1.2mm; padding-bottom: 1.2mm; }
 
 .ib-precisions { font-size: 0.82em; color: #6b6b60; }
+
+.ib-signaux { display: flex; gap: 2mm; }
+.ib-signal { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 0.3mm solid var(--ib-primaire); border-radius: 1.5mm; padding: 0.8mm 1mm; text-align: center; line-height: 1.2; }
+.ib-signal-nom { font-weight: 700; font-size: 0.88em; color: var(--ib-primaire); }
+.ib-signal-nom small { font-weight: 400; color: #6b6b60; }
+.ib-coups { display: flex; justify-content: center; gap: 1.2mm; margin: 0.6mm 0; }
+.ib-coups i { display: block; width: 6mm; height: 1.4mm; border-radius: 0.8mm; background: var(--ib-primaire); }
+.ib-signal-n { font-size: 0.8em; }

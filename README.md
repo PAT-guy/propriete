@@ -197,3 +197,5 @@ Si une mise à jour ajoute de nouvelles tables (c'est le cas pour les plans de b
 ## Poste mouvant, rapproché, plusieurs conducteurs
 
 Chaque objet de la carte a son propre figuré : poste fixe en rond numéroté, poste mouvant en trait orange pointillé avec badge carré M1, M2…, parking en carré bleu P, accès en losange, zone de rapproché en polygone orange pointillé. Les noms des postes ne sont plus affichés en permanence (survol seulement). Une traque accepte plusieurs conducteurs et plusieurs véhicules. Pour une journée à plusieurs traques, la fiche de gestion passe automatiquement en 3 colonnes compactes.
+
+Signaux au cor (départ 1 coup long, arrêt temporaire 2 coups longs facultatif, fin 3 coups longs) : bloc « Signaux » du carton. Véhicules : chaque véhicule d'une traque peut porter les postes qu'il dépose, affichés dans le tableau des équipes. Les règles de sécurité types sont celles de la Sologne ; à faire valider par la fédération de chasse du département (schéma départemental de gestion cynégétique).

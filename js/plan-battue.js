@@ -11,6 +11,7 @@
 
 let battueCourante = null;
 let chasseursCache = [];
+const vehiculesConnus = new Set();
 let parcellesCache = [];
 let especesCache = [];
 let postesChasseCache = [];
@@ -78,6 +79,10 @@ const TYPES_POINT = {
         clientSupabase.from("traques").select().eq("battue_id", idBattue).order("numero"),
     ]);
     await chargerCategories();
+    try {
+        const toutes = await clientSupabase.from("traques").select("vehicules");
+        (toutes.data || []).forEach((r) => listeDepuisTexte(r.vehicules).forEach((v) => vehiculesConnus.add(v)));
+    } catch (e) { /* facultatif */ }
     chasseursCache = chasseurs.data || [];
     parcellesCache = parcelles.data || [];
     especesCache = especes.data || [];
@@ -168,6 +173,9 @@ function nouvelEtatTraque() {
 
 function nouvelleTraque() {
     const etat = nouvelEtatTraque();
+    // la nouvelle traque garde la parcelle de la battue, ou celle de la dernière traque
+    const derniere = traquesEtat[traquesEtat.length - 1];
+    etat.parcelle_id = (battueCourante && battueCourante.parcelle_id) || (derniere && derniere.parcelle_id) || null;
     traquesEtat.push(etat);
     return etat;
 }
@@ -739,6 +747,7 @@ function redessinerPanneau() {
         <input type="text" list="liste-noms-chasseurs" value="${echapper(t.chef_de_ligne)}" oninput="majChampTraque('chef_de_ligne', this.value)">
         <label class="etiquette">Véhicules</label>
         ${champMulti("vehicules", t.vehicules, "ex : Hilux blanche, remorque à chiens", false, "+ Ajouter un véhicule")}
+        ${pastillesVehicules(t)}
         <datalist id="liste-noms-chasseurs">${chasseursCache.map((c) => `<option value="${echapper(nomAffichePersonne(c))}"></option>`).join("")}</datalist>
 
         <div class="titre-bloc" style="margin-top:14px;">Contenu de cette traque</div>
@@ -1299,6 +1308,29 @@ function champMulti(champ, valeur, indication, avecNoms, libelleAjout) {
         </div>`).join("")}
         <button type="button" class="bouton bouton-secondaire" style="padding:3px 8px; font-size:12px;" onclick="ajouterListeMulti('${champ}')">${echapper(libelleAjout)}</button>
     </div>`;
+}
+
+function pastillesVehicules(t) {
+    const actuels = new Set(listeDepuisTexte(t.vehicules));
+    [...(vehiculesDeLaBattue())].forEach((v) => vehiculesConnus.add(v));
+    const proposes = [...vehiculesConnus].filter((v) => !actuels.has(v)).sort((a, b) => a.localeCompare(b, "fr"));
+    if (proposes.length === 0) return "";
+    return `<div style="margin:6px 0 10px; display:flex; flex-wrap:wrap; gap:5px; align-items:center;"><small style="color:#6b6b60;">Habituels :</small>
+        ${proposes.map((v) => `<button type="button" class="bouton bouton-secondaire" style="padding:2px 9px; font-size:12px;" data-vehicule="${echapper(v)}" onclick="ajouterVehiculeHabituel(this.dataset.vehicule)">+ ${echapper(v)}</button>`).join("")}</div>`;
+}
+
+function vehiculesDeLaBattue() {
+    return traquesEtat.flatMap((t) => listeDepuisTexte(t.vehicules));
+}
+
+function ajouterVehiculeHabituel(nom) {
+    const t = traqueActive();
+    memoriser();
+    const v = listeDepuisTexte(t.vehicules);
+    if (!v.includes(nom)) v.push(nom);
+    t.vehicules = v.join("\n");
+    marquerModifie();
+    redessinerPanneau();
 }
 
 function entreesMulti(champ) {

@@ -107,7 +107,7 @@ function postesEtMouvants(ctx, traque) {
 
 /** Texte à plusieurs lignes (conducteurs, véhicules) en HTML : une valeur par ligne. */
 function htmlVehicules(texte) {
-    return vehiculesDepuisTexte(texte).map((v) => `<div><strong>${esc(v.nom)}</strong>${v.postes ? ` <span class="ib-precisions">(postes ${esc(v.postes)})</span>` : ""}</div>`).join("");
+    return vehiculesDepuisTexte(texte).map((v) => `<div><strong>${esc(v.nom)}</strong>${v.conducteur || v.postes ? ` <span class="ib-precisions">· ${[v.conducteur ? esc(v.conducteur) : "", v.postes ? "postes " + esc(v.postes) : ""].filter(Boolean).join(" · ")}</span>` : ""}</div>`).join("");
 }
 
 function htmlListe(texte) {
@@ -404,27 +404,30 @@ const BLOCS = {
             { cle: "colonnes", type: "choix", libelle: "Traques côte à côte", defaut: "auto", choix: [["auto", "Automatique (selon le nombre de traques)"], ["1", "1 colonne"], ["2", "2 colonnes"], ["3", "3 colonnes"]] },
             { cle: "permis", type: "bool", libelle: "N° de permis", defaut: false },
             { cle: "telephone", type: "bool", libelle: "Téléphone", defaut: false },
+            { cle: "emmene", type: "bool", libelle: "Colonne « Emmené par » (d'après les postes déposés par chaque véhicule)", defaut: true },
             { cle: "lignesVides", type: "nombre", libelle: "Lignes vides en plus", defaut: 1, min: 0, max: 10 },
             { cle: "hauteurLigne", type: "nombre", libelle: "Hauteur d'une ligne (mm)", defaut: 6, min: 4, max: 15 },
         ],
         rendre(ctx, o) {
             if (ctx.traques.length === 0) return titreDuBloc(o, "Postes et chasseurs") + aucuneTraque();
-            const colonnesTable = 3 + (o.permis ? 1 : 0) + (o.telephone ? 1 : 0);
+            // la colonne n'apparaît que si au moins un véhicule de la traque dit quels postes il dépose
+            const avecEmmene = (t) => o.emmene !== false && vehiculesDepuisTexte(t.vehicules).some((v) => v.postes);
+            const colonnesTable = 3 + (o.permis ? 1 : 0) + (o.telephone ? 1 : 0) + (ctx.traques.some(avecEmmene) ? 1 : 0);
             const nb = o.colonnes === "auto" || !o.colonnes ? Math.min(3, ctx.traques.length) : Number(o.colonnes);
             const compact = nb >= 3 ? "font-size:0.85em;" : "";
-            const hLigne = nb >= 3 ? Math.min(Number(o.hauteurLigne) || 6, 4.2) : (Number(o.hauteurLigne) || 6);
+            const hLigne = nb >= 3 ? Math.min(Number(o.hauteurLigne) || 6, 3.8) : (Number(o.hauteurLigne) || 6);
             return `${titreDuBloc(o, "Postes et chasseurs")}
             <div class="ib-sous-tableaux" style="grid-template-columns:repeat(${nb},minmax(0,1fr)); ${compact} --ib-h-ligne:${hLigne}mm">
             ${ctx.traques.map((t) => {
                 const parcelle = ctx.parcelles.find((p) => p.id === t.parcelle_id);
                 return `<table class="ib-table"><thead>
                     <tr class="nom-traque"><td colspan="${colonnesTable}"><i class="ib-pastille" style="background:${couleurTraque(t.numero)}; margin-right:1.5mm; vertical-align:middle"></i>${esc(libelleTraqueImpression(t))}${parcelle && parcelle.nom !== libelleTraqueImpression(t) ? " · " + esc(parcelle.nom) : ""}</td></tr>
-                    <tr><th class="num">N°</th><th>Poste</th><th>Chasseur</th>${o.permis ? "<th>Permis</th>" : ""}${o.telephone ? "<th>Téléphone</th>" : ""}</tr></thead><tbody>
+                    <tr><th class="num">N°</th><th>Poste</th><th>Chasseur</th>${ctx.traques.some(avecEmmene) ? '<th style="white-space:nowrap">Emmené par</th>' : ""}${o.permis ? "<th>Permis</th>" : ""}${o.telephone ? "<th>Téléphone</th>" : ""}</tr></thead><tbody>
                     ${postesEtMouvants(ctx, t).map((p) => {
                         const c = chasseurDeCtx(ctx, p.chasseur_id);
-                        return `<tr><td class="num libre ${p.mouvant ? "ib-mouvant" : ""}">${esc(p.num)}</td><td class="libre">${esc(p.nom)}</td><td class="libre">${c ? esc(nomChasseurImpression(c)) : ""}</td>${o.permis ? `<td class="libre">${c ? esc(c.numero_permis) : ""}</td>` : ""}${o.telephone ? `<td class="libre">${c ? esc(c.telephone) : ""}</td>` : ""}</tr>`;
+                        return `<tr><td class="num libre ${p.mouvant ? "ib-mouvant" : ""}">${esc(p.num)}</td><td class="libre">${esc(p.nom)}</td><td class="libre">${c ? esc(nomChasseurImpression(c)) : ""}</td>${ctx.traques.some(avecEmmene) ? `<td class="libre">${(() => { const v = p.mouvant ? null : vehiculePourPoste(t.vehicules, Number(p.num)); return v ? esc(v.conducteur || v.nom) : ""; })()}</td>` : ""}${o.permis ? `<td class="libre">${c ? esc(c.numero_permis) : ""}</td>` : ""}${o.telephone ? `<td class="libre">${c ? esc(c.telephone) : ""}</td>` : ""}</tr>`;
                     }).join("")}
-                    ${lignesVidesTable(Number(o.lignesVides) || 0, colonnesTable)}
+                    ${lignesVidesTable(nb >= 3 ? 0 : (Number(o.lignesVides) || 0), colonnesTable)}
                 </tbody></table>`;
             }).join("")}</div>`;
         },

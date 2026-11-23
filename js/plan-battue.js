@@ -1316,14 +1316,12 @@ function champMulti(champ, valeur, indication, avecNoms, libelleAjout) {
 /** Véhicules : un nom et les postes qu'il dépose (ex : « 1 à 8 »), une ligne par véhicule. */
 function champVehicules(t) {
     // lignes brutes (une ligne vide = véhicule en cours de saisie)
-    const liste = String(t.vehicules || "").split(/\r?\n/).map((ligne) => {
-        const i = ligne.indexOf("|");
-        return i < 0 ? { nom: ligne.trim(), postes: "" } : { nom: ligne.slice(0, i).trim(), postes: ligne.slice(i + 1).trim() };
-    });
+    const liste = vehiculesDepuisTexte(t.vehicules, true);
     return `<div class="liste-multi">
         ${liste.map((v, i) => `<div class="ligne-multi">
             <input type="text" value="${echapper(v.nom)}" placeholder="Véhicule (ex : Hilux blanche)" oninput="majVehicule(${i}, 'designation', this.value)">
-            <input type="text" value="${echapper(v.postes)}" placeholder="Postes déposés (ex : 1 à 8)" style="max-width:42%;" oninput="majVehicule(${i}, 'postes', this.value)">
+            <input type="text" value="${echapper(v.postes)}" placeholder="Postes (ex : 1 à 8)" style="max-width:24%;" oninput="majVehicule(${i}, 'postes', this.value)">
+            <input type="text" list="liste-noms-chasseurs" value="${echapper(v.conducteur)}" placeholder="Qui conduit" style="max-width:24%;" oninput="majVehicule(${i}, 'chauffeur', this.value)">
             ${liste.length > 1 ? `<button type="button" class="bouton bouton-danger" title="Retirer" onclick="retirerListeMulti('vehicules', ${i})">×</button>` : ""}
         </div>`).join("")}
         <button type="button" class="bouton bouton-secondaire" style="padding:3px 8px; font-size:12px;" onclick="ajouterListeMulti('vehicules')">+ Ajouter un véhicule</button>
@@ -1333,13 +1331,10 @@ function champVehicules(t) {
 function majVehicule(index, champ, valeur) {
     const t = traqueActive();
     memoriser(`champ:${t.cle}:vehicule:${index}:${champ}`);
-    const v = String(t.vehicules || "").split(/\r?\n/).map((ligne) => {
-        const i = ligne.indexOf("|");
-        return i < 0 ? { nom: ligne, postes: "" } : { nom: ligne.slice(0, i), postes: ligne.slice(i + 1) };
-    });
-    while (v.length <= index) v.push({ nom: "", postes: "" });
-    v[index][champ === 'designation' ? 'nom' : champ] = valeur.replace(/\|/g, "");
-    t.vehicules = v.map((x) => (x.postes.trim() ? `${x.nom}|${x.postes}` : x.nom)).join("\n");
+    const v = vehiculesDepuisTexte(t.vehicules, true);
+    while (v.length <= index) v.push({ nom: "", postes: "", conducteur: "" });
+    v[index][champ === "designation" ? "nom" : champ === "chauffeur" ? "conducteur" : champ] = valeur.replace(/\|/g, "");
+    t.vehicules = vehiculesVersTexte(v);
     marquerModifie();
 }
 
@@ -1360,7 +1355,7 @@ function ajouterVehiculeHabituel(nom) {
     const t = traqueActive();
     memoriser();
     const v = vehiculesDepuisTexte(t.vehicules);
-    if (!v.some((x) => x.nom === nom)) v.push({ nom, postes: "" });
+    if (!v.some((x) => x.nom === nom)) v.push({ nom, postes: "", conducteur: "" });
     t.vehicules = vehiculesVersTexte(v);
     marquerModifie();
     redessinerPanneau();

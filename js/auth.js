@@ -58,16 +58,37 @@ function injecterNavigation(pageActiveFichier) {
 }
 
 /** Valeurs d'un champ à plusieurs entrées (une par ligne) : sans lignes vides. */
-/** Véhicules enregistrés une ligne par véhicule, au format « nom|postes déposés » (postes facultatif). */
-function vehiculesDepuisTexte(texte) {
-    return listeDepuisTexte(texte).map((ligne) => {
-        const i = ligne.indexOf("|");
-        return i < 0 ? { nom: ligne, postes: "" } : { nom: ligne.slice(0, i).trim(), postes: ligne.slice(i + 1).trim() };
+/**
+ * Véhicules : une ligne par véhicule, au format « nom|postes déposés|conducteur » (postes et conducteur facultatifs).
+ * gardeVides conserve les lignes vides (saisie en cours dans l'éditeur).
+ */
+function vehiculesDepuisTexte(texte, gardeVides) {
+    const lignes = gardeVides ? String(texte || "").split(/\r?\n/) : listeDepuisTexte(texte);
+    return lignes.map((ligne) => {
+        const [nom, postes, conducteur] = ligne.split("|");
+        return { nom: (nom || "").trim(), postes: (postes || "").trim(), conducteur: (conducteur || "").trim() };
     });
 }
 
 function vehiculesVersTexte(liste) {
-    return liste.map((v) => (v.postes ? `${v.nom}|${v.postes}` : v.nom)).join("\n");
+    return liste.map((v) => (v.postes || v.conducteur ? `${v.nom}|${v.postes || ""}${v.conducteur ? "|" + v.conducteur : ""}` : v.nom)).join("\n");
+}
+
+/** « 1 à 8, 12, 15-17 » devient l'ensemble des numéros de postes concernés. */
+function numerosDepuisSpec(spec) {
+    const numeros = new Set();
+    String(spec || "").toLowerCase().split(/[,;]|\bet\b/).forEach((morceau) => {
+        const m = morceau.match(/(\d+)\s*(?:à|a|au|-|–)\s*(\d+)/);
+        if (m) { for (let i = Number(m[1]); i <= Number(m[2]) && i < 500; i++) numeros.add(i); return; }
+        const n = morceau.match(/\d+/);
+        if (n) numeros.add(Number(n[0]));
+    });
+    return numeros;
+}
+
+/** Véhicule qui dépose le poste de ce numéro (d'après la liste « postes déposés » des véhicules), ou null. */
+function vehiculePourPoste(vehiculesTexte, numero) {
+    return vehiculesDepuisTexte(vehiculesTexte).find((v) => v.postes && numerosDepuisSpec(v.postes).has(numero)) || null;
 }
 
 function listeDepuisTexte(texte) {

@@ -219,3 +219,5 @@
 .ib-coups { display: flex; justify-content: center; gap: 1.2mm; margin: 0.6mm 0; }
 .ib-coups i { display: block; width: 6mm; height: 1.4mm; border-radius: 0.8mm; background: var(--ib-primaire); }
 .ib-signal-n { font-size: 0.8em; }
+.ib-sous-tableaux .ib-table th { white-space: nowrap; font-size: 0.78em; letter-spacing: 0; }
+.ib-sous-tableaux .ib-table td { padding-top: 0.3mm; padding-bottom: 0.3mm; }

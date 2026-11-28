@@ -181,7 +181,9 @@ function titreDuBloc(o, defaut) {
 }
 
 function styleTexte(o) {
-    return o.taillePolice ? `font-size:${Number(o.taillePolice)}pt;` : "";
+    // texte justifié par défaut (césure automatique en français), sauf demande contraire ou texte centré
+    const justifie = o.justifie !== false && o.alignement !== "centre";
+    return `${o.taillePolice ? `font-size:${Number(o.taillePolice)}pt;` : ""}${justifie ? "text-align:justify; hyphens:auto; -webkit-hyphens:auto;" : ""}`;
 }
 
 function styleLigne(o) {
@@ -365,6 +367,7 @@ const BLOCS = {
             { cle: "source", type: "choix", libelle: "Texte", defaut: "battue", choix: [["battue", "Celui de la battue"], ["personnalise", "Texte personnalisé"]] },
             { cle: "texte", type: "zone", libelle: "Texte personnalisé", defaut: "" },
             { cle: "taillePolice", type: "nombre", libelle: "Taille du texte (pt, vide = automatique)", defaut: 0, min: 0, max: 14, pas: 0.5 },
+            { cle: "justifie", type: "bool", libelle: "Texte justifié", defaut: true },
             { cle: "colonnes", type: "choix", libelle: "Colonnes", defaut: "1", choix: [["1", "1"], ["2", "2"]] },
         ],
         rendre(ctx, o) { return blocTexteBattue(ctx, o, "regles_securite", "Règles de sécurité"); },
@@ -378,6 +381,7 @@ const BLOCS = {
             { cle: "source", type: "choix", libelle: "Texte", defaut: "battue", choix: [["battue", "Celui de la battue"], ["personnalise", "Texte personnalisé"]] },
             { cle: "texte", type: "zone", libelle: "Texte personnalisé", defaut: "" },
             { cle: "taillePolice", type: "nombre", libelle: "Taille du texte (pt, vide = automatique)", defaut: 0, min: 0, max: 14, pas: 0.5 },
+            { cle: "justifie", type: "bool", libelle: "Texte justifié", defaut: true },
             { cle: "colonnes", type: "choix", libelle: "Colonnes", defaut: "1", choix: [["1", "1"], ["2", "2"]] },
         ],
         rendre(ctx, o) { return blocTexteBattue(ctx, o, "instructions", "Instructions"); },
@@ -389,6 +393,7 @@ const BLOCS = {
         options: [
             { cle: "titre", type: "texte", libelle: "Titre", defaut: "Notes" },
             { cle: "taillePolice", type: "nombre", libelle: "Taille du texte (pt, vide = automatique)", defaut: 0, min: 0, max: 14, pas: 0.5 },
+            { cle: "justifie", type: "bool", libelle: "Texte justifié", defaut: true },
         ],
         rendre(ctx, o) {
             if (!ctx.battue.notes) return "";
@@ -573,6 +578,7 @@ const BLOCS = {
             { cle: "titre", type: "texte", libelle: "Titre (facultatif)", defaut: "" },
             { cle: "texte", type: "zone", libelle: "Texte", defaut: "" },
             { cle: "taillePolice", type: "nombre", libelle: "Taille du texte (pt, vide = automatique)", defaut: 0, min: 0, max: 24, pas: 0.5 },
+            { cle: "justifie", type: "bool", libelle: "Texte justifié", defaut: true },
             { cle: "alignement", type: "choix", libelle: "Alignement", defaut: "gauche", choix: [["gauche", "À gauche"], ["centre", "Centré"]] },
             { cle: "cadre", type: "bool", libelle: "Encadré", defaut: false },
         ],

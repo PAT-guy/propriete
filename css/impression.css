@@ -221,3 +221,8 @@
 .ib-signal-n { font-size: 0.8em; }
 .ib-sous-tableaux .ib-table th { white-space: nowrap; font-size: 0.78em; letter-spacing: 0; }
 .ib-sous-tableaux .ib-table td { padding-top: 0.3mm; padding-bottom: 0.3mm; }
+
+/* Livret : feuille A4 paysage pliée en deux, deux demi-pages A5 portrait côte à côte */
+.ib-feuille.ib-paysage { width: 297mm; height: 210mm; display: flex; }
+.ib-demi { position: relative; overflow: hidden; box-sizing: border-box; width: 148.5mm; height: 210mm; flex: none; }
+.ib-racine .ib-feuille.ib-paysage + .ib-feuille { margin-top: 0; }

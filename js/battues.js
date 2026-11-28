@@ -175,6 +175,7 @@ function afficherProchaine() {
             <a class="bouton bouton-principal" href="saisie.html?id=${b.id}">Saisie rapide</a>
             <a class="bouton bouton-secondaire" href="plan-battue.html?id=${b.id}">Plan de battue</a>
             <a class="bouton bouton-secondaire" href="impression.html?id=${b.id}&doc=carton" target="_blank">Cartons A5</a>
+            <a class="bouton bouton-secondaire" href="impression.html?id=${b.id}&doc=livret" target="_blank">Livret A4 plié</a>
             <a class="bouton bouton-secondaire" href="impression.html?id=${b.id}&doc=fiche" target="_blank">Fiche de gestion</a>
             <button class="bouton bouton-secondaire" onclick="ouvrirModificationBattue('${b.id}')">Participants et infos</button>
         </div>`;

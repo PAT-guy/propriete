@@ -22,7 +22,8 @@ let etatCourantJSON = "";
 let dernierGroupe = null;
 let dernierInstant = 0;
 
-const FACES = { recto: "Recto", verso: "Verso" };
+const FACES = { recto: "Recto", verso: "Verso", page1: "Page 1 (couverture)", page2: "Page 2 (intérieur gauche)", page3: "Page 3 (intérieur droite)", page4: "Page 4 (dos)" };
+const clesFacesDoc = () => clesFaces(typeDoc);
 
 (async () => {
     const estConnecte = await protegerPage();
@@ -32,7 +33,7 @@ const FACES = { recto: "Recto", verso: "Verso" };
 
     const parametres = new URLSearchParams(window.location.search);
     const idBattue = parametres.get("id");
-    typeDoc = parametres.get("doc") === "fiche" ? "fiche" : "carton";
+    typeDoc = ["fiche", "livret"].includes(parametres.get("doc")) ? parametres.get("doc") : "carton";
     const zoneChargement = document.getElementById("zone-chargement");
     if (!idBattue) { zoneChargement.textContent = "Aucune battue indiquée."; return; }
 
@@ -68,17 +69,26 @@ const FACES = { recto: "Recto", verso: "Verso" };
     document.addEventListener("keydown", raccourcisHistorique);
 
     const dateTexte = ctx.battue.date_battue ? parseDate(ctx.battue.date_battue).toLocaleDateString("fr-FR") : "";
-    document.getElementById("titre-page").textContent = typeDoc === "carton" ? "Cartons de battue (A5)" : "Fiche de gestion (A4)";
+    document.getElementById("titre-page").textContent = { carton: "Cartons de battue (A5)", fiche: "Fiche de gestion (A4)", livret: "Livret de battue (A4 plié)" }[typeDoc];
     document.getElementById("sous-titre-page").textContent = `${dateTexte}${battue.secteur ? " · " + battue.secteur : ""}`;
     document.getElementById("lien-plan").href = `plan-battue.html?id=${idBattue}`;
     document.getElementById("lien-carton").href = `impression.html?id=${idBattue}&doc=carton`;
     document.getElementById("lien-fiche").href = `impression.html?id=${idBattue}&doc=fiche`;
-    document.getElementById(typeDoc === "carton" ? "lien-carton" : "lien-fiche").classList.add("bouton-principal");
-    document.getElementById(typeDoc === "carton" ? "lien-carton" : "lien-fiche").classList.remove("bouton-secondaire");
-    document.getElementById("aide-impression").textContent = typeDoc === "carton"
-        ? "2 cartons A5 par feuille A4 : imprime en recto-verso (retournement sur le bord long), à 100 %, sans marges ni mise à l'échelle, puis coupe la feuille en deux."
-        : "Feuille A4 en recto-verso (retournement sur le bord long), à 100 %, sans marges ni mise à l'échelle.";
-    document.title = typeDoc === "carton" ? "Cartons de battue" : "Fiche de gestion";
+    document.getElementById("lien-livret").href = `impression.html?id=${idBattue}&doc=livret`;
+    const lienActif = document.getElementById({ carton: "lien-carton", fiche: "lien-fiche", livret: "lien-livret" }[typeDoc]);
+    lienActif.classList.add("bouton-principal");
+    lienActif.classList.remove("bouton-secondaire");
+    document.getElementById("aide-impression").textContent = {
+        carton: "2 cartons A5 par feuille A4 : imprime en recto-verso (retournement sur le bord long), à 100 %, sans marges ni mise à l'échelle, puis coupe la feuille en deux.",
+        fiche: "Feuille A4 en recto-verso (retournement sur le bord long), à 100 %, sans marges ni mise à l'échelle.",
+        livret: "Feuille A4 en paysage, recto-verso avec retournement sur le bord COURT, à 100 %, sans marges ni mise à l'échelle. Plie ensuite la feuille en deux : couverture devant, consignes au dos, cartes à l'intérieur.",
+    }[typeDoc];
+    document.title = { carton: "Cartons de battue", fiche: "Fiche de gestion", livret: "Livret de battue" }[typeDoc];
+    if (typeDoc === "livret") {
+        const st = document.createElement("style");
+        st.textContent = "@page { size: A4 landscape; margin: 0; } @media print { .ib-echelle { width: 297mm !important; } }";
+        document.head.appendChild(st);
+    }
 
     document.getElementById("bouton-imprimer").addEventListener("click", imprimer);
     window.addEventListener("resize", ajusterEchelle);
@@ -122,10 +132,22 @@ function uneCartePourChaqueTraque(cfg, face) {
     cfg.faces[face] = [...autres, ...cartes];
 }
 
+/** Livret : une carte par traque, réparties sur les pages 2 et 3 (la moitié des traques sur chaque page). */
+function repartirCartesLivret(cfg) {
+    const traques = (ctx && ctx.traques) || [];
+    if (traques.length < 2) return;
+    const modele = cfg.faces.page2.find((b) => b.bloc === "carte") || cfg.faces.page3.find((b) => b.bloc === "carte");
+    const moitie = Math.ceil(traques.length / 2);
+    const carte = (t) => nouveauBloc("carte", { options: { ...(modele ? modele.options : {}), traques: [t.numero], cadrage: null }, generaux: { taille: "remplir" } });
+    cfg.faces.page2 = [...cfg.faces.page2.filter((b) => b.bloc !== "carte"), ...traques.slice(0, moitie).map(carte)];
+    cfg.faces.page3 = [...cfg.faces.page3.filter((b) => b.bloc !== "carte"), ...traques.slice(moitie).map(carte)];
+}
+
 function configDuModele(id) {
     if (id === "defaut") {
         const c = normaliserConfig(configParDefaut(typeDoc), typeDoc);
         if (typeDoc === "carton") uneCartePourChaqueTraque(c, "verso");
+        if (typeDoc === "livret") repartirCartesLivret(c);
         return c;
     }
     const m = modeles.find((x) => x.id === id);
@@ -232,7 +254,8 @@ function genererChampOption(def, valeur, uid) {
 
 function htmlBloc(bloc, face, index, total) {
     const def = BLOCS[bloc.bloc];
-    const autreFace = face === "recto" ? "verso" : "recto";
+    const faces = clesFacesDoc();
+    const autreFace = FACES[faces[(faces.indexOf(face) + 1) % faces.length]].toLowerCase();
     return `<div class="ib-bloc-edit ${bloc.actif ? "" : "inactif"} ${blocsOuverts.has(bloc.uid) ? "ouvert" : ""}" data-uid="${bloc.uid}">
         <div class="entete-bloc">
             <input type="checkbox" data-actif="${bloc.uid}" ${bloc.actif ? "checked" : ""} title="Afficher ce bloc">
@@ -295,12 +318,12 @@ function construirePanneau() {
                 <select data-style="${cle}">${valeurs.map(([v, l]) => `<option value="${v}" ${s[cle] === v ? "selected" : ""}>${echapper(l)}</option>`).join("")}</select>`).join("")}
         </div>
 
-        ${["recto", "verso"].map((face) => `
+        ${clesFacesDoc().map((face) => `
         <div class="ib-section">
-            <h3>${FACES[face]} ${typeDoc === "carton" ? "du carton" : "de la fiche"}</h3>
+            <h3>${FACES[face]} ${{ carton: "du carton", fiche: "de la fiche", livret: "du livret" }[typeDoc]}</h3>
             ${config.faces[face].length === 0 ? '<em style="color:#888; font-size:13px;">Aucun bloc sur cette face.</em>' : ""}
             ${config.faces[face].map((b, i) => htmlBloc(b, face, i, config.faces[face].length)).join("")}
-            ${ctx.traques.length >= 2 ? `<button type="button" class="bouton bouton-secondaire" style="margin-top:8px;" data-une-carte-par-traque="${face}">Une carte par traque (${ctx.traques.length})</button>` : ""}
+            ${ctx.traques.length >= 2 && (typeDoc !== "livret" || face === "page2") ? `<button type="button" class="bouton bouton-secondaire" style="margin-top:8px;" data-une-carte-par-traque="${face}">${typeDoc === "livret" ? "Une carte par traque, sur les pages 2 et 3" : "Une carte par traque"} (${ctx.traques.length})</button>` : ""}
             <div style="display:flex; gap:6px; margin-top:8px;">
                 <select data-ajout-liste="${face}" style="flex:1;">${Object.entries(BLOCS).map(([k, d]) => `<option value="${k}">${echapper(d.libelle)}</option>`).join("")}</select>
                 <button type="button" class="bouton bouton-secondaire" data-ajouter="${face}">Ajouter</button>
@@ -311,7 +334,7 @@ function construirePanneau() {
 }
 
 function trouverBloc(uid) {
-    for (const face of ["recto", "verso"]) {
+    for (const face of clesFacesDoc()) {
         const index = config.faces[face].findIndex((b) => b.uid === uid);
         if (index >= 0) return { face, index, bloc: config.faces[face][index] };
     }
@@ -426,7 +449,8 @@ function brancherPanneau() {
         const t = trouverBloc(b.dataset.deplacer);
         if (!t) return;
         config.faces[t.face].splice(t.index, 1);
-        config.faces[t.face === "recto" ? "verso" : "recto"].push(t.bloc);
+        const faces = clesFacesDoc();
+        config.faces[faces[(faces.indexOf(t.face) + 1) % faces.length]].push(t.bloc);
         changementConfig(true);
     }));
     panneau.querySelectorAll("[data-supprimer]").forEach((b) => b.addEventListener("click", () => {
@@ -436,7 +460,7 @@ function brancherPanneau() {
         changementConfig(true);
     }));
     panneau.querySelectorAll("[data-une-carte-par-traque]").forEach((b) => b.addEventListener("click", () => {
-        uneCartePourChaqueTraque(config, b.dataset.uneCarteParTraque);
+        if (typeDoc === "livret") repartirCartesLivret(config); else uneCartePourChaqueTraque(config, b.dataset.uneCarteParTraque);
         changementConfig(true);
     }));
     panneau.querySelectorAll("[data-ajouter]").forEach((b) => b.addEventListener("click", () => {
@@ -492,7 +516,9 @@ function rendreApercu() {
     const legendes = {
         carton: { recto: "Recto : feuille à imprimer en premier (2 cartons)", verso: "Verso : au dos de la même feuille (2 cartons)" },
         fiche: { recto: "Recto : page 1", verso: "Verso : page 2 (au dos)" },
+        livret: { exterieur: "Extérieur : dos (page 4) à gauche, couverture (page 1) à droite", interieur: "Intérieur : page 2 à gauche, page 3 à droite (au dos de la même feuille)" },
     }[typeDoc];
+    document.getElementById("echelle").style.width = typeDoc === "livret" ? "297mm" : "";
     racine.innerHTML = rendreDocument(config, ctx).map((f) =>
         `<div class="ib-legende-feuille ib-hors-impression">${legendes[f.nom]}</div>${f.html}`).join("");
     ajusterEchelle();

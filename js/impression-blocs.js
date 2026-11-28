@@ -662,6 +662,24 @@ function configParDefaut(type) {
             },
         };
     }
+    if (type === "livret") {
+        return {
+            version: 1, type: "livret", nom: "Livret Sologne",
+            style: { ...STYLE_PAR_DEFAUT, tailleBase: 9.5, marge: 8 },
+            faces: {
+                page1: [
+                    b("entete", { titre: "Battue" }),
+                    b("infos", {}),
+                    b("encart_postes", { lignes: 1, colonnes: "1", hauteurLigne: 7 }),
+                    b("plan_chasse_jour", { tailleSonnerie: 13, hauteurLigne: 6, nombre: true }),
+                    b("signaux", {}),
+                ],
+                page2: [b("carte", { etiquettes: "numeros" }, { taille: "remplir" })],
+                page3: [],
+                page4: [b("consignes", { taillePolice: 10.5, colonnes: "1" })],
+            },
+        };
+    }
     return {
         version: 1, type: "fiche", nom: "Fiche de gestion Sologne",
         style: { ...STYLE_PAR_DEFAUT, tailleBase: 10, marge: 10 },
@@ -686,12 +704,17 @@ function configParDefaut(type) {
 }
 
 /** Complète une configuration enregistrée (anciennes versions, options manquantes) et retire les blocs inconnus. */
+/** Faces d'un document : recto et verso, ou les quatre pages d'un A4 plié (livret). */
+function clesFaces(type) {
+    return type === "livret" ? ["page1", "page2", "page3", "page4"] : ["recto", "verso"];
+}
+
 function normaliserConfig(config, type) {
     const base = configParDefaut(type);
     const c = {
         version: 1, type, nom: (config && config.nom) || base.nom,
         style: { ...base.style, ...((config && config.style) || {}) },
-        faces: { recto: [], verso: [] },
+        faces: Object.fromEntries(clesFaces(type).map((f) => [f, []])),
     };
     delete c.style.traitsCoupe;   // option supprimée : plus de trait de coupe
     // Anciennes mises en page : cadre (oui/non) et fond papier (oui/non) deviennent des choix.
@@ -700,7 +723,7 @@ function normaliserConfig(config, type) {
     delete c.style.cadre;
     delete c.style.fondPapier;
     c.style.couleursPerso = { ...STYLE_PAR_DEFAUT.couleursPerso, ...(c.style.couleursPerso || {}) };
-    ["recto", "verso"].forEach((face) => {
+    clesFaces(type).forEach((face) => {
         ((config && config.faces && config.faces[face]) || []).forEach((bloc) => {
             if (!BLOCS[bloc.bloc]) return;
             const neuf = nouveauBloc(bloc.bloc, { options: bloc.options });
@@ -762,6 +785,15 @@ function attributsRacine(config) {
 /** Retourne le HTML des feuilles A4 du document : [{ nom, html }] (recto puis verso). */
 function rendreDocument(config, ctx) {
     const surface = (face) => `<div class="ib-cadre"></div><div class="ib-face-contenu" data-face="${face}">${rendreFace(config.faces[face], ctx)}</div>`;
+    if (config.type === "livret") {
+        // A4 paysage plié en deux : extérieur = dos (page 4) à gauche, couverture (page 1) à droite ;
+        // intérieur = page 2 à gauche, page 3 à droite. Retournement sur le bord court.
+        const demi = (face) => `<section class="ib-demi">${surface(face)}</section>`;
+        return [
+            { nom: "exterieur", html: `<div class="ib-feuille ib-paysage" data-face="exterieur">${demi("page4")}${demi("page1")}</div>` },
+            { nom: "interieur", html: `<div class="ib-feuille ib-paysage" data-face="interieur">${demi("page2")}${demi("page3")}</div>` },
+        ];
+    }
     const feuilles = [];
     ["recto", "verso"].forEach((face) => {
         let interieur;

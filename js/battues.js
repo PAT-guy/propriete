@@ -7,15 +7,21 @@
  */
 
 const MODELE_REGLES_SECURITE =
-    "- Gilet fluo et couvre-chef orange pour tous, rabatteurs et conducteurs compris.\n"
-    + "- Arme ouverte et déchargée pendant les trajets et dès le signal de fin. Chargée au poste seulement, après le signal de départ.\n"
-    + "- Tir fichant uniquement : en Sologne, brandes et taillis masquent tout, jamais de tir à hauteur d'homme.\n"
-    + "- Angle de 30° de part et d'autre de la ligne de battue interdit. Jamais de tir vers un poste voisin, un rabatteur ou un chien.\n"
-    + "- Identifier l'animal avec certitude et vérifier le plan de chasse (catégorie, bracelet).\n"
-    + "- Pas de tir vers routes, chemins publics, habitations, ni sur l'eau (ricochet).\n"
-    + "- Rester au poste jusqu'au signal de fin. À l'arrêt temporaire : arme ouverte.\n"
-    + "- Animal blessé : ne pas le suivre, prévenir le responsable. Pas d'alcool.\n"
-    + "- Accident : 18 ou 112, prévenir le responsable, donner le n° du poste.";
+    "- Tout chasseur est seul responsable de son tir et de ses conséquences.\n"
+    + "- Être porteur de son permis de chasser, de sa validation et de l'attestation d'assurance.\n"
+    + "- Dans les véhicules, l'arme est déchargée et placée dans son étui.\n"
+    + "- À pied, se déplacer le plus silencieusement possible, carabine culasse ouverte ou fusil cassé, sans cartouche dans l'arme.\n"
+    + "- Le chef de ligne désigne le poste : se placer ventre au bois, immobile. Ne jamais changer de poste.\n"
+    + "- Bien repérer ses voisins. Baudrier ou veste fluo obligatoire. Tir à balle uniquement.\n"
+    + "- Ne charger l'arme que sur autorisation du chef de ligne (un coup long = début de battue).\n"
+    + "- Ne tirer que sur un animal clairement identifié.\n"
+    + "- Interdit de commencer à viser dans la traque et de balayer la ligne des chasseurs postés. Pas de tir dans la traque. Tir d'un animal rentrant interdit.\n"
+    + "- Tout tir doit être fichant : tir assis ou à genoux interdit. Tir en direction des constructions interdit.\n"
+    + "- Respecter l'angle de tir supérieur ou égal à 30° (5 pas latéralement le long du poste, 3 pas transversaux) et les consignes particulières de certains postes.\n"
+    + "- Ne pas tirer un gibier près de son voisin, ni au-delà de son poste.\n"
+    + "- Fin de la traque : 3 coups longs. Armes immédiatement déchargées avant toute descente de la chaise de battue.\n"
+    + "- Chaque tir est vérifié : attendre impérativement le chef de ligne.\n"
+    + "- La sécurité est l'affaire de tous : dans le doute, on ne tire pas.";
 
 const MODELE_INSTRUCTIONS =
     "- Rendez-vous à l'heure indiquée au lieu de rendez-vous.\n"

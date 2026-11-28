@@ -656,7 +656,7 @@ function configParDefaut(type) {
                     b("encart_postes", { lignes: 1, colonnes: "1", hauteurLigne: 6 }, { largeur: "moitie" }),
                     b("plan_chasse_jour", { tailleSonnerie: 12, hauteurLigne: 5.5, nombre: true }, { largeur: "moitie" }),
                     b("signaux", {}),
-                    b("consignes", { taillePolice: 7.5, colonnes: "2" }),
+                    b("consignes", { taillePolice: 7, colonnes: "2" }),
                 ],
                 verso: [b("carte", { etiquettes: "numeros" }, { taille: "remplir" })],
             },
